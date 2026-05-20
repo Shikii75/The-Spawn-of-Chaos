@@ -5,6 +5,10 @@ public class move : MonoBehaviour
     public float moveSpeed = 6f;
     public float jumpForce = 12f;
     public float gravityScale = 1f;
+    
+    [Header("Blob Form Settings")]
+    public float blobSpeedMultiplier = 1.5f; // Makes the blob dash faster than normal running
+    private bool isBlobForm = false;
 
     private Rigidbody2D rb;
     private Animator anim;
@@ -19,33 +23,46 @@ public class move : MonoBehaviour
 
     void Update()
     {
-         float horizontalInput = Input.GetAxisRaw("Horizontal");
+        float horizontalInput = Input.GetAxisRaw("Horizontal");
 
-    rb.linearVelocity = new Vector2(horizontalInput * moveSpeed, rb.linearVelocity.y);
+        // 👇 Check if pressing M AND moving left or right
+        if (Input.GetKey(KeyCode.M) && horizontalInput != 0)
+        {
+            isBlobForm = true;
+        }
+        else
+        {
+            isBlobForm = false;
+        }
 
-    anim.SetBool("isRunning", horizontalInput != 0);
+        // Apply movement speed (faster if in blob form)
+        float currentSpeed = isBlobForm ? (moveSpeed * blobSpeedMultiplier) : moveSpeed;
+        rb.linearVelocity = new Vector2(horizontalInput * currentSpeed, rb.linearVelocity.y);
 
-    // Flip sprite
-    if (horizontalInput > 0)
-        transform.localScale = new Vector3(1, 1, 1);
-    else if (horizontalInput < 0)
-        transform.localScale = new Vector3(-1, 1, 1);
+        // 👇 Update Animator states
+        anim.SetBool("isRunning", horizontalInput != 0 && !isBlobForm);
+        anim.SetBool("isBlob", isBlobForm);
 
-    // 👇 Jump logic
-    if (Input.GetButtonDown("Jump") && isGrounded)
-    {
-        rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
-        isGrounded = false;
-    }
+        // Flip sprite based on movement direction (preserving your exact inspector scales)
+        if (horizontalInput > 0)
+            transform.localScale = new Vector3(1.145f, 1.1842f, 1.1042f);
+        else if (horizontalInput < 0)
+            transform.localScale = new Vector3(-1.145f, 1.1842f, 1.1042f);
 
-    // 👇 Animator jump bool
-    anim.SetBool("isJumping", !isGrounded);
+        // 👇 Jump logic (disable jumping while in blob form)
+        if (Input.GetButtonDown("Jump") && isGrounded && !isBlobForm)
+        {
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+            isGrounded = false;
+        }
+
+        anim.SetBool("isJumping", !isGrounded);
     }
 
     void FixedUpdate()
     {
         // Constant gravity
-        rb.linearVelocity += Physics2D.gravity * Time.fixedDeltaTime;
+        rb.linearVelocity += Physics2D.gravity * gravityScale * Time.fixedDeltaTime;
     }
 
     void OnCollisionEnter2D(Collision2D collision)
@@ -56,5 +73,3 @@ public class move : MonoBehaviour
         }
     }
 }
-
-

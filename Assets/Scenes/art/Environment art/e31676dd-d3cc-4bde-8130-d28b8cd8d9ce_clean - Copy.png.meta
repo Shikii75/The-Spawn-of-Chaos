@@ -1,10 +1,13 @@
 fileFormatVersion: 2
-guid: c5f7679ad12b1584387a2936bd9f09ad
+guid: b9c1c0817eeb558428923c13b2ade869
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -1362848128468763148
-    second: Adobe Express - file (68)_0
+      213: 7641075777528841238
+    second: e31676dd-d3cc-4bde-8130-d28b8cd8d9ce_clean - Copy_0
+  - first:
+      213: 7879532115312671829
+    second: e31676dd-d3cc-4bde-8130-d28b8cd8d9ce_clean - Copy_1
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +103,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Adobe Express - file (68)_0
+      name: e31676dd-d3cc-4bde-8130-d28b8cd8d9ce_clean - Copy_0
       rect:
         serializedVersion: 2
-        x: 215
-        y: 40
-        width: 260
-        height: 284
+        x: 0
+        y: 167
+        width: 5
+        height: 14
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +118,30 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 4fd30db09d0361de0800000000000000
-      internalID: -1362848128468763148
+      spriteID: 614c27d7fed8a0a60800000000000000
+      internalID: 7641075777528841238
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: e31676dd-d3cc-4bde-8130-d28b8cd8d9ce_clean - Copy_1
+      rect:
+        serializedVersion: 2
+        x: 21
+        y: 5
+        width: 255
+        height: 336
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 55c7e7916b8b95d60800000000000000
+      internalID: 7879532115312671829
       vertices: []
       indices: 
       edges: []
@@ -135,7 +160,8 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Adobe Express - file (68)_0: -1362848128468763148
+      e31676dd-d3cc-4bde-8130-d28b8cd8d9ce_clean - Copy_0: 7641075777528841238
+      e31676dd-d3cc-4bde-8130-d28b8cd8d9ce_clean - Copy_1: 7879532115312671829
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

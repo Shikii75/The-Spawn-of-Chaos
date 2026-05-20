@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: ff837ee10b7b6a14fbff7d3d03c90cc3
+guid: 7b906fde83817d04389e95016a6c7bc6
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 6996388870077147275
-    second: ezgif-frame-002_0
+      213: -1964624033934450096
+    second: Untitled - May 20, 2026 at 14.51.34_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,23 +100,23 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: ezgif-frame-002_0
+      name: Untitled - May 20, 2026 at 14.51.34_0
       rect:
         serializedVersion: 2
-        x: 25
-        y: 77
-        width: 295
-        height: 201
-      alignment: 2
-      pivot: {x: 0.5, y: 1}
+        x: 28
+        y: 80
+        width: 957
+        height: 1215
+      alignment: 0
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: b88e17fdb9a281160800000000000000
-      internalID: 6996388870077147275
+      spriteID: 0526424a9d04cb4e0800000000000000
+      internalID: -1964624033934450096
       vertices: []
       indices: 
       edges: []
@@ -125,7 +125,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 48a9474da1f9dc94281a5052189362c7
+    spriteID: 
     internalID: 0
     vertices: []
     indices: 
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      ezgif-frame-002_0: 6996388870077147275
+      Untitled - May 20, 2026 at 14.51.34_0: -1964624033934450096
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

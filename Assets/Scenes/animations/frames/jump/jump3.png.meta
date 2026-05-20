@@ -1,10 +1,13 @@
 fileFormatVersion: 2
-guid: ff837ee10b7b6a14fbff7d3d03c90cc3
+guid: e54967d5f93fa8046a757097771809c0
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 6996388870077147275
-    second: ezgif-frame-002_0
+      213: -3937395983013798283
+    second: jump3_0
+  - first:
+      213: -6304608246120704075
+    second: jump3_1
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -51,7 +54,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
+  spritePixelsToUnits: 250
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -100,23 +103,45 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: ezgif-frame-002_0
+      name: jump3_0
       rect:
         serializedVersion: 2
-        x: 25
-        y: 77
-        width: 295
-        height: 201
-      alignment: 2
-      pivot: {x: 0.5, y: 1}
+        x: 110
+        y: 2
+        width: 969
+        height: 942
+      alignment: 0
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: b88e17fdb9a281160800000000000000
-      internalID: 6996388870077147275
+      spriteID: 57e9964f63f8b59c0800000000000000
+      internalID: -3937395983013798283
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: jump3_1
+      rect:
+        serializedVersion: 2
+        x: 497
+        y: 0
+        width: 9
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5b71af114388188a0800000000000000
+      internalID: -6304608246120704075
       vertices: []
       indices: 
       edges: []
@@ -125,7 +150,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 48a9474da1f9dc94281a5052189362c7
+    spriteID: 
     internalID: 0
     vertices: []
     indices: 
@@ -135,7 +160,8 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      ezgif-frame-002_0: 6996388870077147275
+      jump3_0: -3937395983013798283
+      jump3_1: -6304608246120704075
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 7c566f6ccdaa2a6468b701a18157bad7
+guid: 8e60f1ece6b41d1418266d1040d26cc4
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -7581937417513294726
-    second: Adobe Express - file (63)_0
+      213: -1964624033934450096
+    second: Untitled - May 20, 2026 at 14.51.34_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Adobe Express - file (63)_0
+      name: Untitled - May 20, 2026 at 14.51.34_0
       rect:
         serializedVersion: 2
-        x: 187
-        y: 5
-        width: 299
-        height: 321
+        x: 28
+        y: 80
+        width: 957
+        height: 1215
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: a74a0efe61c87c690800000000000000
-      internalID: -7581937417513294726
+      spriteID: 0526424a9d04cb4e0800000000000000
+      internalID: -1964624033934450096
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Adobe Express - file (63)_0: -7581937417513294726
+      Untitled - May 20, 2026 at 14.51.34_0: -1964624033934450096
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
