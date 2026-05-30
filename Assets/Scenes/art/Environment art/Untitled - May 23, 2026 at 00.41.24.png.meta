@@ -1,16 +1,19 @@
 fileFormatVersion: 2
-guid: 831dab4aee656e54298977254fc85793
+guid: 6c6f42e531e35c449a0325039b81305c
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -137972784495506535
-    second: neutral_0
+      213: -6169349796357855283
+    second: Untitled - May 23, 2026 at 00.41.24_0
   - first:
-      213: 242335434675338585
-    second: neutral_1
+      213: 602221921746236865
+    second: Untitled - May 23, 2026 at 00.41.24_1
   - first:
-      213: 4673670971779964938
-    second: neutral_2
+      213: -1769589189868990905
+    second: Untitled - May 23, 2026 at 00.41.24_2
+  - first:
+      213: 2736915262244100461
+    second: Untitled - May 23, 2026 at 00.41.24_3
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -106,67 +109,89 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: neutral_0
+      name: Untitled - May 23, 2026 at 00.41.24_0
       rect:
         serializedVersion: 2
-        x: 1849
-        y: 0
-        width: 4126
-        height: 4320
+        x: 47
+        y: 360
+        width: 1474
+        height: 380
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 99b4977cb72d51ef0800000000000000
-      internalID: -137972784495506535
+      spriteID: dc726fcfb01126aa0800000000000000
+      internalID: -6169349796357855283
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: neutral_1
+      name: Untitled - May 23, 2026 at 00.41.24_1
       rect:
         serializedVersion: 2
-        x: 6436
-        y: 2032
+        x: 694
+        y: 345
+        width: 41
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1c533a9a5a58b5800800000000000000
+      internalID: 602221921746236865
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Untitled - May 23, 2026 at 00.41.24_2
+      rect:
+        serializedVersion: 2
+        x: 748
+        y: 340
         width: 16
-        height: 13
+        height: 9
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 95d305c3bc2fc5300800000000000000
-      internalID: 242335434675338585
+      spriteID: 74ecc7be1082177e0800000000000000
+      internalID: -1769589189868990905
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: neutral_2
+      name: Untitled - May 23, 2026 at 00.41.24_3
       rect:
         serializedVersion: 2
-        x: 1823
-        y: 10
-        width: 4146
-        height: 4300
+        x: 1077
+        y: 338
+        width: 47
+        height: 17
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: a00eff59cf63cd040800000000000000
-      internalID: 4673670971779964938
+      spriteID: d6997622ee97bf520800000000000000
+      internalID: 2736915262244100461
       vertices: []
       indices: 
       edges: []
@@ -175,7 +200,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: cc4294cce3cfa9a4eb83e18a7ac14111
+    spriteID: 
     internalID: 0
     vertices: []
     indices: 
@@ -185,9 +210,10 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      neutral_0: -137972784495506535
-      neutral_1: 242335434675338585
-      neutral_2: 4673670971779964938
+      Untitled - May 23, 2026 at 00.41.24_0: -6169349796357855283
+      Untitled - May 23, 2026 at 00.41.24_1: 602221921746236865
+      Untitled - May 23, 2026 at 00.41.24_2: -1769589189868990905
+      Untitled - May 23, 2026 at 00.41.24_3: 2736915262244100461
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

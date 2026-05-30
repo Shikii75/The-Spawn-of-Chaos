@@ -1,16 +1,25 @@
 fileFormatVersion: 2
-guid: 831dab4aee656e54298977254fc85793
+guid: 893f9996d16c90b4db97d36e2a10f3ec
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -137972784495506535
-    second: neutral_0
+      213: 8409419395242053240
+    second: Untitled - May 24, 2026 at 17.20.13_0
   - first:
-      213: 242335434675338585
-    second: neutral_1
+      213: -3982690349841824770
+    second: Untitled - May 24, 2026 at 17.20.13_1
   - first:
-      213: 4673670971779964938
-    second: neutral_2
+      213: 6129084202725611452
+    second: Untitled - May 24, 2026 at 17.20.13_2
+  - first:
+      213: -4490646674482475490
+    second: Untitled - May 24, 2026 at 17.20.13_3
+  - first:
+      213: 3415688990081581117
+    second: Untitled - May 24, 2026 at 17.20.13_4
+  - first:
+      213: 3068229169881208461
+    second: Untitled - May 24, 2026 at 17.20.13_5
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -57,7 +66,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
+  spritePixelsToUnits: 40
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -106,13 +115,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: neutral_0
+      name: Untitled - May 24, 2026 at 17.20.13_0
       rect:
         serializedVersion: 2
-        x: 1849
-        y: 0
-        width: 4126
-        height: 4320
+        x: 36
+        y: 73
+        width: 133
+        height: 130
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -121,20 +130,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 99b4977cb72d51ef0800000000000000
-      internalID: -137972784495506535
+      spriteID: 87eceac826244b470800000000000000
+      internalID: 8409419395242053240
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: neutral_1
+      name: Untitled - May 24, 2026 at 17.20.13_1
       rect:
         serializedVersion: 2
-        x: 6436
-        y: 2032
-        width: 16
-        height: 13
+        x: 65
+        y: 192
+        width: 8
+        height: 6
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -143,20 +152,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 95d305c3bc2fc5300800000000000000
-      internalID: 242335434675338585
+      spriteID: ef34d4f5a34aab8c0800000000000000
+      internalID: -3982690349841824770
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: neutral_2
+      name: Untitled - May 24, 2026 at 17.20.13_2
       rect:
         serializedVersion: 2
-        x: 1823
-        y: 10
-        width: 4146
-        height: 4300
+        x: 99
+        y: 185
+        width: 20
+        height: 11
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -165,8 +174,74 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: a00eff59cf63cd040800000000000000
-      internalID: 4673670971779964938
+      spriteID: cb71bedeb91ee0550800000000000000
+      internalID: 6129084202725611452
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Untitled - May 24, 2026 at 17.20.13_3
+      rect:
+        serializedVersion: 2
+        x: 121
+        y: 191
+        width: 6
+        height: 7
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e1eceab54a40ea1c0800000000000000
+      internalID: -4490646674482475490
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Untitled - May 24, 2026 at 17.20.13_4
+      rect:
+        serializedVersion: 2
+        x: 136
+        y: 166
+        width: 17
+        height: 17
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d3086051a07f66f20800000000000000
+      internalID: 3415688990081581117
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Untitled - May 24, 2026 at 17.20.13_5
+      rect:
+        serializedVersion: 2
+        x: 143
+        y: 146
+        width: 8
+        height: 12
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d86d2408c2a849a20800000000000000
+      internalID: 3068229169881208461
       vertices: []
       indices: 
       edges: []
@@ -175,7 +250,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: cc4294cce3cfa9a4eb83e18a7ac14111
+    spriteID: 765d5e5010e47e44599d26ae83228d8e
     internalID: 0
     vertices: []
     indices: 
@@ -185,9 +260,12 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      neutral_0: -137972784495506535
-      neutral_1: 242335434675338585
-      neutral_2: 4673670971779964938
+      Untitled - May 24, 2026 at 17.20.13_0: 8409419395242053240
+      Untitled - May 24, 2026 at 17.20.13_1: -3982690349841824770
+      Untitled - May 24, 2026 at 17.20.13_2: 6129084202725611452
+      Untitled - May 24, 2026 at 17.20.13_3: -4490646674482475490
+      Untitled - May 24, 2026 at 17.20.13_4: 3415688990081581117
+      Untitled - May 24, 2026 at 17.20.13_5: 3068229169881208461
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

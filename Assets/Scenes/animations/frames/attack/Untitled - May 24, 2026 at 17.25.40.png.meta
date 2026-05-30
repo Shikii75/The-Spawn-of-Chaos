@@ -1,16 +1,19 @@
 fileFormatVersion: 2
-guid: 831dab4aee656e54298977254fc85793
+guid: 290697846a1ffc34cbd77211f16ac18f
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -137972784495506535
-    second: neutral_0
+      213: 7453898185262298645
+    second: Untitled - May 24, 2026 at 17.25.40_0
   - first:
-      213: 242335434675338585
-    second: neutral_1
+      213: -8212774082464149876
+    second: Untitled - May 24, 2026 at 17.25.40_1
   - first:
-      213: 4673670971779964938
-    second: neutral_2
+      213: 5142465044143974882
+    second: Untitled - May 24, 2026 at 17.25.40_2
+  - first:
+      213: 311191879626379932
+    second: Untitled - May 24, 2026 at 17.25.40_3
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -57,7 +60,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
+  spritePixelsToUnits: 40
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -106,13 +109,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: neutral_0
+      name: Untitled - May 24, 2026 at 17.25.40_0
       rect:
         serializedVersion: 2
-        x: 1849
-        y: 0
-        width: 4126
-        height: 4320
+        x: 49
+        y: 48
+        width: 156
+        height: 128
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -121,20 +124,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 99b4977cb72d51ef0800000000000000
-      internalID: -137972784495506535
+      spriteID: 516fc7438e0917760800000000000000
+      internalID: 7453898185262298645
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: neutral_1
+      name: Untitled - May 24, 2026 at 17.25.40_1
       rect:
         serializedVersion: 2
-        x: 6436
-        y: 2032
-        width: 16
-        height: 13
+        x: 172
+        y: 126
+        width: 26
+        height: 40
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -143,20 +146,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 95d305c3bc2fc5300800000000000000
-      internalID: 242335434675338585
+      spriteID: c8e80323c7d560e80800000000000000
+      internalID: -8212774082464149876
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: neutral_2
+      name: Untitled - May 24, 2026 at 17.25.40_2
       rect:
         serializedVersion: 2
-        x: 1823
-        y: 10
-        width: 4146
-        height: 4300
+        x: 64
+        y: 47
+        width: 142
+        height: 92
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -165,8 +168,30 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: a00eff59cf63cd040800000000000000
-      internalID: 4673670971779964938
+      spriteID: 2e9a01236b4bd5740800000000000000
+      internalID: 5142465044143974882
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Untitled - May 24, 2026 at 17.25.40_3
+      rect:
+        serializedVersion: 2
+        x: 150
+        y: 135
+        width: 11
+        height: 12
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c92dd12ad53915400800000000000000
+      internalID: 311191879626379932
       vertices: []
       indices: 
       edges: []
@@ -175,7 +200,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: cc4294cce3cfa9a4eb83e18a7ac14111
+    spriteID: 373f777e9ba6da74795a9d7efede2647
     internalID: 0
     vertices: []
     indices: 
@@ -185,9 +210,10 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      neutral_0: -137972784495506535
-      neutral_1: 242335434675338585
-      neutral_2: 4673670971779964938
+      Untitled - May 24, 2026 at 17.25.40_0: 7453898185262298645
+      Untitled - May 24, 2026 at 17.25.40_1: -8212774082464149876
+      Untitled - May 24, 2026 at 17.25.40_2: 5142465044143974882
+      Untitled - May 24, 2026 at 17.25.40_3: 311191879626379932
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

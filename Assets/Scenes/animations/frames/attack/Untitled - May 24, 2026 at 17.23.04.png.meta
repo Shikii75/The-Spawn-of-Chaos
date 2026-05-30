@@ -1,16 +1,10 @@
 fileFormatVersion: 2
-guid: 831dab4aee656e54298977254fc85793
+guid: ba981d939bf12dd4eb5de171473a4583
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -137972784495506535
-    second: neutral_0
-  - first:
-      213: 242335434675338585
-    second: neutral_1
-  - first:
-      213: 4673670971779964938
-    second: neutral_2
+      213: -4768125110489267120
+    second: Untitled - May 24, 2026 at 17.23.04_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -57,7 +51,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
+  spritePixelsToUnits: 40
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -106,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: neutral_0
+      name: Untitled - May 24, 2026 at 17.23.04_0
       rect:
         serializedVersion: 2
-        x: 1849
-        y: 0
-        width: 4126
-        height: 4320
+        x: 40
+        y: 17
+        width: 133
+        height: 130
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -121,52 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 99b4977cb72d51ef0800000000000000
-      internalID: -137972784495506535
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: neutral_1
-      rect:
-        serializedVersion: 2
-        x: 6436
-        y: 2032
-        width: 16
-        height: 13
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 95d305c3bc2fc5300800000000000000
-      internalID: 242335434675338585
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: neutral_2
-      rect:
-        serializedVersion: 2
-        x: 1823
-        y: 10
-        width: 4146
-        height: 4300
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: a00eff59cf63cd040800000000000000
-      internalID: 4673670971779964938
+      spriteID: 054caa0897734ddb0800000000000000
+      internalID: -4768125110489267120
       vertices: []
       indices: 
       edges: []
@@ -175,7 +125,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: cc4294cce3cfa9a4eb83e18a7ac14111
+    spriteID: 00073331285294141819b10b18a500c1
     internalID: 0
     vertices: []
     indices: 
@@ -185,9 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      neutral_0: -137972784495506535
-      neutral_1: 242335434675338585
-      neutral_2: 4673670971779964938
+      Untitled - May 24, 2026 at 17.23.04_0: -4768125110489267120
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

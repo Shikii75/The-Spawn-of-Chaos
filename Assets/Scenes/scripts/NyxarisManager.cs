@@ -20,6 +20,12 @@ public class NyxarisManager : MonoBehaviour
     public Sprite explaining;
     public Sprite annoyed;
 
+    [Header("Current Game State Connection")]
+    [Tooltip("Options: idle, combat, story")]
+    public string currentMode = "idle";
+    [Range(0f, 1f)]
+    public float currentTrust = 0.5f;
+
     [System.Serializable]
     public class NyxarisRequest { public string message; public string mode; public float trust; }
     [System.Serializable]
@@ -52,17 +58,20 @@ public class NyxarisManager : MonoBehaviour
 
     void Update()
     {
-        // Optional: Press the Escape key to close the chat interface
+        // Press the Escape key to close the chat interface
         if (mainInterfacePanel != null && mainInterfacePanel.activeSelf && Input.GetKeyDown(KeyCode.Escape))
         {
             HideInterface();
         }
-        if (!Input.GetKeyDown(KeyCode.LeftShift) && !Input.GetKeyDown(KeyCode.RightShift))
+        
+        // Use Shift to bring up interface if it's hidden
+        if (Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift))
         {
-            return;
+            if (mainInterfacePanel != null && !mainInterfacePanel.activeSelf)
+            {
+                ShowInterface();
+            }
         }
-        // Find the manager and tell it to show up
-        FindObjectOfType<NyxarisManager>().ShowInterface();
     }
 
     public void SendInputMessage()
@@ -79,7 +88,12 @@ public class NyxarisManager : MonoBehaviour
 
     IEnumerator SendRequest(string msg)
     {
-        NyxarisRequest requestData = new NyxarisRequest { message = msg, mode = "idle", trust = 0.5f };
+        // 🔥 Now leverages dynamic system variables instead of hardcoded placeholders
+        NyxarisRequest requestData = new NyxarisRequest { 
+            message = msg, 
+            mode = currentMode, 
+            trust = currentTrust 
+        };
         string json = JsonUtility.ToJson(requestData);
 
         using (UnityWebRequest request = new UnityWebRequest("http://127.0.0.1:5001/nyxaris", "POST"))
@@ -108,9 +122,15 @@ public class NyxarisManager : MonoBehaviour
     {
         switch (emotion)
         {
-            case "cutely-annoyed": portrait.sprite = annoyed; break;
-            case "explaining": portrait.sprite = explaining; break;
-            default: portrait.sprite = neutral; break;
+            case "cutely-annoyed": 
+                portrait.sprite = annoyed; 
+                break;
+            case "explaining": 
+                portrait.sprite = explaining; 
+                break;
+            default: 
+                portrait.sprite = neutral; 
+                break;
         }
     }
 
