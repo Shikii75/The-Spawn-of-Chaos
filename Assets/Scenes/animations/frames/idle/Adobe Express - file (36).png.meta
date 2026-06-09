@@ -103,12 +103,12 @@ TextureImporter:
       name: Adobe Express - file (36)_0
       rect:
         serializedVersion: 2
-        x: 158
+        x: 0
         y: 1
-        width: 336
+        width: 640
         height: 350
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -125,7 +125,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: a6202e45807c13342ba1723bbc1e0ffb
     internalID: 0
     vertices: []
     indices: 
