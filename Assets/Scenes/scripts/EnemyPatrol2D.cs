@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public class EnemyPatrol2D : MonoBehaviour, IDamageable
 {
@@ -505,3 +505,4 @@ public class EnemyPatrol2D : MonoBehaviour, IDamageable
         }
     }
 }
+

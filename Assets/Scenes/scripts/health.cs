@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class Health : MonoBehaviour, IDamageable
@@ -6,6 +7,10 @@ public class Health : MonoBehaviour, IDamageable
     private int currentHealth;
 
     public int CurrentHealth => currentHealth;
+    public int MaxHealth => maxHealth;
+
+    public event Action<int> onDamageTaken;
+    public event Action onDeath;
 
     void Start()
     {
@@ -24,6 +29,8 @@ public class Health : MonoBehaviour, IDamageable
             enemy.TriggerKnockback();
         }
 
+        onDamageTaken?.Invoke(damage);
+
         if (currentHealth <= 0)
         {
             Die();
@@ -33,6 +40,7 @@ public class Health : MonoBehaviour, IDamageable
     void Die()
     {
         Debug.Log($"{name} died.");
+        onDeath?.Invoke();
         Destroy(gameObject);
     }
 }

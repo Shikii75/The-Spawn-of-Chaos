@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections;
 
-public class MoveAndFadeLoop : MonoBehaviour
+public class MoveAndFade : MonoBehaviour
 {
     public float moveSpeed = 0.1f;
     public float fadeDuration = 5f;
