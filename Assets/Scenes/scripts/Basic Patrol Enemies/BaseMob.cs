@@ -49,7 +49,7 @@ public class BaseMob : MonoBehaviour, IDamageable
         }
 
         Vector2 target = movingRight ? (Vector2)rightPoint.position : (Vector2)leftPoint.position;
-        float distance = Vector2.Distance(transform.position, target);
+        float distance = Mathf.Abs(transform.position.x - target.x);
 
         if (distance <= 0.2f)
         {

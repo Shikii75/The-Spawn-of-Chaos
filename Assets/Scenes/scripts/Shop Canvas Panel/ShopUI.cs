@@ -145,7 +145,7 @@ public class ShopUI : MonoBehaviour
         {
             int currentCoins = 0;
             // Get currency from the PlayerCurrency singleton or fallback to shopSystem
-            PlayerCurrency pc = FindFirstObjectByType<PlayerCurrency>();
+            PlayerCurrency pc = PlayerCurrency.Instance;
             if (pc != null)
             {
                 currentCoins = pc.Coins;

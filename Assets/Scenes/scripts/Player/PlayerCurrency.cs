@@ -86,6 +86,21 @@ public class PlayerCurrency : MonoBehaviour
         // Consuming potion on H key press
         if (Input.GetKeyDown(KeyCode.H))
         {
+            // Ignore key while typing in any input fields
+            if (UnityEngine.EventSystems.EventSystem.current != null && UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject != null)
+            {
+                var go = UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject;
+                if (go.GetComponent<TMPro.TMP_InputField>() != null || go.GetComponent<UnityEngine.UI.InputField>() != null)
+                {
+                    return;
+                }
+            }
+
+            // Ignore key if dialogue, shop, or chat panels are open
+            if (NPCDialogueUI.Instance != null && NPCDialogueUI.Instance.IsDialogueActive) return;
+            if (ShopUI.Instance != null && ShopUI.Instance.IsShopActive) return;
+            if (NyxarisManager.Instance != null && NyxarisManager.Instance.mainInterfacePanel != null && NyxarisManager.Instance.mainInterfacePanel.activeSelf) return;
+
             UsePotion();
         }
     }

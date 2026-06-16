@@ -53,8 +53,15 @@ public class FallingPlatform : PlatformBase
     {
         if (!triggered && collision.collider.CompareTag("Player"))
         {
-            triggered = true;
-            timer = 0f;
+            foreach (ContactPoint2D contact in collision.contacts)
+            {
+                if (contact.normal.y > 0.5f)
+                {
+                    triggered = true;
+                    timer = 0f;
+                    break;
+                }
+            }
         }
     }
 }

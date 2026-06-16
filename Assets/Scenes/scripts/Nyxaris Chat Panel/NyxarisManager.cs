@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.SceneManagement;
 
 public class NyxarisManager : MonoBehaviour
 {
@@ -28,10 +29,12 @@ public class NyxarisManager : MonoBehaviour
     [Range(0f, 1f)]
     public float currentTrust = 0.5f;
 
+    private Coroutine resetEmotionCoroutine;
+
     [System.Serializable]
-    public class NyxarisRequest { public string message; public string mode; public float trust; }
+    public class NyxarisRequest { public string message; public string mode; public float trust; public string level; }
     [System.Serializable]
-    public class NyxarisResponse { public string response; public string emotion; }
+    public class NyxarisResponse { public string response; public string emotion; public string sprite_key; }
 
     void Awake()
     {
@@ -71,12 +74,15 @@ public class NyxarisManager : MonoBehaviour
             HideInterface();
         }
         
-        // Use Shift to bring up interface if it's hidden
-        if (Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift))
+        // Press Tab to toggle the Nyxaris chat interface (Tab avoids conflict with dash on Shift)
+        if (Input.GetKeyDown(KeyCode.Tab))
         {
-            if (mainInterfacePanel != null && !mainInterfacePanel.activeSelf)
+            if (mainInterfacePanel != null)
             {
-                ShowInterface();
+                if (mainInterfacePanel.activeSelf)
+                    HideInterface();
+                else
+                    ShowInterface();
             }
         }
     }
@@ -99,7 +105,8 @@ public class NyxarisManager : MonoBehaviour
         NyxarisRequest requestData = new NyxarisRequest { 
             message = msg, 
             mode = currentMode, 
-            trust = currentTrust 
+            trust = currentTrust,
+            level = SceneManager.GetActiveScene().name
         };
         string json = JsonUtility.ToJson(requestData);
 
@@ -115,6 +122,7 @@ public class NyxarisManager : MonoBehaviour
             if (request.result == UnityWebRequest.Result.Success)
             {
                 NyxarisResponse response = JsonUtility.FromJson<NyxarisResponse>(request.downloadHandler.text);
+                Debug.Log("Nyxaris Expression: " + response.sprite_key);
                 SetEmotion(response.emotion);
                 StartCoroutine(TypeText(response.response));
             }
@@ -127,18 +135,31 @@ public class NyxarisManager : MonoBehaviour
 
     void SetEmotion(string emotion)
     {
+        if (resetEmotionCoroutine != null)
+        {
+            StopCoroutine(resetEmotionCoroutine);
+        }
+        
         switch (emotion)
         {
             case "cutely-annoyed": 
                 portrait.sprite = annoyed; 
+                resetEmotionCoroutine = StartCoroutine(ResetEmotionAfterDelay());
                 break;
             case "explaining": 
                 portrait.sprite = explaining; 
+                resetEmotionCoroutine = StartCoroutine(ResetEmotionAfterDelay());
                 break;
             default: 
                 portrait.sprite = neutral; 
                 break;
         }
+    }
+
+    IEnumerator ResetEmotionAfterDelay()
+    {
+        yield return new WaitForSeconds(3.0f);
+        portrait.sprite = neutral;
     }
 
     IEnumerator TypeText(string text)

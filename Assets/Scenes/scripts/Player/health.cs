@@ -66,6 +66,37 @@ public class Health : MonoBehaviour, IDamageable
     {
         Debug.Log($"{name} died.");
         onDeath?.Invoke();
-        Destroy(gameObject);
+
+        if (CompareTag("Player"))
+        {
+            // Disable movement and combat to prevent input execution after death
+            move playerMove = GetComponent<move>();
+            if (playerMove != null) playerMove.enabled = false;
+
+            MageCombat playerCombat = GetComponent<MageCombat>();
+            if (playerCombat != null) playerCombat.enabled = false;
+
+            Rigidbody2D rb = GetComponent<Rigidbody2D>();
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector2.zero;
+                rb.isKinematic = true;
+            }
+
+            Collider2D col = GetComponent<Collider2D>();
+            if (col != null) col.enabled = false;
+
+            StartCoroutine(ReloadSceneRoutine(2.0f));
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+
+    private System.Collections.IEnumerator ReloadSceneRoutine(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
     }
 }

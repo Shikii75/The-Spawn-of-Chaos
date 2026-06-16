@@ -26,13 +26,9 @@ public class Spiderling : MonoBehaviour, IDamageable
     {
         if (isDead) return;
 
-        if (playerTransform == null)
+        if (playerTransform == null && PlayerCurrency.Instance != null)
         {
-            GameObject player = GameObject.FindGameObjectWithTag("Player");
-            if (player != null)
-            {
-                playerTransform = player.transform;
-            }
+            playerTransform = PlayerCurrency.Instance.transform;
         }
 
         if (playerTransform != null)

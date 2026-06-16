@@ -11,10 +11,18 @@ public class SpringPlatform : PlatformBase
         if (!collision.collider.CompareTag(playerTag))
             return;
 
-        Rigidbody2D playerRb = collision.collider.GetComponent<Rigidbody2D>();
-        if (playerRb != null)
+        // Verify the player landed on the top of the spring
+        foreach (ContactPoint2D contact in collision.contacts)
         {
-            playerRb.linearVelocity = new Vector2(playerRb.linearVelocity.x, bounceForce);
+            if (contact.normal.y > 0.5f)
+            {
+                Rigidbody2D playerRb = collision.collider.GetComponent<Rigidbody2D>();
+                if (playerRb != null)
+                {
+                    playerRb.linearVelocity = new Vector2(playerRb.linearVelocity.x, bounceForce);
+                    break;
+                }
+            }
         }
     }
 }

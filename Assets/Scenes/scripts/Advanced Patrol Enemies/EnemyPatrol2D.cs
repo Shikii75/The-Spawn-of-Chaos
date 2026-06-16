@@ -86,6 +86,20 @@ public class EnemyPatrol2D : MonoBehaviour, IDamageable
         currentHealth = maxHealth;
     }
 
+    private void Start()
+    {
+        // Auto-assign player as TargetA if targets are unassigned
+        if (TargetA == null && TargetB == null)
+        {
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null)
+            {
+                TargetA = player.transform;
+                if (verboseLogs) Debug.Log($"[EnemyPatrol2D] {name} auto-assigned player as TargetA.");
+            }
+        }
+    }
+
     private void Update()
     {
         if (isKnockedBack)
@@ -149,6 +163,16 @@ public class EnemyPatrol2D : MonoBehaviour, IDamageable
 
     private Transform ChooseClosestTarget()
     {
+        // Re-resolve player if the reference was lost (e.g. player died and respawned)
+        if (TargetA == null && TargetB == null)
+        {
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null)
+            {
+                TargetA = player.transform;
+            }
+        }
+
         Transform closest = null;
         float bestDistance = float.MaxValue;
 

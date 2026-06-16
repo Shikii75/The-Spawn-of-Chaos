@@ -8,15 +8,22 @@ public class NPCDialogueUI : MonoBehaviour
 {
     public static NPCDialogueUI Instance { get; private set; }
 
-    [Header("Settings")]
-    public float typeSpeed = 0.02f;
+    [Header("UI References (Drag & Drop)")]
+    [Tooltip("The speech bubble or dialogue panel GameObject container.")]
+    public GameObject dialoguePanel;
+    
+    [Tooltip("TextMeshPro component for the NPC's name.")]
+    public TMP_Text nameText;
+    
+    [Tooltip("TextMeshPro component for the dialogue body text.")]
+    public TMP_Text dialogueText;
+    
+    [Tooltip("Optional: TextMeshPro component indicating dialogue can be advanced (e.g. '▶').")]
+    public TMP_Text advanceIndicator;
 
-    // ── Runtime-built UI references ──
-    private Canvas canvas;
-    private GameObject dialoguePanel;
-    private TextMeshProUGUI nameText;
-    private TextMeshProUGUI dialogueText;
-    private TextMeshProUGUI advanceIndicator;
+    [Header("Settings")]
+    [Tooltip("Typewriter character text speed interval in seconds.")]
+    public float typeSpeed = 0.02f;
 
     // ── Dialogue state ──
     private string[] dialogueLines;
@@ -25,7 +32,107 @@ public class NPCDialogueUI : MonoBehaviour
     private Coroutine typingCoroutine;
     private Action onComplete;
 
+    private int openedFrameCount;
+
     public bool IsDialogueActive => dialoguePanel != null && dialoguePanel.activeSelf;
+
+    private void AutoResolveReferences()
+    {
+        dialoguePanel = this.gameObject;
+        nameText = null;
+        dialogueText = null;
+        advanceIndicator = null;
+
+        var allTexts = GetComponentsInChildren<TextMeshProUGUI>(true);
+        foreach (var txt in allTexts)
+        {
+            string n = txt.gameObject.name.ToLower();
+            if (n.Contains("dialogue") || n.Contains("body") || n.Contains("content") || n == "text" || n.Contains("body text"))
+            {
+                dialogueText = txt;
+            }
+            else if (n.Contains("name") || n.Contains("title") || n.Contains("character") || n.Contains("npc name"))
+            {
+                nameText = txt;
+            }
+            else if (n.Contains("advance") || n.Contains("indicator") || n.Contains("icon") || n.Contains("arrow"))
+            {
+                advanceIndicator = txt;
+            }
+        }
+
+        // Fallback for texts if still null (auto-split by screen layout position)
+        if (nameText == null || dialogueText == null)
+        {
+            var list = new System.Collections.Generic.List<TextMeshProUGUI>();
+            foreach (var txt in allTexts)
+            {
+                if (txt != advanceIndicator) list.Add(txt);
+            }
+
+            if (list.Count >= 2)
+            {
+                list.Sort((a, b) => b.transform.position.y.CompareTo(a.transform.position.y));
+                nameText = list[0];
+                dialogueText = list[1];
+            }
+            else if (list.Count == 1)
+            {
+                dialogueText = list[0];
+            }
+        }
+    }
+
+    [ContextMenu("Apply Dialogue UI Styling")]
+    public void ApplyStyling()
+    {
+        AutoResolveReferences();
+
+        Canvas nearestCanvas = GetComponentInParent<Canvas>();
+        Canvas rootCanvas = nearestCanvas != null ? nearestCanvas.rootCanvas : null;
+        if (rootCanvas != null)
+        {
+            CanvasScaler scaler = rootCanvas.GetComponent<CanvasScaler>();
+            if (scaler == null)
+            {
+                scaler = rootCanvas.gameObject.AddComponent<CanvasScaler>();
+            }
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            scaler.matchWidthOrHeight = 0.5f;
+        }
+
+        if (nearestCanvas != null && nearestCanvas != rootCanvas)
+        {
+            RectTransform rt = nearestCanvas.GetComponent<RectTransform>();
+            if (rt != null)
+            {
+                rt.anchorMin        = Vector2.zero;
+                rt.anchorMax        = Vector2.one;
+                rt.pivot            = new Vector2(0.5f, 0.5f);
+                rt.sizeDelta        = Vector2.zero;
+                rt.anchoredPosition = Vector2.zero;
+                rt.localScale       = Vector3.one;
+            }
+
+            CanvasScaler nestedScaler = nearestCanvas.GetComponent<CanvasScaler>();
+            if (nestedScaler != null)
+            {
+                if (Application.isPlaying) Destroy(nestedScaler);
+                else DestroyImmediate(nestedScaler);
+            }
+        }
+
+        if (dialoguePanel != null)
+        {
+            RectTransform prt = dialoguePanel.GetComponent<RectTransform>();
+            if (prt != null) prt.localScale = Vector3.one;
+        }
+        if (nameText != null) nameText.rectTransform.localScale = Vector3.one;
+        if (dialogueText != null) dialogueText.rectTransform.localScale = Vector3.one;
+        if (advanceIndicator != null) advanceIndicator.rectTransform.localScale = Vector3.one;
+    }
 
     void Awake()
     {
@@ -39,71 +146,18 @@ public class NPCDialogueUI : MonoBehaviour
             return;
         }
 
-        BuildUI();
+        ApplyStyling();
+
+        if (dialoguePanel != null)
+        {
+            dialoguePanel.SetActive(false);
+        }
     }
-
-    // ══════════════════════════════════════════════════════════════════
-    //  UI CONSTRUCTION — entire hierarchy built from code
-    // ══════════════════════════════════════════════════════════════════
-
-    private void BuildUI()
-    {
-        // ── Canvas (sort order 5) ──
-        canvas = UIFactory.CreateCanvas("NPCDialogueCanvas", 5);
-        canvas.transform.SetParent(transform, false);
-
-        // ── Bottom-of-screen dialogue bar ──
-        // Full width, 180px tall, anchored to bottom
-        RectTransform panelRT = UIFactory.CreatePanel(
-            canvas.transform, "DialoguePanel", UIFactory.PanelBackground,
-            new Vector2(0f, 0f), new Vector2(1f, 0f),          // anchor bottom-stretch
-            new Vector2(0f, 0f), new Vector2(0f, 180f)          // 180px tall from bottom
-        );
-        dialoguePanel = panelRT.gameObject;
-
-        // ── NPC Name text — top-left of panel, accent color, 22pt ──
-        nameText = UIFactory.CreateText(
-            panelRT, "NameText", "",
-            22f, UIFactory.Accent, TextAlignmentOptions.TopLeft
-        );
-        UIFactory.SetRect(nameText.rectTransform,
-            new Vector2(0f, 1f), new Vector2(0.5f, 1f),
-            new Vector2(20f, -40f), new Vector2(0f, -10f)
-        );
-        nameText.fontStyle = FontStyles.Bold;
-        nameText.enableWordWrapping = false;
-
-        // ── Dialogue body text — main area, white, 18pt ──
-        dialogueText = UIFactory.CreateText(
-            panelRT, "DialogueText", "",
-            18f, UIFactory.TextWhite, TextAlignmentOptions.TopLeft
-        );
-        UIFactory.SetRect(dialogueText.rectTransform,
-            new Vector2(0f, 0f), new Vector2(1f, 1f),
-            new Vector2(20f, 15f), new Vector2(-20f, -45f)
-        );
-
-        // ── Advance indicator '▶' — bottom-right, muted, 16pt ──
-        advanceIndicator = UIFactory.CreateText(
-            panelRT, "AdvanceIndicator", "▶",
-            16f, UIFactory.TextMuted, TextAlignmentOptions.BottomRight
-        );
-        UIFactory.SetRect(advanceIndicator.rectTransform,
-            new Vector2(1f, 0f), new Vector2(1f, 0f),
-            new Vector2(-60f, 8f), new Vector2(-15f, 30f)
-        );
-
-        // Start hidden
-        dialoguePanel.SetActive(false);
-    }
-
-    // ══════════════════════════════════════════════════════════════════
-    //  INPUT HANDLING
-    // ══════════════════════════════════════════════════════════════════
 
     void Update()
     {
         if (!IsDialogueActive) return;
+        if (Time.frameCount == openedFrameCount) return;
 
         // Advance dialogue on Left Click, Enter, or E key press
         if (Input.GetMouseButtonDown(0) || Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.E))
@@ -126,10 +180,6 @@ public class NPCDialogueUI : MonoBehaviour
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    //  PUBLIC API
-    // ══════════════════════════════════════════════════════════════════
-
     public void ShowDialogue(string npcName, string[] lines, Action onCompleteCallback = null)
     {
         if (lines == null || lines.Length == 0) return;
@@ -137,16 +187,14 @@ public class NPCDialogueUI : MonoBehaviour
         dialogueLines = lines;
         currentLineIndex = 0;
         onComplete = onCompleteCallback;
+        openedFrameCount = Time.frameCount;
+
+        // Apply scaling and reference resolution checks on show
+        ApplyStyling();
 
         if (nameText != null)
         {
             nameText.text = npcName;
-        }
-
-        // Ensure this Manager GameObject itself is active
-        if (!gameObject.activeSelf)
-        {
-            gameObject.SetActive(true);
         }
 
         if (dialoguePanel != null)
@@ -154,10 +202,10 @@ public class NPCDialogueUI : MonoBehaviour
             dialoguePanel.SetActive(true);
         }
 
-        // Verify the GameObject is active in the hierarchy (not blocked by an inactive parent)
+        // Verify the GameObject is active in the hierarchy
         if (!gameObject.activeInHierarchy)
         {
-            Debug.LogError($"NPCDialogueUI: Cannot start dialogue because '{gameObject.name}' or one of its parent GameObjects is inactive in the hierarchy! Please make sure they are active.");
+            Debug.LogError($"NPCDialogueUI: Cannot start dialogue because '{gameObject.name}' or one of its parent GameObjects is inactive in the hierarchy!");
             return;
         }
 
@@ -183,10 +231,6 @@ public class NPCDialogueUI : MonoBehaviour
         onComplete = null;
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    //  TYPEWRITER EFFECT
-    // ══════════════════════════════════════════════════════════════════
-
     private void StartTypingLine(string line)
     {
         if (typingCoroutine != null)
@@ -199,12 +243,18 @@ public class NPCDialogueUI : MonoBehaviour
     private IEnumerator TypeLineRoutine(string line)
     {
         isTyping = true;
-        dialogueText.text = "";
+        if (dialogueText != null) dialogueText.text = "";
+        
+        // Hide advance indicator during typing
+        if (advanceIndicator != null) advanceIndicator.gameObject.SetActive(false);
+
         foreach (char c in line)
         {
-            dialogueText.text += c;
+            if (dialogueText != null) dialogueText.text += c;
             yield return new WaitForSeconds(typeSpeed);
         }
+        
+        if (advanceIndicator != null) advanceIndicator.gameObject.SetActive(true);
         isTyping = false;
     }
 
@@ -214,7 +264,8 @@ public class NPCDialogueUI : MonoBehaviour
         {
             StopCoroutine(typingCoroutine);
         }
-        dialogueText.text = dialogueLines[currentLineIndex];
+        if (dialogueText != null) dialogueText.text = dialogueLines[currentLineIndex];
+        if (advanceIndicator != null) advanceIndicator.gameObject.SetActive(true);
         isTyping = false;
     }
 

@@ -11,10 +11,8 @@ public class CameraFollow : MonoBehaviour
         if (player == null) return;
 
         Vector3 targetPosition = player.position + offset;
-        transform.position = Vector3.Lerp(
-            transform.position,
-            targetPosition,
-            smoothSpeed * Time.deltaTime
-        );
+        // Exponential decay gives framerate-independent smoothing, unlike Lerp with deltaTime
+        float t = 1f - Mathf.Exp(-smoothSpeed * Time.deltaTime);
+        transform.position = Vector3.Lerp(transform.position, targetPosition, t);
     }
 }

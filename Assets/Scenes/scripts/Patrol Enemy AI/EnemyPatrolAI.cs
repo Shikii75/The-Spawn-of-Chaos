@@ -45,6 +45,19 @@ public class EnemyPatrolAI : MonoBehaviour, IDamageable
         animator = animator ?? GetComponent<Animator>();
     }
 
+    void Start()
+    {
+        // Auto-assign player as target if targets array is empty
+        if (targets == null || targets.Length == 0 || (targets.Length == 1 && targets[0] == null))
+        {
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null)
+            {
+                targets = new Transform[] { player.transform };
+            }
+        }
+    }
+
     void Update()
     {
         if (isDead || animator == null)
@@ -115,7 +128,7 @@ public class EnemyPatrolAI : MonoBehaviour, IDamageable
         }
 
         Transform destination = patrolPoints[currentPatrolIndex];
-        float distance = Vector2.Distance(transform.position, destination.position);
+        float distance = Mathf.Abs(transform.position.x - destination.position.x);
         if (distance < 0.3f)
         {
             currentPatrolIndex = (currentPatrolIndex + 1) % patrolPoints.Length;

@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody2D))]
 public class MovingPlatform : PlatformBase
 {
     public Transform pointA;
@@ -7,6 +8,13 @@ public class MovingPlatform : PlatformBase
     public float speed = 2.5f;
 
     private Vector3 targetPosition;
+    private Rigidbody2D rb;
+
+    void Awake()
+    {
+        rb = GetComponent<Rigidbody2D>();
+        rb.isKinematic = true;
+    }
 
     void Start()
     {
@@ -17,12 +25,18 @@ public class MovingPlatform : PlatformBase
             return;
         }
         targetPosition = pointB.position;
+        rb.position = transform.position;
     }
 
-    void Update()
+    void FixedUpdate()
     {
-        transform.position = Vector3.MoveTowards(transform.position, targetPosition, speed * Time.deltaTime);
-        if (Vector3.Distance(transform.position, targetPosition) < 0.05f)
+        Vector2 currentPos = rb.position;
+        Vector2 targetPos = targetPosition;
+        Vector2 newPos = Vector2.MoveTowards(currentPos, targetPos, speed * Time.fixedDeltaTime);
+        
+        rb.MovePosition(newPos);
+
+        if (Vector2.Distance(newPos, targetPos) < 0.05f)
         {
             targetPosition = targetPosition == pointA.position ? pointB.position : pointA.position;
         }
@@ -32,7 +46,15 @@ public class MovingPlatform : PlatformBase
     {
         if (collision.collider.CompareTag("Player"))
         {
-            collision.transform.SetParent(transform);
+            // Only parent the player if they landed on top of the platform
+            foreach (ContactPoint2D contact in collision.contacts)
+            {
+                if (contact.normal.y > 0.5f)
+                {
+                    collision.transform.SetParent(transform);
+                    break;
+                }
+            }
         }
     }
 
@@ -40,7 +62,10 @@ public class MovingPlatform : PlatformBase
     {
         if (collision.collider.CompareTag("Player"))
         {
-            collision.transform.SetParent(null);
+            if (collision.transform.parent == transform)
+            {
+                collision.transform.SetParent(null);
+            }
         }
     }
 }

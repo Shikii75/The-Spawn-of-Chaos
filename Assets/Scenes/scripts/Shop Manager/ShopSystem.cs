@@ -77,7 +77,7 @@ public class ShopSystem : MonoBehaviour
 
     private void ApplyPurchase(ShopItem item)
     {
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        GameObject player = PlayerCurrency.Instance != null ? PlayerCurrency.Instance.gameObject : GameObject.FindGameObjectWithTag("Player");
         if (player == null)
         {
             Debug.LogError("ShopSystem: Player GameObject not found in scene!");

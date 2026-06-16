@@ -37,6 +37,7 @@ public class DojoWaveManager : MonoBehaviour
     private int currentWaveIndex = 0;
     private bool challengeStarted = false;
     private bool challengeCompleted = false;
+    private bool isSpawningWave = false;
     private List<GameObject> activeEnemies = new List<GameObject>();
 
     void Awake()
@@ -48,7 +49,7 @@ public class DojoWaveManager : MonoBehaviour
 
     void Update()
     {
-        if (!challengeStarted || challengeCompleted) return;
+        if (!challengeStarted || challengeCompleted || isSpawningWave) return;
 
         // Clean up destroyed enemies from the list
         activeEnemies.RemoveAll(item => item == null);
@@ -78,6 +79,8 @@ public class DojoWaveManager : MonoBehaviour
 
     private IEnumerator AdvanceWave()
     {
+        isSpawningWave = true;
+
         if (currentWaveIndex < waves.Count)
         {
             DojoWave wave = waves[currentWaveIndex];
@@ -117,6 +120,8 @@ public class DojoWaveManager : MonoBehaviour
         {
             CompleteChallenge();
         }
+
+        isSpawningWave = false;
     }
 
     private void CompleteChallenge()

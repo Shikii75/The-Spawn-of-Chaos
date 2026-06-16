@@ -10,34 +10,25 @@ public class SpiderPatrol : MonoBehaviour
 
     void Update()
     {
-        if (movingRight)
+        if (leftPoint == null || rightPoint == null)
+            return;
+
+        Transform target = movingRight ? rightPoint : leftPoint;
+        
+        // Move towards target's X coordinate while preserving current Y coordinate
+        Vector2 targetXPosition = new Vector2(target.position.x, transform.position.y);
+        transform.position = Vector2.MoveTowards(
+            transform.position,
+            targetXPosition,
+            speed * Time.deltaTime
+        );
+
+        float horizontalDistance = Mathf.Abs(transform.position.x - target.position.x);
+        if (horizontalDistance < 0.3f)
         {
-            transform.position = Vector2.MoveTowards(
-                transform.position,
-                rightPoint.position,
-                speed * Time.deltaTime
-            );
-
-            if (Vector2.Distance(transform.position, rightPoint.position) < 0.3f)
-            {
-                movingRight = false;
-                Flip();
-            }
+            movingRight = !movingRight;
+            Flip();
         }
-        else
-{
-    transform.position = Vector2.MoveTowards(
-        transform.position,
-        leftPoint.position,
-        speed * Time.deltaTime
-    );
-
-    if (Vector2.Distance(transform.position, leftPoint.position) < 1f)
-    {
-        movingRight = true;
-        Flip();
-    }
-}
     }
 
     void Flip()

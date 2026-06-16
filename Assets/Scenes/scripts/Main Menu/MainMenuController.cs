@@ -35,25 +35,33 @@ public class MainMenuController : MonoBehaviour
     [Tooltip("Logo sprite to display at the top of the menu. Automatically searched in Assets/Scenes/art/main_menu_logo.png.")]
     public Sprite logoSprite;
     [Tooltip("Size of the logo image on screen.")]
-    public Vector2 logoSize = new Vector2(600f, 400f);
+    public Vector2 logoSize = new Vector2(875f, 500f);
     [Tooltip("Background texture to display behind the menu. Automatically searched in Assets/Scenes/art/main_menu_bg.png.")]
     public Sprite backgroundSprite;
     [Tooltip("Color tint to apply to the background texture.")]
     public Color backgroundColor = new Color(0.85f, 0.82f, 0.95f, 1f); // Subtle gothic violet/blue tint to smoke
 
+    [Header("Custom Button Sprites")]
+    [Tooltip("PLAY button.")]
+    public Sprite playButtonSprite;
+    [Tooltip("OPTIONS button.")]
+    public Sprite optionsButtonSprite;
+    [Tooltip("QUIT button.")]
+    public Sprite quitButtonSprite;
+
     [Header("Button Configuration")]
     [Tooltip("Dimensions of the menu buttons (width, height) - adjustable directly in Inspector.")]
-    public Vector2 buttonSize = new Vector2(240f, 55f);
+    public Vector2 buttonSize = new Vector2(220f, 55f);
 
     [Header("Text Configuration")]
     [Tooltip("Font size of the game title text (used if no logo sprite is assigned).")]
-    public float titleFontSize = 52f;
+    public float titleFontSize = 58f;
     [Tooltip("Whether the title text should be bold.")]
     public bool boldTitle = true;
     [Tooltip("Font size of the subtitle text.")]
-    public float subtitleFontSize = 22f;
+    public float subtitleFontSize = 24f;
     [Tooltip("Font size of the buttons text.")]
-    public float buttonFontSize = 24f;
+    public float buttonFontSize = 26f;
     [Tooltip("Whether the button labels should be bold.")]
     public bool boldButtons = true;
 
@@ -72,6 +80,18 @@ public class MainMenuController : MonoBehaviour
         if (backgroundSprite == null)
         {
             backgroundSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Scenes/art/main_menu_bg.png");
+        }
+        if (playButtonSprite == null)
+        {
+            playButtonSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Scenes/art/play_btn.png");
+        }
+        if (optionsButtonSprite == null)
+        {
+            optionsButtonSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Scenes/art/options_btn.png");
+        }
+        if (quitButtonSprite == null)
+        {
+            quitButtonSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Scenes/art/quit_btn.png");
         }
     }
 #endif
@@ -94,6 +114,18 @@ public class MainMenuController : MonoBehaviour
         {
             backgroundSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Scenes/art/main_menu_bg.png");
         }
+        if (playButtonSprite == null)
+        {
+            playButtonSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Scenes/art/play_btn.png");
+        }
+        if (optionsButtonSprite == null)
+        {
+            optionsButtonSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Scenes/art/options_btn.png");
+        }
+        if (quitButtonSprite == null)
+        {
+            quitButtonSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Scenes/art/quit_btn.png");
+        }
 #endif
 
         BuildUI();
@@ -114,6 +146,13 @@ public class MainMenuController : MonoBehaviour
         // Create the menu canvas
         Canvas canvas = UIFactory.CreateCanvas("MainMenuCanvas", 0);
         canvas.transform.SetParent(transform, false);
+
+        // Adjust CanvasScaler to match height (1.0f) to prevent vertical layout overflow on custom resolutions
+        CanvasScaler scaler = canvas.GetComponent<CanvasScaler>();
+        if (scaler != null)
+        {
+            scaler.matchWidthOrHeight = 1.0f;
+        }
 
         // ═══════════════════════════════════════════════════════════
         //  MAIN PANEL — full-screen background
@@ -182,19 +221,49 @@ public class MainMenuController : MonoBehaviour
         UIFactory.AddLayoutElement(spacer1.gameObject, preferredHeight: 15f, preferredWidth: 10f);
 
         // ── PLAY button ──
-        Button playBtn = CreateCustomButton(mainRT, "PlayButton", "PLAY", buttonFontSize, buttonSize,
-            () => PlayGame(gameSceneName));
-        UIFactory.AddLayoutElement(playBtn.gameObject, preferredWidth: buttonSize.x, preferredHeight: buttonSize.y);
+        Button playBtn;
+        if (playButtonSprite != null)
+        {
+            playBtn = CreateImageButton(mainRT, "PlayButton", playButtonSprite, new Vector2(300f, 90f),
+                () => PlayGame(gameSceneName));
+            UIFactory.AddLayoutElement(playBtn.gameObject, preferredWidth: 300f, preferredHeight: 90f);
+        }
+        else
+        {
+            playBtn = CreateCustomButton(mainRT, "PlayButton", "PLAY", buttonFontSize, buttonSize,
+                () => PlayGame(gameSceneName));
+            UIFactory.AddLayoutElement(playBtn.gameObject, preferredWidth: buttonSize.x, preferredHeight: buttonSize.y);
+        }
 
         // ── OPTIONS button ──
-        Button optionsBtn = CreateCustomButton(mainRT, "OptionsButton", "OPTIONS", buttonFontSize, buttonSize,
-            () => OpenOptions());
-        UIFactory.AddLayoutElement(optionsBtn.gameObject, preferredWidth: buttonSize.x, preferredHeight: buttonSize.y);
+        Button optionsBtn;
+        if (optionsButtonSprite != null)
+        {
+            optionsBtn = CreateImageButton(mainRT, "OptionsButton", optionsButtonSprite, new Vector2(300f, 85.7f),
+                () => OpenOptions());
+            UIFactory.AddLayoutElement(optionsBtn.gameObject, preferredWidth: 300f, preferredHeight: 85.7f);
+        }
+        else
+        {
+            optionsBtn = CreateCustomButton(mainRT, "OptionsButton", "OPTIONS", buttonFontSize, buttonSize,
+                () => OpenOptions());
+            UIFactory.AddLayoutElement(optionsBtn.gameObject, preferredWidth: buttonSize.x, preferredHeight: buttonSize.y);
+        }
 
         // ── QUIT button ──
-        Button quitBtn = CreateCustomButton(mainRT, "QuitButton", "QUIT", buttonFontSize, buttonSize,
-            () => QuitGame());
-        UIFactory.AddLayoutElement(quitBtn.gameObject, preferredWidth: buttonSize.x, preferredHeight: buttonSize.y);
+        Button quitBtn;
+        if (quitButtonSprite != null)
+        {
+            quitBtn = CreateImageButton(mainRT, "QuitButton", quitButtonSprite, new Vector2(300f, 81.4f),
+                () => QuitGame());
+            UIFactory.AddLayoutElement(quitBtn.gameObject, preferredWidth: 300f, preferredHeight: 81.4f);
+        }
+        else
+        {
+            quitBtn = CreateCustomButton(mainRT, "QuitButton", "QUIT", buttonFontSize, buttonSize,
+                () => QuitGame());
+            UIFactory.AddLayoutElement(quitBtn.gameObject, preferredWidth: buttonSize.x, preferredHeight: buttonSize.y);
+        }
 
         // Spacer
         RectTransform spacerB = UIFactory.CreatePanel(mainRT, "SpacerB", Color.clear,
@@ -296,13 +365,14 @@ public class MainMenuController : MonoBehaviour
             borderImg.sprite = roundedSprite;
             borderImg.type = Image.Type.Sliced; // standard 9-slicing
         }
+        borderImg.color = new Color(146f/255f, 104f/255f, 255f/255f, 0.65f);
 
         // 2. Create Inner Background
         RectTransform innerRT = UIFactory.CreatePanel(
             borderRT, name + "_Bg", 
-            UIFactory.ButtonNormal, // Semi-transparent button color
+            new Color(0.08f, 0.04f, 0.18f, 0.94f), // richer anime/VG purple button background
             Vector2.zero, Vector2.one,
-            new Vector2(2f, 2f), new Vector2(-2f, -2f) // 2px border gap
+            new Vector2(3f, 3f), new Vector2(-3f, -3f) // 3px inner padding for a stronger border effect
         );
 
         Image innerImg = innerRT.GetComponent<Image>();
@@ -311,18 +381,19 @@ public class MainMenuController : MonoBehaviour
             innerImg.sprite = roundedSprite;
             innerImg.type = Image.Type.Sliced;
         }
+        innerImg.color = new Color(0.10f, 0.06f, 0.22f, 0.96f);
 
         // 3. Add Button component to the border container (to capture clicks)
         Button btn = borderRT.gameObject.AddComponent<Button>();
         btn.targetGraphic = innerImg; // Transition the inner graphic color
         
         ColorBlock cb = btn.colors;
-        cb.normalColor = UIFactory.ButtonNormal;
-        cb.highlightedColor = UIFactory.ButtonHighlight;
-        cb.pressedColor = UIFactory.ButtonPressed;
-        cb.disabledColor = UIFactory.ButtonDisabled;
-        cb.colorMultiplier = 1f;
-        cb.fadeDuration = 0.1f;
+        cb.normalColor = new Color(0.12f, 0.08f, 0.25f, 0.92f);
+        cb.highlightedColor = new Color(0.45f, 0.28f, 1f, 0.95f);
+        cb.pressedColor = new Color(0.28f, 0.16f, 0.78f, 0.95f);
+        cb.disabledColor = new Color(0.18f, 0.14f, 0.22f, 0.45f);
+        cb.colorMultiplier = 1.1f;
+        cb.fadeDuration = 0.12f;
         btn.colors = cb;
 
         if (onClick != null)
@@ -337,10 +408,71 @@ public class MainMenuController : MonoBehaviour
         );
         UIFactory.SetRect(text.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
         text.fontStyle = boldButtons ? FontStyles.Bold : FontStyles.Normal;
+        text.characterSpacing = 4f;
+        text.outlineColor = new Color(0f, 0f, 0f, 0.78f);
+        text.outlineWidth = 0.24f;
 
         // 5. Add Custom Hover/Scale Script
         MenuButtonEffects fx = borderRT.gameObject.AddComponent<MenuButtonEffects>();
         fx.Initialize(text, innerImg, borderImg);
+
+        return btn;
+    }
+
+    private Button CreateImageButton(Transform parent, string name, Sprite buttonSprite, Vector2 size, UnityEngine.Events.UnityAction onClick)
+    {
+        // 1. Create Container (invisible, captures clicks)
+        RectTransform containerRT = UIFactory.CreatePanel(
+            parent, name + "_Container", 
+            Color.clear,
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f)
+        );
+        containerRT.sizeDelta = size;
+
+        // 2. Create Glow Underlay (slightly larger, starts fully transparent)
+        RectTransform glowRT = UIFactory.CreatePanel(
+            containerRT, name + "_Glow", 
+            Color.clear,
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f)
+        );
+        glowRT.sizeDelta = size * 1.15f; 
+        Image glowImg = glowRT.gameObject.GetComponent<Image>();
+        glowImg.sprite = buttonSprite;
+        glowImg.color = new Color(0.8f, 0.4f, 1f, 0f); // Bright violet/purple glow
+        glowImg.preserveAspect = true;
+
+        // 3. Create Button Image
+        RectTransform buttonRT = UIFactory.CreatePanel(
+            containerRT, name + "_Image", 
+            Color.white,
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f)
+        );
+        buttonRT.sizeDelta = size;
+        Image buttonImg = buttonRT.gameObject.GetComponent<Image>();
+        buttonImg.sprite = buttonSprite;
+        buttonImg.preserveAspect = true;
+
+        // 4. Add Button component to container
+        Button btn = containerRT.gameObject.AddComponent<Button>();
+        btn.targetGraphic = buttonImg;
+
+        ColorBlock cb = btn.colors;
+        cb.normalColor = new Color(0.9f, 0.9f, 0.9f, 1f);
+        cb.highlightedColor = Color.white;
+        cb.pressedColor = new Color(0.8f, 0.8f, 0.8f, 1f);
+        cb.disabledColor = new Color(0.5f, 0.5f, 0.5f, 0.5f);
+        cb.colorMultiplier = 1.1f;
+        cb.fadeDuration = 0.1f;
+        btn.colors = cb;
+
+        if (onClick != null)
+        {
+            btn.onClick.AddListener(onClick);
+        }
+
+        // 5. Add custom Hover/Scale/Glow effect script
+        ImageButtonEffects fx = containerRT.gameObject.AddComponent<ImageButtonEffects>();
+        fx.Initialize(buttonImg, glowImg);
 
         return btn;
     }
@@ -483,7 +615,7 @@ public class MenuButtonEffects : MonoBehaviour,
     {
         isHovered = true;
         targetScale = originalScale * 1.08f; // Scale up 8%
-        targetTextColor = UIFactory.Accent;  // Glow purple text
+        targetTextColor = new Color(1f, 0.92f, 0.72f, 1f);  // Warm highlight for game style
         
         if (borderImage != null)
         {
@@ -492,7 +624,7 @@ public class MenuButtonEffects : MonoBehaviour,
         
         if (buttonText != null)
         {
-            // Add gothic pointer arrows
+            // Add energetic pointer arrows
             buttonText.text = "▶  " + originalText + "  ◀";
         }
     }
@@ -524,6 +656,97 @@ public class MenuButtonEffects : MonoBehaviour,
         if (isHovered)
         {
             targetScale = originalScale * 1.08f;
+        }
+        else
+        {
+            targetScale = originalScale;
+        }
+    }
+}
+
+// ──────────────────────────────────────────────────────────────────────
+//  HELPER COMPONENT — Hover, scale & glow transitions for image buttons
+// ──────────────────────────────────────────────────────────────────────
+public class ImageButtonEffects : MonoBehaviour, 
+    IPointerEnterHandler, 
+    IPointerExitHandler,
+    IPointerDownHandler,
+    IPointerUpHandler
+{
+    private RectTransform rectTransform;
+    private Image buttonImage;
+    private Image glowImage;
+    
+    private Vector3 targetScale = Vector3.one;
+    private float targetGlowAlpha = 0f;
+    private float currentGlowAlpha = 0f;
+    
+    private Vector3 originalScale;
+    private float lerpSpeed = 12f;
+    private bool isHovered = false;
+    private float pulseTimer = 0f;
+
+    public void Initialize(Image btnImg, Image glwImg)
+    {
+        rectTransform = GetComponent<RectTransform>();
+        buttonImage = btnImg;
+        glowImage = glwImg;
+        
+        originalScale = rectTransform.localScale;
+        targetScale = originalScale;
+    }
+
+    void Update()
+    {
+        // Smoothly scale the button container
+        rectTransform.localScale = Vector3.Lerp(rectTransform.localScale, targetScale, Time.deltaTime * lerpSpeed);
+        
+        // Smoothly fade glow opacity
+        currentGlowAlpha = Mathf.Lerp(currentGlowAlpha, targetGlowAlpha, Time.deltaTime * lerpSpeed);
+        
+        if (glowImage != null)
+        {
+            Color c = glowImage.color;
+            if (isHovered)
+            {
+                // Pulsate the glow while hovered for extra high quality feel
+                pulseTimer += Time.deltaTime * 5f;
+                float pulse = 0.7f + Mathf.Sin(pulseTimer) * 0.2f; // pulsates between 0.5 and 0.9
+                c.a = currentGlowAlpha * pulse;
+            }
+            else
+            {
+                c.a = currentGlowAlpha;
+            }
+            glowImage.color = c;
+        }
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        isHovered = true;
+        targetScale = originalScale * 1.06f; // Scale up 6%
+        targetGlowAlpha = 0.85f;             // Fade in glow
+        pulseTimer = 0f;
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        isHovered = false;
+        targetScale = originalScale;
+        targetGlowAlpha = 0f;                // Fade out glow
+    }
+
+    public void OnPointerDown(PointerEventData eventData)
+    {
+        targetScale = originalScale * 0.96f; // Squish slightly on press
+    }
+
+    public void OnPointerUp(PointerEventData eventData)
+    {
+        if (isHovered)
+        {
+            targetScale = originalScale * 1.06f;
         }
         else
         {

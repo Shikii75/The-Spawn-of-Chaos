@@ -73,6 +73,7 @@ public class move : MonoBehaviour
             if (dashTimeLeft <= 0f)
             {
                 isDashing = false;
+                rb.gravityScale = gravityScale; // Restore gravity
                 rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
             }
             else
@@ -85,6 +86,18 @@ public class move : MonoBehaviour
         if (dashCooldownTimer > 0f)
         {
             dashCooldownTimer -= Time.deltaTime;
+        }
+
+        if (IsMovementBlocked())
+        {
+            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+            if (anim != null)
+            {
+                anim.SetBool("isRunning", false);
+                anim.SetBool("isBlob", false);
+                anim.SetBool("isJumping", !isGrounded);
+            }
+            return;
         }
 
         float horizontalInput = Input.GetAxisRaw("Horizontal");
@@ -109,6 +122,7 @@ public class move : MonoBehaviour
             isDashing = true;
             dashTimeLeft = dashDuration;
             dashCooldownTimer = dashCooldown;
+            rb.gravityScale = 0f; // Disable gravity during dash
             rb.linearVelocity = new Vector2(lastFacingSign * dashSpeed, 0f);
             if (anim != null)
             {
@@ -142,10 +156,29 @@ public class move : MonoBehaviour
         anim.SetBool("isJumping", !isGrounded);
     }
 
+    private bool IsMovementBlocked()
+    {
+        if (PauseMenu.Instance != null && PauseMenu.Instance.isPaused) return true;
+        if (NPCDialogueUI.Instance != null && NPCDialogueUI.Instance.IsDialogueActive) return true;
+        if (ShopUI.Instance != null && ShopUI.Instance.IsShopActive) return true;
+        if (NyxarisManager.Instance != null && NyxarisManager.Instance.mainInterfacePanel != null && NyxarisManager.Instance.mainInterfacePanel.activeSelf) return true;
+
+        // Block movement if any UI text input has active keyboard focus
+        if (UnityEngine.EventSystems.EventSystem.current != null && UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject != null)
+        {
+            var go = UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject;
+            if (go.GetComponent<TMPro.TMP_InputField>() != null || go.GetComponent<UnityEngine.UI.InputField>() != null)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     void FixedUpdate()
     {
-        // Constant gravity
-        rb.linearVelocity += Physics2D.gravity * gravityScale * Time.fixedDeltaTime;
+        // Constant gravity is managed natively by Rigidbody2D, no manual velocity addition needed.
     }
 
     void OnCollisionEnter2D(Collision2D collision)
@@ -153,6 +186,32 @@ public class move : MonoBehaviour
         if (collision.gameObject.CompareTag("Ground"))
         {
             isGrounded = true;
+        }
+    }
+
+    void OnCollisionStay2D(Collision2D collision)
+    {
+        // Continuously verify ground contact so walking off a ledge resets isGrounded reliably
+        if (collision.gameObject.CompareTag("Ground"))
+        {
+            bool touchingFromAbove = false;
+            foreach (ContactPoint2D contact in collision.contacts)
+            {
+                if (contact.normal.y > 0.5f)
+                {
+                    touchingFromAbove = true;
+                    break;
+                }
+            }
+            isGrounded = touchingFromAbove;
+        }
+    }
+
+    void OnCollisionExit2D(Collision2D collision)
+    {
+        if (collision.gameObject.CompareTag("Ground"))
+        {
+            isGrounded = false;
         }
     }
 }

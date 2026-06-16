@@ -51,6 +51,13 @@ public class HUDManager : MonoBehaviour
         }
 
         BuildUI();
+
+        // Hide HUD if the main menu is active and not playing yet
+        MainMenuController menu = FindObjectOfType<MainMenuController>();
+        if (menu != null && !MainMenuController.isPlaying)
+        {
+            canvas.gameObject.SetActive(false);
+        }
     }
 
     // ══════════════════════════════════════════════════════════════════
@@ -61,7 +68,7 @@ public class HUDManager : MonoBehaviour
     {
         // ── Canvas (sort order 0) ──
         canvas = UIFactory.CreateCanvas("HUDCanvas", 0);
-        canvas.transform.SetParent(transform, false);
+        canvas.transform.SetParent(null, false);
 
         // Calculate scaled dimensions and positions to keep alignment clean at any scale
         float healthWidth = 250f * hudScale;
