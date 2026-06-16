@@ -48,6 +48,8 @@ public class MainMenuController : MonoBehaviour
     public Sprite optionsButtonSprite;
     [Tooltip("QUIT button.")]
     public Sprite quitButtonSprite;
+    [Tooltip("BACK button.")]
+    public Sprite backButtonSprite;
 
     [Header("Button Configuration")]
     [Tooltip("Dimensions of the menu buttons (width, height) - adjustable directly in Inspector.")]
@@ -93,6 +95,10 @@ public class MainMenuController : MonoBehaviour
         {
             quitButtonSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Scenes/art/quit_btn.png");
         }
+        if (backButtonSprite == null)
+        {
+            backButtonSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Scenes/art/back_btn.png");
+        }
     }
 #endif
 
@@ -125,6 +131,10 @@ public class MainMenuController : MonoBehaviour
         if (quitButtonSprite == null)
         {
             quitButtonSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Scenes/art/quit_btn.png");
+        }
+        if (backButtonSprite == null)
+        {
+            backButtonSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Scenes/art/back_btn.png");
         }
 #endif
 
@@ -335,9 +345,19 @@ public class MainMenuController : MonoBehaviour
         UIFactory.AddLayoutElement(spacer3.gameObject, preferredHeight: 40f, preferredWidth: 10f);
 
         // ── BACK button ──
-        Button backBtn = CreateCustomButton(optionsRT, "BackButton", "BACK", buttonFontSize * 0.9f, new Vector2(200f, 50f),
-            () => CloseOptions());
-        UIFactory.AddLayoutElement(backBtn.gameObject, preferredWidth: 200f, preferredHeight: 50f);
+        Button backBtn;
+        if (backButtonSprite != null)
+        {
+            backBtn = CreateImageButton(optionsRT, "BackButton", backButtonSprite, new Vector2(300f, 85.5f),
+                () => CloseOptions());
+            UIFactory.AddLayoutElement(backBtn.gameObject, preferredWidth: 300f, preferredHeight: 85.5f);
+        }
+        else
+        {
+            backBtn = CreateCustomButton(optionsRT, "BackButton", "BACK", buttonFontSize * 0.9f, new Vector2(200f, 50f),
+                () => CloseOptions());
+            UIFactory.AddLayoutElement(backBtn.gameObject, preferredWidth: 200f, preferredHeight: 50f);
+        }
 
         // Start with main panel active, options hidden
         mainPanel.SetActive(true);

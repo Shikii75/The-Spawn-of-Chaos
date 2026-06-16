@@ -99289,6 +99289,7 @@ MonoBehaviour:
   playButtonSprite: {fileID: -1933650420404753983, guid: 92bb6ad3661218744ac14ea8193d1e1b, type: 3}
   optionsButtonSprite: {fileID: -1933650420404753983, guid: 4cb1355bec592374997f4547e0be69bf, type: 3}
   quitButtonSprite: {fileID: -1933650420404753983, guid: bf977ddb61790a24a944cd4bbe30b7f1, type: 3}
+  backButtonSprite: {fileID: 4201149829938419966, guid: 276af957419145559d9c80e12194b624, type: 3}
   backgroundSprite: {fileID: 8999863512469678568, guid: 24679c088cf386644bc25769b24a3d58, type: 3}
   backgroundColor: {r: 1, g: 1, b: 1, a: 1}
   buttonSize: {x: 220, y: 55}
