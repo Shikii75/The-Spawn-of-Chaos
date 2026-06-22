@@ -14,16 +14,29 @@ public class HUDManager : MonoBehaviour
     [Tooltip("Scale multiplier for HUD elements. Default is 10f (10 times larger). Adjust in the Inspector to scale up or down.")]
     public float hudScale = 10f;
 
+    [Header("Health Units Settings")]
+    [Tooltip("Base size of each health unit in the HUD.")]
+    public float healthUnitSize = 50f;
+
     // ── Runtime-built UI references ──
     private Canvas canvas;
-    private Slider healthSlider;
-    private Slider catchUpHealthSlider;
-    private Image healthBorderImage;
+    private RectTransform healthUnitsContainer;
+    private List<Image> unitForegroundFills = new List<Image>();
+    private List<Image> unitCatchUpFills = new List<Image>();
+    private Sprite healthUnitSprite;
+    private float healthPerUnit = 2f;
     private TextMeshProUGUI healthText;
     
     private Slider manaSlider;
     private Slider catchUpManaSlider;
     private TextMeshProUGUI manaText;
+
+    // ── Mana Liquid Wave animation references ──
+    private Sprite manaWaveSprite;
+    private RawImage manaWaveOverlay1;
+    private RawImage manaWaveOverlay2;
+    private float manaWaveScroll1 = 0f;
+    private float manaWaveScroll2 = 0f;
     
     private TextMeshProUGUI coinsText;
     private TextMeshProUGUI potionsText;
@@ -34,12 +47,14 @@ public class HUDManager : MonoBehaviour
     private PlayerCurrency playerCurrency;
 
     // ── Unique HUD elements ──
-    private List<GameObject> healthNotches = new List<GameObject>();
     private List<GameObject> manaNotches = new List<GameObject>();
     private float lastMaxMana = -1f;
 
     void Awake()
     {
+        // Force the scale multiplier to a compact size of 2.0f to prevent covering the screen
+        hudScale = 2.0f;
+
         if (Instance == null)
         {
             Instance = this;
@@ -71,165 +86,66 @@ public class HUDManager : MonoBehaviour
         canvas.transform.SetParent(null, false);
 
         // Calculate scaled dimensions and positions to keep alignment clean at any scale
-        float healthWidth = 250f * hudScale;
-        float healthHeight = 20f * hudScale;
-        float leftMargin = 30f * Mathf.Min(hudScale, 2f); // Extra padding for the diamond prefix icon
+        float leftMargin = 30f * Mathf.Min(hudScale, 2f);
         float topMargin = 20f * Mathf.Min(hudScale, 2f);
-
-        // Size of the prefix diamond
-        float diamondSize = healthHeight * 1.4f;
-
-        float healthX = leftMargin + (diamondSize * 0.5f) + (healthWidth / 2f);
-        float healthY = -(topMargin + healthHeight / 2f);
+        float unitSize = healthUnitSize * hudScale; // Configurable unit size
+        float healthY = -topMargin - 30f * Mathf.Min(hudScale, 2f);
 
         // ──────────────────── TOP-LEFT: Health ────────────────────
 
-        // 1. Diamond Icon Border
-        RectTransform diamondBorder = UIFactory.CreatePanel(
-            canvas.transform, "HealthDiamondBorder", 
-            UIFactory.BorderColor,
-            new Vector2(0f, 1f), new Vector2(0f, 1f)
-        );
-        UIFactory.SetRectFixed(diamondBorder,
-            new Vector2(0f, 1f), new Vector2(0f, 1f),
-            new Vector2(leftMargin + diamondSize / 2f, healthY), 
-            new Vector2(diamondSize, diamondSize)
-        );
-        diamondBorder.localEulerAngles = new Vector3(0f, 0f, 45f);
+        // 1. Container for health units (left-aligned)
+        GameObject containerGo = new GameObject("HealthUnitsContainer");
+        containerGo.transform.SetParent(canvas.transform, false);
+        healthUnitsContainer = containerGo.AddComponent<RectTransform>();
+        healthUnitsContainer.anchorMin = new Vector2(0f, 1f);
+        healthUnitsContainer.anchorMax = new Vector2(0f, 1f);
+        healthUnitsContainer.pivot = new Vector2(0f, 1f);
+        healthUnitsContainer.anchoredPosition = new Vector2(leftMargin, healthY);
+        healthUnitsContainer.sizeDelta = new Vector2(1000f * hudScale, unitSize);
 
-        // 2. Diamond Icon Inner
-        RectTransform diamondInner = UIFactory.CreatePanel(
-            diamondBorder, "HealthDiamondInner", 
-            UIFactory.PanelBackground,
-            Vector2.zero, Vector2.one,
-            new Vector2(3f, 3f), new Vector2(-3f, -3f)
-        );
-
-        // 3. Health Symbol (rotated -45f so it sits upright)
-        TextMeshProUGUI heartText = UIFactory.CreateText(
-            diamondInner, "HealthSymbolText", "H",
-            healthHeight * 0.8f, UIFactory.SliderHealthFill, 
-            TextAlignmentOptions.Center
-        );
-        UIFactory.SetRect(heartText.rectTransform,
-            Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero
-        );
-        heartText.rectTransform.localEulerAngles = new Vector3(0f, 0f, -45f);
-        heartText.fontStyle = FontStyles.Bold;
-
-        // 4. Health Bar Outer Border Panel
-        RectTransform healthBorderPanel = UIFactory.CreatePanel(
-            canvas.transform, "HealthBorder", 
-            UIFactory.BorderColor,
-            new Vector2(0f, 1f), new Vector2(0f, 1f)
-        );
-        UIFactory.SetRectFixed(healthBorderPanel,
-            new Vector2(0f, 1f), new Vector2(0f, 1f),
-            new Vector2(healthX, healthY), new Vector2(healthWidth + 6f, healthHeight + 6f)
-        );
-        healthBorderImage = healthBorderPanel.GetComponent<Image>();
-
-        // 5. Health Bar Inner BG
-        RectTransform healthInnerBg = UIFactory.CreatePanel(
-            healthBorderPanel, "HealthInnerBg", 
-            UIFactory.PanelBackground,
-            Vector2.zero, Vector2.one,
-            new Vector2(3f, 3f), new Vector2(-3f, -3f)
-        );
-
-        // 6. Health Catch-Up Slider (Under-fill damage indicator)
-        catchUpHealthSlider = UIFactory.CreateSlider(healthInnerBg, "CatchUpHealthSlider", new Color(200f/255f, 100f/255f, 0f/255f, 0.7f));
-        UIFactory.SetRect(catchUpHealthSlider.GetComponent<RectTransform>(),
-            Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero
-        );
-
-        // 7. Main Health Slider
-        healthSlider = UIFactory.CreateSlider(healthInnerBg, "HealthSlider", UIFactory.SliderHealthFill);
-        Transform mainBgTransform = healthSlider.transform.Find("Background");
-        if (mainBgTransform != null)
-        {
-            Image mainBgImg = mainBgTransform.GetComponent<Image>();
-            if (mainBgImg != null) mainBgImg.color = Color.clear; // Make transparent to see catch-up slider
-        }
-        UIFactory.SetRect(healthSlider.GetComponent<RectTransform>(),
-            Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero
-        );
-
-        // 8. Health Text Overlay
-        healthText = UIFactory.CreateText(
-            healthInnerBg, "HealthText", "100 / 100",
-            12f * hudScale, UIFactory.TextWhite, TextAlignmentOptions.Center
-        );
-        UIFactory.SetRect(healthText.rectTransform,
-            Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero
-        );
-        healthText.fontStyle = FontStyles.Bold;
-        healthText.enableWordWrapping = false;
+        // 2. Health Text Overlay - Removed to save vertical space and keep it tidy
+        healthText = null;
 
         // ──────────────────── TOP-LEFT: Mana ────────────────────
 
         float manaWidth = 250f * hudScale;
         float manaHeight = 16f * hudScale;
-        float gap = 12f * Mathf.Min(hudScale, 2f); // Spacer between bars
-        float manaDiamondSize = manaHeight * 1.4f;
+        float gap = 6f * Mathf.Min(hudScale, 2f); // Reduced gap from 12f
+        float manaX = leftMargin + (manaWidth / 2f);
+        float manaY = healthY - unitSize - gap - (manaHeight / 2f);
 
-        float manaX = leftMargin + (manaDiamondSize * 0.5f) + (manaWidth / 2f);
-        float manaY = healthY - (healthHeight / 2f) - gap - (manaHeight / 2f);
-
-        // 1. Mana Diamond Icon Border
-        RectTransform manaDiamondBorder = UIFactory.CreatePanel(
-            canvas.transform, "ManaDiamondBorder", 
-            UIFactory.BorderColor,
-            new Vector2(0f, 1f), new Vector2(0f, 1f)
-        );
-        UIFactory.SetRectFixed(manaDiamondBorder,
-            new Vector2(0f, 1f), new Vector2(0f, 1f),
-            new Vector2(leftMargin + manaDiamondSize / 2f, manaY), 
-            new Vector2(manaDiamondSize, manaDiamondSize)
-        );
-        manaDiamondBorder.localEulerAngles = new Vector3(0f, 0f, 45f);
-
-        // 2. Mana Diamond Icon Inner
-        RectTransform manaDiamondInner = UIFactory.CreatePanel(
-            manaDiamondBorder, "ManaDiamondInner", 
-            UIFactory.PanelBackground,
-            Vector2.zero, Vector2.one,
-            new Vector2(2.5f, 2.5f), new Vector2(-2.5f, -2.5f)
-        );
-
-        // 3. Mana Symbol (rotated -45f so it sits upright)
-        TextMeshProUGUI manaSymbol = UIFactory.CreateText(
-            manaDiamondInner, "ManaSymbolText", "M",
-            manaHeight * 0.8f, UIFactory.SliderManaFill, 
-            TextAlignmentOptions.Center
-        );
-        UIFactory.SetRect(manaSymbol.rectTransform,
-            Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero
-        );
-        manaSymbol.rectTransform.localEulerAngles = new Vector3(0f, 0f, -45f);
-        manaSymbol.fontStyle = FontStyles.Bold;
-
-        // 4. Mana Bar Outer Border Panel
+        // 4. Mana Bar Outer Border Panel (Made transparent to remove outline box)
         RectTransform manaBorderPanel = UIFactory.CreatePanel(
             canvas.transform, "ManaBorder", 
-            UIFactory.BorderColor,
+            Color.clear,
             new Vector2(0f, 1f), new Vector2(0f, 1f)
         );
         UIFactory.SetRectFixed(manaBorderPanel,
             new Vector2(0f, 1f), new Vector2(0f, 1f),
-            new Vector2(manaX, manaY), new Vector2(manaWidth + 5f, manaHeight + 5f)
+            new Vector2(manaX, manaY), new Vector2(manaWidth, manaHeight)
         );
 
-        // 5. Mana Bar Inner BG
+        // 5. Mana Bar Inner BG (Made transparent to remove background box)
         RectTransform manaInnerBg = UIFactory.CreatePanel(
             manaBorderPanel, "ManaInnerBg", 
-            UIFactory.PanelBackground,
+            Color.clear,
             Vector2.zero, Vector2.one,
-            new Vector2(2.5f, 2.5f), new Vector2(-2.5f, -2.5f)
+            Vector2.zero, Vector2.zero
         );
 
         // 6. Mana Catch-Up Slider (Under-fill mana indicator)
         catchUpManaSlider = UIFactory.CreateSlider(manaInnerBg, "CatchUpManaSlider", new Color(0f, 180f/255f, 220f/255f, 0.7f));
+        Transform catchUpBgTransform = catchUpManaSlider.transform.Find("Background");
+        if (catchUpBgTransform != null)
+        {
+            Image catchUpBgImg = catchUpBgTransform.GetComponent<Image>();
+            if (catchUpBgImg != null) catchUpBgImg.color = Color.clear; // Make background transparent
+        }
+        if (catchUpManaSlider.fillRect != null)
+        {
+            Image catchUpFillImg = catchUpManaSlider.fillRect.GetComponent<Image>();
+            if (catchUpFillImg != null) catchUpFillImg.color = Color.clear; // Make solid fill transparent
+        }
         UIFactory.SetRect(catchUpManaSlider.GetComponent<RectTransform>(),
             Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero
         );
@@ -240,22 +156,19 @@ public class HUDManager : MonoBehaviour
         if (manaBgTransform != null)
         {
             Image manaBgImg = manaBgTransform.GetComponent<Image>();
-            if (manaBgImg != null) manaBgImg.color = Color.clear; // Make transparent
+            if (manaBgImg != null) manaBgImg.color = Color.clear; // Make background transparent
+        }
+        if (manaSlider.fillRect != null)
+        {
+            Image manaFillImg = manaSlider.fillRect.GetComponent<Image>();
+            if (manaFillImg != null) manaFillImg.color = Color.clear; // Make solid fill transparent
         }
         UIFactory.SetRect(manaSlider.GetComponent<RectTransform>(),
             Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero
         );
 
-        // 8. Mana Text Overlay
-        manaText = UIFactory.CreateText(
-            manaInnerBg, "ManaText", "100 / 100",
-            10f * hudScale, UIFactory.TextWhite, TextAlignmentOptions.Center
-        );
-        UIFactory.SetRect(manaText.rectTransform,
-            Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero
-        );
-        manaText.fontStyle = FontStyles.Bold;
-        manaText.enableWordWrapping = false;
+        // 8. Mana Text Overlay - Disabled to hide numbers entirely
+        manaText = null;
 
         // ──────────────────── TOP-RIGHT: Coins & Potions ────────────────
 
@@ -303,6 +216,34 @@ public class HUDManager : MonoBehaviour
 
     void Start()
     {
+        healthUnitSprite = Resources.Load<Sprite>("health_unit");
+        if (healthUnitSprite == null)
+        {
+            Debug.LogWarning("health_unit sprite could not be loaded from Resources!");
+        }
+
+        manaWaveSprite = Resources.Load<Sprite>("mana_wave");
+        if (manaWaveSprite != null && manaSlider != null && manaSlider.fillRect != null)
+        {
+            // First wave layer (back/mid layer)
+            GameObject waveGo1 = new GameObject("ManaWaveOverlay1");
+            waveGo1.transform.SetParent(manaSlider.fillRect, false);
+            manaWaveOverlay1 = waveGo1.AddComponent<RawImage>();
+            manaWaveOverlay1.texture = manaWaveSprite.texture;
+            manaWaveOverlay1.color = new Color(1f, 1f, 1f, 0.75f);
+            RectTransform waveRT1 = waveGo1.GetComponent<RectTransform>();
+            UIFactory.SetRect(waveRT1, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+
+            // Second wave layer (front layer, moving opposite direction, slightly larger/tiled)
+            GameObject waveGo2 = new GameObject("ManaWaveOverlay2");
+            waveGo2.transform.SetParent(manaSlider.fillRect, false);
+            manaWaveOverlay2 = waveGo2.AddComponent<RawImage>();
+            manaWaveOverlay2.texture = manaWaveSprite.texture;
+            manaWaveOverlay2.color = new Color(1f, 1f, 1f, 0.95f);
+            RectTransform waveRT2 = waveGo2.GetComponent<RectTransform>();
+            UIFactory.SetRect(waveRT2, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        }
+
         if (playerGameObject == null)
         {
             playerGameObject = GameObject.FindGameObjectWithTag("Player");
@@ -350,20 +291,26 @@ public class HUDManager : MonoBehaviour
 
     void Update()
     {
-        // Smoothly drain the catch-up sliders (under-fills)
-        if (catchUpHealthSlider != null && healthSlider != null)
+        // Smoothly drain the catch-up health fills
+        for (int i = 0; i < unitCatchUpFills.Count; i++)
         {
-            if (catchUpHealthSlider.value > healthSlider.value)
+            if (i < unitForegroundFills.Count)
             {
-                catchUpHealthSlider.value = Mathf.Lerp(catchUpHealthSlider.value, healthSlider.value, Time.deltaTime * 3.5f);
-                if (catchUpHealthSlider.value - healthSlider.value < 0.5f)
+                Image catchUp = unitCatchUpFills[i];
+                Image fg = unitForegroundFills[i];
+                
+                if (catchUp.fillAmount > fg.fillAmount)
                 {
-                    catchUpHealthSlider.value = healthSlider.value;
+                    catchUp.fillAmount = Mathf.Lerp(catchUp.fillAmount, fg.fillAmount, Time.deltaTime * 3.5f);
+                    if (catchUp.fillAmount - fg.fillAmount < 0.005f)
+                    {
+                        catchUp.fillAmount = fg.fillAmount;
+                    }
                 }
-            }
-            else
-            {
-                catchUpHealthSlider.value = healthSlider.value;
+                else
+                {
+                    catchUp.fillAmount = fg.fillAmount;
+                }
             }
         }
 
@@ -403,18 +350,44 @@ public class HUDManager : MonoBehaviour
         }
 
         // Pulsing danger effect for low health (<= 25% health)
-        if (healthBorderImage != null && playerHealth != null)
+        if (playerHealth != null && unitForegroundFills.Count > 0)
         {
             float hpPercent = (float)playerHealth.CurrentHealth / playerHealth.MaxHealth;
             if (hpPercent <= 0.25f && playerHealth.CurrentHealth > 0)
             {
                 float pulse = (Mathf.Sin(Time.time * 8f) + 1f) / 2f; // Fast warning pulse
-                healthBorderImage.color = Color.Lerp(UIFactory.BorderColor, Color.red, pulse);
+                Color warningColor = Color.Lerp(Color.white, new Color(1f, 0.3f, 0.3f, 1f), pulse);
+                foreach (var fg in unitForegroundFills)
+                {
+                    if (fg != null) fg.color = warningColor;
+                }
             }
             else
             {
-                healthBorderImage.color = UIFactory.BorderColor;
+                foreach (var fg in unitForegroundFills)
+                {
+                    if (fg != null) fg.color = Color.white;
+                }
             }
+        }
+
+        // Scroll and oscillate the mana liquid wave overlays
+        if (manaWaveOverlay1 != null)
+        {
+            manaWaveScroll1 += Time.deltaTime * 0.15f;
+            manaWaveOverlay1.uvRect = new Rect(manaWaveScroll1, 0f, 1f, 1f);
+            
+            // Vertical sloshing effect (sine oscillation of Y scale)
+            float slosh = Mathf.Sin(Time.time * 2.5f) * 0.05f + 0.95f;
+            manaWaveOverlay1.rectTransform.localScale = new Vector3(1f, slosh, 1f);
+        }
+        if (manaWaveOverlay2 != null)
+        {
+            manaWaveScroll2 -= Time.deltaTime * 0.25f;
+            manaWaveOverlay2.uvRect = new Rect(manaWaveScroll2, 0.1f, 1.2f, 1f);
+            
+            float slosh2 = Mathf.Cos(Time.time * 3.0f) * 0.07f + 0.93f;
+            manaWaveOverlay2.rectTransform.localScale = new Vector3(1f, slosh2, 1f);
         }
     }
 
@@ -428,7 +401,6 @@ public class HUDManager : MonoBehaviour
         {
             UpdateMaxHealthUI(playerHealth.MaxHealth);
             UpdateHealthUI(0);
-            if (catchUpHealthSlider != null) catchUpHealthSlider.value = playerHealth.CurrentHealth;
         }
 
         if (playerCurrency != null)
@@ -440,30 +412,26 @@ public class HUDManager : MonoBehaviour
 
     private void UpdateHealthUI(int damageTaken)
     {
-        if (playerHealth != null && healthSlider != null)
+        if (playerHealth != null)
         {
-            healthSlider.value = playerHealth.CurrentHealth;
+            float currentHP = playerHealth.CurrentHealth;
+            for (int i = 0; i < unitForegroundFills.Count; i++)
+            {
+                float unitMin = i * healthPerUnit;
+                float fill = Mathf.Clamp01((currentHP - unitMin) / healthPerUnit);
+                unitForegroundFills[i].fillAmount = fill;
+            }
+
             if (healthText != null)
             {
-                healthText.text = playerHealth.CurrentHealth + " / " + playerHealth.MaxHealth;
+                healthText.text = (playerHealth.CurrentHealth * 0.5f) + " / " + (playerHealth.MaxHealth * 0.5f);
             }
         }
     }
 
     private void UpdateMaxHealthUI(int newMaxHealth)
     {
-        if (healthSlider != null)
-        {
-            healthSlider.maxValue = newMaxHealth;
-            if (catchUpHealthSlider != null) catchUpHealthSlider.maxValue = newMaxHealth;
-            if (playerHealth != null)
-            {
-                healthSlider.value = playerHealth.CurrentHealth;
-                if (catchUpHealthSlider != null) catchUpHealthSlider.value = playerHealth.CurrentHealth;
-            }
-
-            RebuildNotches(healthSlider, healthNotches, newMaxHealth, 25f);
-        }
+        RebuildHealthUnits(newMaxHealth);
     }
 
     private void UpdateCoinsUI(int coins)
@@ -483,6 +451,98 @@ public class HUDManager : MonoBehaviour
     }
 
     // ══════════════════════════════════════════════════════════════════
+    //  HEALTH UNITS MANAGEMENT
+    // ══════════════════════════════════════════════════════════════════
+
+    private void RebuildHealthUnits(float newMaxHealth)
+    {
+        if (healthUnitsContainer != null)
+        {
+            foreach (Transform child in healthUnitsContainer)
+            {
+                Destroy(child.gameObject);
+            }
+        }
+        unitForegroundFills.Clear();
+        unitCatchUpFills.Clear();
+
+        if (newMaxHealth <= 0) return;
+
+        int numUnits = Mathf.CeilToInt(newMaxHealth / healthPerUnit);
+        float unitSize = healthUnitSize * hudScale; // Configurable unit size
+        float spacing = 4f * Mathf.Min(hudScale, 2f); // Halved spacing from 8f
+
+        for (int i = 0; i < numUnits; i++)
+        {
+            float xOffset = i * (unitSize + spacing);
+            CreateHealthUnit(xOffset, unitSize); // Offset relative to container left edge
+        }
+
+        UpdateHealthUI(0);
+
+        if (playerHealth != null)
+        {
+            float currentHP = playerHealth.CurrentHealth;
+            for (int i = 0; i < unitForegroundFills.Count; i++)
+            {
+                float unitMin = i * healthPerUnit;
+                float fill = Mathf.Clamp01((currentHP - unitMin) / healthPerUnit);
+                unitForegroundFills[i].fillAmount = fill;
+                unitCatchUpFills[i].fillAmount = fill;
+            }
+        }
+    }
+
+    private void CreateHealthUnit(float xOffset, float size)
+    {
+        GameObject unitGo = new GameObject("HealthUnit_" + unitForegroundFills.Count);
+        unitGo.transform.SetParent(healthUnitsContainer, false);
+        RectTransform unitRT = unitGo.AddComponent<RectTransform>();
+
+        // Anchored to left (0f) and centered vertically (0.5f) inside the container
+        unitRT.anchorMin = new Vector2(0f, 0.5f);
+        unitRT.anchorMax = new Vector2(0f, 0.5f);
+        unitRT.pivot = new Vector2(0f, 0.5f);
+        unitRT.anchoredPosition = new Vector2(xOffset, 0f);
+        unitRT.sizeDelta = new Vector2(size, size);
+
+        // 1. Background Outline Image (depleted unit state)
+        GameObject bgGo = new GameObject("Background");
+        bgGo.transform.SetParent(unitRT, false);
+        Image bgImg = bgGo.AddComponent<Image>();
+        bgImg.sprite = healthUnitSprite;
+        bgImg.color = new Color(0.12f, 0.05f, 0.2f, 0.65f); // Dark-gothic transparent silhouette
+        RectTransform bgRT = bgGo.GetComponent<RectTransform>();
+        UIFactory.SetRect(bgRT, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+
+        // 2. Catch-Up Image (lagging damage indicator)
+        GameObject catchUpGo = new GameObject("CatchUp");
+        catchUpGo.transform.SetParent(unitRT, false);
+        Image catchUpImg = catchUpGo.AddComponent<Image>();
+        catchUpImg.sprite = healthUnitSprite;
+        catchUpImg.color = new Color(0.85f, 0.35f, 0.05f, 0.85f); // Orange warning fill
+        catchUpImg.type = Image.Type.Filled;
+        catchUpImg.fillMethod = Image.FillMethod.Horizontal;
+        catchUpImg.fillAmount = 1f;
+        RectTransform catchUpRT = catchUpGo.GetComponent<RectTransform>();
+        UIFactory.SetRect(catchUpRT, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        unitCatchUpFills.Add(catchUpImg);
+
+        // 3. Foreground Image (actual current health)
+        GameObject fgGo = new GameObject("Foreground");
+        fgGo.transform.SetParent(unitRT, false);
+        Image fgImg = fgGo.AddComponent<Image>();
+        fgImg.sprite = healthUnitSprite;
+        fgImg.color = Color.white; // Full color original sprite
+        fgImg.type = Image.Type.Filled;
+        fgImg.fillMethod = Image.FillMethod.Horizontal;
+        fgImg.fillAmount = 1f;
+        RectTransform fgRT = fgGo.GetComponent<RectTransform>();
+        UIFactory.SetRect(fgRT, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        unitForegroundFills.Add(fgImg);
+    }
+
+    // ══════════════════════════════════════════════════════════════════
     //  NOTCH DIVISION GENERATION
     // ══════════════════════════════════════════════════════════════════
 
@@ -495,25 +555,6 @@ public class HUDManager : MonoBehaviour
         }
         notchesList.Clear();
 
-        if (maxVal <= 0 || interval <= 0) return;
-
-        int numNotches = Mathf.FloorToInt((maxVal - 0.1f) / interval);
-        for (int i = 1; i <= numNotches; i++)
-        {
-            float percent = (i * interval) / maxVal;
-
-            // Create notch inside slider's Fill Area
-            Transform fillArea = slider.transform.Find("Fill Area");
-            if (fillArea != null)
-            {
-                RectTransform notchRT = UIFactory.CreatePanel(
-                    fillArea, "Notch_" + i, 
-                    new Color(10f/255f, 8f/255f, 20f/255f, 0.75f), // Dark background divider
-                    new Vector2(percent, 0f), new Vector2(percent, 1f),
-                    new Vector2(-1.5f * hudScale, 0f), new Vector2(1.5f * hudScale, 0f)
-                );
-                notchesList.Add(notchRT.gameObject);
-            }
-        }
+        // Notch generation is disabled entirely for a clean, borderless wave appearance
     }
 }

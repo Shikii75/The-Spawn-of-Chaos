@@ -7,7 +7,7 @@ public class Spiderling : MonoBehaviour, IDamageable
     public float speed = 3.5f;
     
     [Header("Combat Settings")]
-    public int damage = 10;
+    public int damage = 1;
     public float attackRange = 0.8f;
     public float attackCooldown = 1.0f;
     public int health = 10;

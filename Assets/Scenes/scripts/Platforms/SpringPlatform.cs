@@ -3,7 +3,7 @@ using UnityEngine;
 [RequireComponent(typeof(Collider2D))]
 public class SpringPlatform : PlatformBase
 {
-    public float bounceForce = 16f;
+    public float bounceForce = 7f;
     public string playerTag = "Player";
 
     private void OnCollisionEnter2D(Collision2D collision)
@@ -14,7 +14,7 @@ public class SpringPlatform : PlatformBase
         // Verify the player landed on the top of the spring
         foreach (ContactPoint2D contact in collision.contacts)
         {
-            if (contact.normal.y > 0.5f)
+            if (contact.normal.y < -0.5f)
             {
                 Rigidbody2D playerRb = collision.collider.GetComponent<Rigidbody2D>();
                 if (playerRb != null)

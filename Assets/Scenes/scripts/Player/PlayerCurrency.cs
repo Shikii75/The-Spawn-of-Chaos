@@ -73,7 +73,7 @@ public class PlayerCurrency : MonoBehaviour
                 
                 healingPotions--;
                 onPotionsChanged?.Invoke(healingPotions);
-                playerHealth.Heal(40);
+                playerHealth.Heal(4);
                 Debug.Log("Player consumed a potion. Remaining: " + healingPotions);
                 return true;
             }

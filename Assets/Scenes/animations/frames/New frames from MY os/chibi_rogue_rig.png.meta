@@ -1,0 +1,533 @@
+fileFormatVersion: 2
+guid: d2b86552b646c2a4db1bae87389acead
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 9182349593047450563
+    second: chibi_rogue_rig_0
+  - first:
+      213: -3670744735619180006
+    second: chibi_rogue_rig_1
+  - first:
+      213: 715376355673217223
+    second: chibi_rogue_rig_2
+  - first:
+      213: -8050312611294360862
+    second: chibi_rogue_rig_3
+  - first:
+      213: 6199893953659383736
+    second: chibi_rogue_rig_4
+  - first:
+      213: -3612966919073644382
+    second: chibi_rogue_rig_5
+  - first:
+      213: 8171100548432273704
+    second: chibi_rogue_rig_6
+  - first:
+      213: -3050928183474352643
+    second: chibi_rogue_rig_7
+  - first:
+      213: -7800386031331693359
+    second: chibi_rogue_rig_8
+  - first:
+      213: 3323869936249926422
+    second: chibi_rogue_rig_9
+  - first:
+      213: -2219712746992032270
+    second: chibi_rogue_rig_10
+  - first:
+      213: -3245150018335426878
+    second: chibi_rogue_rig_11
+  - first:
+      213: 223389963133699387
+    second: chibi_rogue_rig_12
+  - first:
+      213: -4621830313979798962
+    second: chibi_rogue_rig_13
+  - first:
+      213: 2147412242642358653
+    second: chibi_rogue_rig_14
+  - first:
+      213: -8725431706492983920
+    second: chibi_rogue_rig_15
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: chibi_rogue_rig_0
+      rect:
+        serializedVersion: 2
+        x: 17
+        y: 641
+        width: 340
+        height: 337
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3c3cb010e424e6f70800000000000000
+      internalID: 9182349593047450563
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_rogue_rig_1
+      rect:
+        serializedVersion: 2
+        x: 354
+        y: 638
+        width: 364
+        height: 384
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a1a98448c15ee0dc0800000000000000
+      internalID: -3670744735619180006
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_rogue_rig_2
+      rect:
+        serializedVersion: 2
+        x: 722
+        y: 619
+        width: 258
+        height: 339
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7c89d9851078de900800000000000000
+      internalID: 715376355673217223
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_rogue_rig_3
+      rect:
+        serializedVersion: 2
+        x: 17
+        y: 347
+        width: 164
+        height: 259
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2eac3f8155b874090800000000000000
+      internalID: -8050312611294360862
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_rogue_rig_4
+      rect:
+        serializedVersion: 2
+        x: 171
+        y: 338
+        width: 167
+        height: 265
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8bfa5f0d3b27a0650800000000000000
+      internalID: 6199893953659383736
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_rogue_rig_5
+      rect:
+        serializedVersion: 2
+        x: 315
+        y: 309
+        width: 170
+        height: 288
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2a0c06bbab92cddc0800000000000000
+      internalID: -3612966919073644382
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_rogue_rig_6
+      rect:
+        serializedVersion: 2
+        x: 520
+        y: 344
+        width: 173
+        height: 262
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8212e4d08a4956170800000000000000
+      internalID: 8171100548432273704
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_rogue_rig_7
+      rect:
+        serializedVersion: 2
+        x: 664
+        y: 344
+        width: 176
+        height: 262
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dfd88cc4bfce8a5d0800000000000000
+      internalID: -3050928183474352643
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_rogue_rig_8
+      rect:
+        serializedVersion: 2
+        x: 811
+        y: 370
+        width: 196
+        height: 230
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1dc2e839b367fb390800000000000000
+      internalID: -7800386031331693359
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_rogue_rig_9
+      rect:
+        serializedVersion: 2
+        x: 389
+        y: 162
+        width: 140
+        height: 178
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 613f6cda812c02e20800000000000000
+      internalID: 3323869936249926422
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_rogue_rig_10
+      rect:
+        serializedVersion: 2
+        x: 558
+        y: 95
+        width: 141
+        height: 214
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2f52224640ff131e0800000000000000
+      internalID: -2219712746992032270
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_rogue_rig_11
+      rect:
+        serializedVersion: 2
+        x: 741
+        y: 258
+        width: 31
+        height: 34
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2c6b34a7049e6f2d0800000000000000
+      internalID: -3245150018335426878
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_rogue_rig_12
+      rect:
+        serializedVersion: 2
+        x: 364
+        y: 0
+        width: 483
+        height: 222
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b35c8f6ecf3a91300800000000000000
+      internalID: 223389963133699387
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_rogue_rig_13
+      rect:
+        serializedVersion: 2
+        x: 735
+        y: 178
+        width: 21
+        height: 50
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e4a1a1321d5fbdfb0800000000000000
+      internalID: -4621830313979798962
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_rogue_rig_14
+      rect:
+        serializedVersion: 2
+        x: 867
+        y: 14
+        width: 135
+        height: 141
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d71d505ae042dcd10800000000000000
+      internalID: 2147412242642358653
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_rogue_rig_15
+      rect:
+        serializedVersion: 2
+        x: 1017
+        y: 0
+        width: 7
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0952e8e971a09e680800000000000000
+      internalID: -8725431706492983920
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      chibi_rogue_rig_0: 9182349593047450563
+      chibi_rogue_rig_1: -3670744735619180006
+      chibi_rogue_rig_10: -2219712746992032270
+      chibi_rogue_rig_11: -3245150018335426878
+      chibi_rogue_rig_12: 223389963133699387
+      chibi_rogue_rig_13: -4621830313979798962
+      chibi_rogue_rig_14: 2147412242642358653
+      chibi_rogue_rig_15: -8725431706492983920
+      chibi_rogue_rig_2: 715376355673217223
+      chibi_rogue_rig_3: -8050312611294360862
+      chibi_rogue_rig_4: 6199893953659383736
+      chibi_rogue_rig_5: -3612966919073644382
+      chibi_rogue_rig_6: 8171100548432273704
+      chibi_rogue_rig_7: -3050928183474352643
+      chibi_rogue_rig_8: -7800386031331693359
+      chibi_rogue_rig_9: 3323869936249926422
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

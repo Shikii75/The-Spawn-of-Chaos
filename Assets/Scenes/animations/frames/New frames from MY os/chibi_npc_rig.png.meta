@@ -1,0 +1,455 @@
+fileFormatVersion: 2
+guid: 92a8f5ebd7db8404bb28d6e2afa5bc4e
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -5785814149139192164
+    second: chibi_npc_rig_0
+  - first:
+      213: -8167651320987105429
+    second: chibi_npc_rig_1
+  - first:
+      213: -195445044853635162
+    second: chibi_npc_rig_2
+  - first:
+      213: -3004445122712096325
+    second: chibi_npc_rig_3
+  - first:
+      213: 8676524644570311298
+    second: chibi_npc_rig_4
+  - first:
+      213: 5112329301699890469
+    second: chibi_npc_rig_5
+  - first:
+      213: 268077480461755951
+    second: chibi_npc_rig_6
+  - first:
+      213: -7952795520221482992
+    second: chibi_npc_rig_7
+  - first:
+      213: 2161311454835530624
+    second: chibi_npc_rig_8
+  - first:
+      213: 3387929183618292260
+    second: chibi_npc_rig_9
+  - first:
+      213: 9157050921861098248
+    second: chibi_npc_rig_10
+  - first:
+      213: -7511459223582583430
+    second: chibi_npc_rig_11
+  - first:
+      213: -9177807193006284536
+    second: chibi_npc_rig_12
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: chibi_npc_rig_0
+      rect:
+        serializedVersion: 2
+        x: 11
+        y: 647
+        width: 328
+        height: 363
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c9621289fa8a4bfa0800000000000000
+      internalID: -5785814149139192164
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_npc_rig_1
+      rect:
+        serializedVersion: 2
+        x: 308
+        y: 421
+        width: 420
+        height: 515
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b67405bc56ca6ae80800000000000000
+      internalID: -8167651320987105429
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_npc_rig_2
+      rect:
+        serializedVersion: 2
+        x: 709
+        y: 687
+        width: 134
+        height: 194
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6a7836864c3a94df0800000000000000
+      internalID: -195445044853635162
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_npc_rig_3
+      rect:
+        serializedVersion: 2
+        x: 872
+        y: 699
+        width: 115
+        height: 180
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bb1379144111e46d0800000000000000
+      internalID: -3004445122712096325
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_npc_rig_4
+      rect:
+        serializedVersion: 2
+        x: 30
+        y: 383
+        width: 148
+        height: 266
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 28a298ca135396870800000000000000
+      internalID: 8676524644570311298
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_npc_rig_5
+      rect:
+        serializedVersion: 2
+        x: 165
+        y: 376
+        width: 157
+        height: 272
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 52d84a2e964a2f640800000000000000
+      internalID: 5112329301699890469
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_npc_rig_6
+      rect:
+        serializedVersion: 2
+        x: 734
+        y: 510
+        width: 263
+        height: 154
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f2664335c0768b300800000000000000
+      internalID: 268077480461755951
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_npc_rig_7
+      rect:
+        serializedVersion: 2
+        x: 59
+        y: 126
+        width: 137
+        height: 241
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 01071ed2c9ef1a190800000000000000
+      internalID: -7952795520221482992
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_npc_rig_8
+      rect:
+        serializedVersion: 2
+        x: 209
+        y: 17
+        width: 161
+        height: 340
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 08b547a21558efd10800000000000000
+      internalID: 2161311454835530624
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_npc_rig_9
+      rect:
+        serializedVersion: 2
+        x: 373
+        y: 17
+        width: 144
+        height: 167
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 42a5fb974a7540f20800000000000000
+      internalID: 3387929183618292260
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_npc_rig_10
+      rect:
+        serializedVersion: 2
+        x: 549
+        y: 104
+        width: 143
+        height: 298
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 80ba1bb1c41641f70800000000000000
+      internalID: 9157050921861098248
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_npc_rig_11
+      rect:
+        serializedVersion: 2
+        x: 702
+        y: 17
+        width: 148
+        height: 356
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a75578132afe1c790800000000000000
+      internalID: -7511459223582583430
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_npc_rig_12
+      rect:
+        serializedVersion: 2
+        x: 849
+        y: 18
+        width: 151
+        height: 166
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 801e5dbebf0e1a080800000000000000
+      internalID: -9177807193006284536
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      chibi_npc_rig_0: -5785814149139192164
+      chibi_npc_rig_1: -8167651320987105429
+      chibi_npc_rig_10: 9157050921861098248
+      chibi_npc_rig_11: -7511459223582583430
+      chibi_npc_rig_12: -9177807193006284536
+      chibi_npc_rig_2: -195445044853635162
+      chibi_npc_rig_3: -3004445122712096325
+      chibi_npc_rig_4: 8676524644570311298
+      chibi_npc_rig_5: 5112329301699890469
+      chibi_npc_rig_6: 268077480461755951
+      chibi_npc_rig_7: -7952795520221482992
+      chibi_npc_rig_8: 2161311454835530624
+      chibi_npc_rig_9: 3387929183618292260
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

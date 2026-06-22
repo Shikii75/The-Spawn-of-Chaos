@@ -28,13 +28,22 @@ public class MovingPlatform : PlatformBase
         rb.position = transform.position;
     }
 
+    private Transform playerTransform;
+    private bool playerOnPlatform = false;
+
     void FixedUpdate()
     {
         Vector2 currentPos = rb.position;
         Vector2 targetPos = targetPosition;
         Vector2 newPos = Vector2.MoveTowards(currentPos, targetPos, speed * Time.fixedDeltaTime);
         
+        Vector2 delta = newPos - currentPos;
         rb.MovePosition(newPos);
+
+        if (playerOnPlatform && playerTransform != null)
+        {
+            playerTransform.position += (Vector3)delta;
+        }
 
         if (Vector2.Distance(newPos, targetPos) < 0.05f)
         {
@@ -46,12 +55,13 @@ public class MovingPlatform : PlatformBase
     {
         if (collision.collider.CompareTag("Player"))
         {
-            // Only parent the player if they landed on top of the platform
+            // Only mount the player if they landed on top of the platform
             foreach (ContactPoint2D contact in collision.contacts)
             {
-                if (contact.normal.y > 0.5f)
+                if (contact.normal.y < -0.5f)
                 {
-                    collision.transform.SetParent(transform);
+                    playerOnPlatform = true;
+                    playerTransform = collision.transform;
                     break;
                 }
             }
@@ -62,9 +72,10 @@ public class MovingPlatform : PlatformBase
     {
         if (collision.collider.CompareTag("Player"))
         {
-            if (collision.transform.parent == transform)
+            playerOnPlatform = false;
+            if (playerTransform == collision.transform)
             {
-                collision.transform.SetParent(null);
+                playerTransform = null;
             }
         }
     }

@@ -90,7 +90,7 @@ public class ShopSystem : MonoBehaviour
                 Health playerHealth = player.GetComponent<Health>();
                 if (playerHealth != null)
                 {
-                    playerHealth.IncreaseMaxHealth(20);
+                    playerHealth.IncreaseMaxHealth(2);
                 }
                 break;
 

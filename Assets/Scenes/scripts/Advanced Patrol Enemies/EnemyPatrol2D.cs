@@ -15,8 +15,8 @@ public class EnemyPatrol2D : MonoBehaviour, IDamageable
     public float attackRange = 1.4f;
     public float dashRange = 4f;
     public float dashDuration = 0.35f;
-    public int attackDamage = 10;
-    public int dashDamage = 20;
+    public int attackDamage = 1;
+    public int dashDamage = 2;
     public float attackCooldown = 1.0f;
     public float dashCooldown = 2.0f;
     public float knockbackDuration = 0.3f;
@@ -88,6 +88,10 @@ public class EnemyPatrol2D : MonoBehaviour, IDamageable
 
     private void Start()
     {
+        // Force/clamp damage values to bypass Inspector serialization overrides
+        attackDamage = 1; // 0.5 units of health (1 HP)
+        dashDamage = 2;   // 1 unit of health (2 HP)
+
         // Auto-assign player as TargetA if targets are unassigned
         if (TargetA == null && TargetB == null)
         {

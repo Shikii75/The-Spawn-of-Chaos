@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class Health : MonoBehaviour, IDamageable
 {
-    public int maxHealth = 100;
+    public int maxHealth = 14;
     private int currentHealth;
 
     public int CurrentHealth => currentHealth;
@@ -15,6 +15,10 @@ public class Health : MonoBehaviour, IDamageable
 
     void Start()
     {
+        if (CompareTag("Player"))
+        {
+            maxHealth = 14; // Force player max health to 14 (7 units) to override Unity inspector value
+        }
         currentHealth = maxHealth;
     }
 

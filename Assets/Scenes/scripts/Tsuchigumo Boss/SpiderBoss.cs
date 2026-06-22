@@ -155,7 +155,21 @@ public class SpiderBoss : MonoBehaviour
     {
         animator.SetTrigger("Stomp");
         yield return new WaitForSeconds(0.65f);
-        // Optional: apply area-of-effect damage later via trigger.
+        // Find player and apply stomp damage if they are close (range 8)
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
+        {
+            float distance = Vector2.Distance(transform.position, player.transform.position);
+            if (distance < 8f)
+            {
+                Health playerHealth = player.GetComponent<Health>();
+                if (playerHealth != null)
+                {
+                    playerHealth.TakeDamage(4); // Stomp deals 2 units = 4 HP
+                    Debug.Log("Player hit by Boss Stomp!");
+                }
+            }
+        }
         isAttacking = false;
     }
 

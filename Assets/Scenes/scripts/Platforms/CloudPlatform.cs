@@ -22,9 +22,21 @@ public class CloudPlatform : PlatformBase
         currentTarget = pointB.position;
     }
 
+    private Transform playerTransform;
+    private bool playerOnPlatform = false;
+
     void Update()
     {
-        transform.position = Vector3.MoveTowards(transform.position, currentTarget, speed * Time.deltaTime);
+        Vector3 currentPosition = transform.position;
+        Vector3 newPosition = Vector3.MoveTowards(currentPosition, currentTarget, speed * Time.deltaTime);
+        Vector3 delta = newPosition - currentPosition;
+        transform.position = newPosition;
+
+        if (playerOnPlatform && playerTransform != null)
+        {
+            playerTransform.position += delta;
+        }
+
         if (Vector3.Distance(transform.position, currentTarget) < 0.1f)
         {
             movingToB = !movingToB;
@@ -36,13 +48,18 @@ public class CloudPlatform : PlatformBase
     {
         if (!collision.collider.CompareTag("Player"))
             return;
-        collision.transform.SetParent(transform);
+        playerOnPlatform = true;
+        playerTransform = collision.transform;
     }
 
     void OnCollisionExit2D(Collision2D collision)
     {
         if (!collision.collider.CompareTag("Player"))
             return;
-        collision.transform.SetParent(null);
+        playerOnPlatform = false;
+        if (playerTransform == collision.transform)
+        {
+            playerTransform = null;
+        }
     }
 }

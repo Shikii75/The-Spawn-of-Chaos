@@ -1,0 +1,533 @@
+fileFormatVersion: 2
+guid: 1560062127668ac41a5282df7ee7ddb1
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -4012358410922329931
+    second: chibi_swordsman_rig_0
+  - first:
+      213: 2645509098359399783
+    second: chibi_swordsman_rig_1
+  - first:
+      213: -1286536777561446979
+    second: chibi_swordsman_rig_2
+  - first:
+      213: 5905210837916247064
+    second: chibi_swordsman_rig_3
+  - first:
+      213: -8359468433534465369
+    second: chibi_swordsman_rig_4
+  - first:
+      213: -7513650673185872182
+    second: chibi_swordsman_rig_5
+  - first:
+      213: -5369720984784003504
+    second: chibi_swordsman_rig_6
+  - first:
+      213: -1781766585477228847
+    second: chibi_swordsman_rig_7
+  - first:
+      213: -8067978230832617981
+    second: chibi_swordsman_rig_8
+  - first:
+      213: 4164330815299211529
+    second: chibi_swordsman_rig_9
+  - first:
+      213: 7180224002280221224
+    second: chibi_swordsman_rig_10
+  - first:
+      213: -3686409354338475224
+    second: chibi_swordsman_rig_11
+  - first:
+      213: -8128829600207224040
+    second: chibi_swordsman_rig_12
+  - first:
+      213: 7663742834816552189
+    second: chibi_swordsman_rig_13
+  - first:
+      213: -1418389990059656782
+    second: chibi_swordsman_rig_14
+  - first:
+      213: -2704485505599281021
+    second: chibi_swordsman_rig_15
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: chibi_swordsman_rig_0
+      rect:
+        serializedVersion: 2
+        x: 34
+        y: 473
+        width: 159
+        height: 235
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5b87c6d984d3158c0800000000000000
+      internalID: -4012358410922329931
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_swordsman_rig_1
+      rect:
+        serializedVersion: 2
+        x: 72
+        y: 689
+        width: 263
+        height: 324
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 765a6c9228cb6b420800000000000000
+      internalID: 2645509098359399783
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_swordsman_rig_2
+      rect:
+        serializedVersion: 2
+        x: 213
+        y: 332
+        width: 438
+        height: 375
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: db569fefd9d452ee0800000000000000
+      internalID: -1286536777561446979
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_swordsman_rig_3
+      rect:
+        serializedVersion: 2
+        x: 341
+        y: 687
+        width: 378
+        height: 310
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 814e8cd48f583f150800000000000000
+      internalID: 5905210837916247064
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_swordsman_rig_4
+      rect:
+        serializedVersion: 2
+        x: 642
+        y: 430
+        width: 201
+        height: 281
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7aa461400c33dfb80800000000000000
+      internalID: -8359468433534465369
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_swordsman_rig_5
+      rect:
+        serializedVersion: 2
+        x: 901
+        y: 488
+        width: 19
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ac6a16295862ab790800000000000000
+      internalID: -7513650673185872182
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_swordsman_rig_6
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 241
+        height: 434
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 05e1dfed63bea75b0800000000000000
+      internalID: -5369720984784003504
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_swordsman_rig_7
+      rect:
+        serializedVersion: 2
+        x: 290
+        y: 0
+        width: 172
+        height: 277
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1d618ff0bb4e547e0800000000000000
+      internalID: -1781766585477228847
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_swordsman_rig_8
+      rect:
+        serializedVersion: 2
+        x: 578
+        y: 21
+        width: 163
+        height: 396
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 30623a78b88c80090800000000000000
+      internalID: -8067978230832617981
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_swordsman_rig_9
+      rect:
+        serializedVersion: 2
+        x: 828
+        y: 178
+        width: 101
+        height: 194
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9015f1d10dcaac930800000000000000
+      internalID: 4164330815299211529
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_swordsman_rig_10
+      rect:
+        serializedVersion: 2
+        x: 853
+        y: 172
+        width: 15
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 82a65a700b745a360800000000000000
+      internalID: 7180224002280221224
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_swordsman_rig_11
+      rect:
+        serializedVersion: 2
+        x: 917
+        y: 172
+        width: 6
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8236af1493e37dcc0800000000000000
+      internalID: -3686409354338475224
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_swordsman_rig_12
+      rect:
+        serializedVersion: 2
+        x: 261
+        y: 21
+        width: 9
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 813c7f70c88903f80800000000000000
+      internalID: -8128829600207224040
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_swordsman_rig_13
+      rect:
+        serializedVersion: 2
+        x: 485
+        y: 15
+        width: 60
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dfc8f2701851b5a60800000000000000
+      internalID: 7663742834816552189
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_swordsman_rig_14
+      rect:
+        serializedVersion: 2
+        x: 831
+        y: 0
+        width: 193
+        height: 161
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2b93689a1ddd05ce0800000000000000
+      internalID: -1418389990059656782
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chibi_swordsman_rig_15
+      rect:
+        serializedVersion: 2
+        x: 773
+        y: 12
+        width: 22
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 388ef8af2ccb77ad0800000000000000
+      internalID: -2704485505599281021
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      chibi_swordsman_rig_0: -4012358410922329931
+      chibi_swordsman_rig_1: 2645509098359399783
+      chibi_swordsman_rig_10: 7180224002280221224
+      chibi_swordsman_rig_11: -3686409354338475224
+      chibi_swordsman_rig_12: -8128829600207224040
+      chibi_swordsman_rig_13: 7663742834816552189
+      chibi_swordsman_rig_14: -1418389990059656782
+      chibi_swordsman_rig_15: -2704485505599281021
+      chibi_swordsman_rig_2: -1286536777561446979
+      chibi_swordsman_rig_3: 5905210837916247064
+      chibi_swordsman_rig_4: -8359468433534465369
+      chibi_swordsman_rig_5: -7513650673185872182
+      chibi_swordsman_rig_6: -5369720984784003504
+      chibi_swordsman_rig_7: -1781766585477228847
+      chibi_swordsman_rig_8: -8067978230832617981
+      chibi_swordsman_rig_9: 4164330815299211529
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

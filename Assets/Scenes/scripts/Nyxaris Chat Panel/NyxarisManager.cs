@@ -19,9 +19,13 @@ public class NyxarisManager : MonoBehaviour
     public Image portrait;
 
     [Header("Sprites")]
-    public Sprite neutral;
-    public Sprite explaining;
-    public Sprite annoyed;
+    public Sprite[] neutralSprites;
+    public Sprite[] explainingSprites;
+    public Sprite[] thinkingSprites;
+    public Sprite[] angrySprites;
+    public Sprite[] cuteSprites;
+    public Sprite[] motherlySprites;
+    public Sprite[] kindSprites;
 
     [Header("Current Game State Connection")]
     [Tooltip("Options: idle, combat, story")]
@@ -140,26 +144,56 @@ public class NyxarisManager : MonoBehaviour
             StopCoroutine(resetEmotionCoroutine);
         }
         
-        switch (emotion)
+        Sprite selectedSprite = null;
+        switch (emotion.ToLower().Trim())
         {
-            case "cutely-annoyed": 
-                portrait.sprite = annoyed; 
-                resetEmotionCoroutine = StartCoroutine(ResetEmotionAfterDelay());
+            case "explaining":
+                selectedSprite = GetRandomSprite(explainingSprites);
                 break;
-            case "explaining": 
-                portrait.sprite = explaining; 
-                resetEmotionCoroutine = StartCoroutine(ResetEmotionAfterDelay());
+            case "thinking":
+                selectedSprite = GetRandomSprite(thinkingSprites);
                 break;
-            default: 
-                portrait.sprite = neutral; 
+            case "angry":
+                selectedSprite = GetRandomSprite(angrySprites);
+                break;
+            case "cute":
+            case "cutely-annoyed":
+                selectedSprite = GetRandomSprite(cuteSprites);
+                break;
+            case "motherly":
+                selectedSprite = GetRandomSprite(motherlySprites);
+                break;
+            case "kind":
+                selectedSprite = GetRandomSprite(kindSprites);
+                break;
+            default:
+                selectedSprite = GetRandomSprite(neutralSprites);
                 break;
         }
+
+        if (selectedSprite != null)
+        {
+            portrait.sprite = selectedSprite;
+            if (emotion != "neutral")
+            {
+                resetEmotionCoroutine = StartCoroutine(ResetEmotionAfterDelay());
+            }
+        }
+    }
+
+    Sprite GetRandomSprite(Sprite[] sprites)
+    {
+        if (sprites == null || sprites.Length == 0) return null;
+        return sprites[Random.Range(0, sprites.Length)];
     }
 
     IEnumerator ResetEmotionAfterDelay()
     {
         yield return new WaitForSeconds(3.0f);
-        portrait.sprite = neutral;
+        if (neutralSprites != null && neutralSprites.Length > 0)
+        {
+            portrait.sprite = neutralSprites[0];
+        }
     }
 
     IEnumerator TypeText(string text)

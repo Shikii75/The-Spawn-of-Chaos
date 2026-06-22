@@ -21,7 +21,8 @@ public static class AIEditorBridge
 {
     private static HttpListener listener;
     private static ConcurrentQueue<EditorCommand> commandQueue = new ConcurrentQueue<EditorCommand>();
-    private const string PORT = "5002";
+    // Port 5004 used to avoid conflicts
+    private const string PORT = "5004";
 
     [Serializable]
     private class EditorCommand
@@ -219,6 +220,9 @@ public static class AIEditorBridge
 
                 case "createobject":
                     return CreateLevelObject(cmd);
+
+                case "createsprite":
+                    return CreateSpriteObject(cmd);
 
                 case "buildlevel":
                     return BuildLevelRemainder();
@@ -637,6 +641,48 @@ public static class AIEditorBridge
         MakeLevelBlock(cmd.targetName, cx, cy, width, height, new Color32(r, g, b, 255), tag);
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         return new CommandResponse { status = "success", message = $"Created block '{cmd.targetName}' at ({cx},{cy}) size ({width}x{height})." };
+    }
+
+    private static CommandResponse CreateSpriteObject(EditorCommand cmd)
+    {
+        string[] parts = cmd.propertyValue.Split(',');
+        if (parts.Length < 7)
+            return new CommandResponse { status = "error", message = "propertyValue must be: posX,posY,scaleX,scaleY,spritePath,sortingOrder,tag" };
+
+        float posX = float.Parse(parts[0]);
+        float posY = float.Parse(parts[1]);
+        float scaleX = float.Parse(parts[2]);
+        float scaleY = float.Parse(parts[3]);
+        string spritePath = parts[4].Trim();
+        int sortingOrder = int.Parse(parts[5]);
+        string tag = parts[6].Trim();
+
+        GameObject go = new GameObject(cmd.targetName);
+        try { go.tag = tag; }
+        catch { go.tag = "Untagged"; }
+
+        SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
+        if (!string.IsNullOrEmpty(spritePath))
+        {
+            Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(spritePath);
+            if (sprite != null)
+            {
+                sr.sprite = sprite;
+            }
+            else
+            {
+                Debug.LogWarning($"[AIEditorBridge] Sprite not found at path '{spritePath}'");
+            }
+        }
+        sr.sortingLayerName = "Default";
+        sr.sortingOrder = sortingOrder;
+
+        go.transform.position = new Vector3(posX, posY, 0f);
+        go.transform.localScale = new Vector3(scaleX, scaleY, 1f);
+
+        Undo.RegisterCreatedObjectUndo(go, "Create Sprite Object: " + cmd.targetName);
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        return new CommandResponse { status = "success", message = $"Created sprite object '{cmd.targetName}' at ({posX},{posY})." };
     }
 
     /// <summary>

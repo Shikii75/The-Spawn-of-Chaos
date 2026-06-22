@@ -14,6 +14,8 @@ public class Cloud : MonoBehaviour
     private bool playerOnCloud = false;
     private bool waitingAtPoint = true;
 
+    private Transform playerTransform;
+
     private void Start()
     {
         if (pointA == null || pointB == null)
@@ -41,8 +43,21 @@ public class Cloud : MonoBehaviour
             waitingAtPoint = false;
         }
 
-        if (!playerOnCloud)
-            return;
+        Vector3 currentPosition = transform.position;
+        Vector3 newPosition = Vector3.MoveTowards(
+            currentPosition,
+            target,
+            speed * Time.deltaTime
+        );
+
+        Vector3 delta = newPosition - currentPosition;
+        transform.position = newPosition;
+
+        // Move player along with the cloud if they are standing on it
+        if (playerOnCloud && playerTransform != null)
+        {
+            playerTransform.position += delta;
+        }
 
         if (Vector3.Distance(transform.position, target) < 0.05f)
         {
@@ -52,12 +67,6 @@ public class Cloud : MonoBehaviour
             waitingAtPoint = true;
             return;
         }
-
-        transform.position = Vector3.MoveTowards(
-            transform.position,
-            target,
-            speed * Time.deltaTime
-        );
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
@@ -66,7 +75,7 @@ public class Cloud : MonoBehaviour
             return;
 
         playerOnCloud = true;
-        collision.transform.SetParent(transform);
+        playerTransform = collision.transform;
     }
 
     private void OnCollisionExit2D(Collision2D collision)
@@ -75,6 +84,9 @@ public class Cloud : MonoBehaviour
             return;
 
         playerOnCloud = false;
-        collision.transform.SetParent(null);
+        if (playerTransform == collision.transform)
+        {
+            playerTransform = null;
+        }
     }
 }

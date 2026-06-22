@@ -19,7 +19,7 @@ public class CheckpointSystem : MonoBehaviour
 
     [Header("Lore Self-Harm Settings")]
     [Tooltip("HP the player loses when activating a checkpoint (the lore ritual).")]
-    public int activationCost = 5;
+    public int activationCost = 1;
 
     [Header("VFX")]
     public GameObject activationVFXPrefab;

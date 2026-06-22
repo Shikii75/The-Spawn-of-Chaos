@@ -5,7 +5,7 @@ public class WebProjectile : MonoBehaviour
 {
     [Header("Web Settings")]
     public float speed = 8.0f;
-    public int damage = 15;
+    public int damage = 1;
     public float slowDuration = 2.5f;
     public float slowMultiplier = 0.5f;
     public float lifetime = 4.0f;

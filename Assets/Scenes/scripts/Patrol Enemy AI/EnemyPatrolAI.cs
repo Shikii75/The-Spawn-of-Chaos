@@ -13,8 +13,8 @@ public class EnemyPatrolAI : MonoBehaviour, IDamageable
     public float dashDuration = 0.35f;
     public float attackCooldown = 1.2f;
     public float dashCooldown = 2.0f;
-    public int attackDamage = 12;
-    public int dashDamage = 20;
+    public int attackDamage = 1;
+    public int dashDamage = 2;
     public int maxHealth = 80;
 
     [Header("Animator")]
@@ -47,6 +47,10 @@ public class EnemyPatrolAI : MonoBehaviour, IDamageable
 
     void Start()
     {
+        // Force/clamp damage values to bypass Inspector serialization overrides
+        attackDamage = 1; // 0.5 units of health (1 HP)
+        dashDamage = 2;   // 1 unit of health (2 HP)
+
         // Auto-assign player as target if targets array is empty
         if (targets == null || targets.Length == 0 || (targets.Length == 1 && targets[0] == null))
         {

@@ -40,6 +40,9 @@ public class DojoWaveManager : MonoBehaviour
     private bool isSpawningWave = false;
     private List<GameObject> activeEnemies = new List<GameObject>();
 
+    public bool IsChallengeStarted => challengeStarted;
+    public bool IsChallengeCompleted => challengeCompleted;
+
     void Awake()
     {
         // Ensure gates are initially open/inactive
