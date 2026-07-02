@@ -32,8 +32,18 @@ public class move : MonoBehaviour
     private Animator anim;
     private bool isGrounded;
 
+    private static move instance;
+
     void Awake()
     {
+        if (instance != null && instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        instance = this;
+        DontDestroyOnLoad(gameObject);
+
         rb = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
         rb.gravityScale = gravityScale;

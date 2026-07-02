@@ -511,6 +511,23 @@ public class MainMenuController : MonoBehaviour
         if (mainPanel != null) mainPanel.SetActive(false);
         if (optionsPanel != null) optionsPanel.SetActive(false);
 
+        // If we are already in a scene with the same name, just hide the menu and play the editor scene!
+        string activeName = SceneManager.GetActiveScene().name;
+        if (!string.IsNullOrEmpty(activeName) && activeName.Equals(sceneName, System.StringComparison.OrdinalIgnoreCase))
+        {
+            Debug.Log("[MainMenuController] Already in target scene. Hiding menu to play active editor scene.");
+            gameObject.SetActive(false);
+
+            // Trigger LevelMusicPlayer to start the level gameplay BGM immediately
+            LevelMusicPlayer lmp = FindObjectOfType<LevelMusicPlayer>();
+            if (lmp != null && lmp.levelMusic != null && AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlayBGM(lmp.levelMusic, lmp.fadeOnStart);
+                Debug.Log("[MainMenuController] Started level music: " + lmp.levelMusic.name);
+            }
+            return;
+        }
+
         if (!string.IsNullOrEmpty(sceneName))
         {
             SceneManager.LoadScene(sceneName);

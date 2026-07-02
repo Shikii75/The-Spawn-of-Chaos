@@ -98,11 +98,21 @@ public class Spiderling : MonoBehaviour, IDamageable
         }
         else
         {
-            // Flash red on hit
-            SpriteRenderer sr = GetComponent<SpriteRenderer>();
-            if (sr != null)
+            SpriteJuice juice = GetComponent<SpriteJuice>();
+            if (juice != null)
             {
-                StartCoroutine(FlashRed(sr));
+                Transform player = GameObject.FindGameObjectWithTag("Player")?.transform;
+                Vector2 hitDir = player != null ? (transform.position - player.position).normalized : Vector2.right;
+                juice.PlayHitReaction(hitDir, 3f);
+            }
+            else
+            {
+                // Flash red on hit
+                SpriteRenderer sr = GetComponent<SpriteRenderer>();
+                if (sr != null)
+                {
+                    StartCoroutine(FlashRed(sr));
+                }
             }
         }
     }

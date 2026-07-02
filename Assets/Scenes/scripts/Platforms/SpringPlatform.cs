@@ -3,7 +3,7 @@ using UnityEngine;
 [RequireComponent(typeof(Collider2D))]
 public class SpringPlatform : PlatformBase
 {
-    public float bounceForce = 7f;
+    public float bounceForce = 14f;
     public string playerTag = "Player";
 
     private void OnCollisionEnter2D(Collision2D collision)

@@ -21,11 +21,13 @@ public class EnemyPatrol2D : MonoBehaviour, IDamageable
     public float dashCooldown = 2.0f;
     public float knockbackDuration = 0.3f;
 
-    [Header("Patrol")]
-    [Tooltip("First patrol waypoint.")]
-    public Transform patrolPoint1;
-    [Tooltip("Second patrol waypoint.")]
-    public Transform patrolPoint2;
+    [Header("Patrol Settings")]
+    [Tooltip("Distance the enemy patrols left and right from its starting position.")]
+    public float patrolRadius = 5f;
+
+    [Header("Sprite Settings")]
+    [Tooltip("Check this if your sprite asset faces right by default. Uncheck if it faces left.")]
+    public bool spriteFacesRight = false;
 
     [Header("Animator Parameters")]
     public string strwalkBoolName = "strwalk";
@@ -46,6 +48,10 @@ public class EnemyPatrol2D : MonoBehaviour, IDamageable
     private float nextDashTime;
     private Vector2 dashDirection;
     private Transform currentPatrolTarget;
+    
+    private Vector3 initialScale;
+    private float patrolDirection = 1f;
+    private float startX;
     
     // Animator validation
     private System.Collections.Generic.HashSet<string> _animParamNames = new System.Collections.Generic.HashSet<string>();
@@ -84,6 +90,7 @@ public class EnemyPatrol2D : MonoBehaviour, IDamageable
         }
 
         currentHealth = maxHealth;
+        initialScale = transform.localScale;
     }
 
     private void Start()
@@ -91,6 +98,14 @@ public class EnemyPatrol2D : MonoBehaviour, IDamageable
         // Force/clamp damage values to bypass Inspector serialization overrides
         attackDamage = 1; // 0.5 units of health (1 HP)
         dashDamage = 2;   // 1 unit of health (2 HP)
+
+        // Clamp dash duration to a safe, reasonable platformer range
+        if (dashDuration > 0.6f)
+        {
+            dashDuration = 0.35f;
+        }
+
+        startX = transform.position.x;
 
         // Auto-assign player as TargetA if targets are unassigned
         if (TargetA == null && TargetB == null)
@@ -118,11 +133,13 @@ public class EnemyPatrol2D : MonoBehaviour, IDamageable
         if (!targetInDashRange)
         {
             PerformPatrol();
+            UpdateFacing(0f);
             return;
         }
 
         if (isDashing)
         {
+            UpdateFacing(0f);
             return;
         }
 
@@ -131,6 +148,10 @@ public class EnemyPatrol2D : MonoBehaviour, IDamageable
         if (distance <= attackRange)
         {
             BeginAttack();
+            if (currentTarget != null)
+            {
+                UpdateFacing(Mathf.Sign(currentTarget.position.x - transform.position.x));
+            }
             return;
         }
 
@@ -141,6 +162,7 @@ public class EnemyPatrol2D : MonoBehaviour, IDamageable
         }
 
         ChaseTarget(currentTarget.position);
+        UpdateFacing(0f);
     }
 
     private void FixedUpdate()
@@ -157,8 +179,43 @@ public class EnemyPatrol2D : MonoBehaviour, IDamageable
                 rb.linearVelocity = new Vector2(dashDirection.x * dashSpeed, rb.linearVelocity.y);
             }
 
+            // Wall and Ledge Check during active dash to prevent flying off platforms
+            float extentX = 0.5f;
+            float extentY = 0.5f;
+            var boxCollider = GetComponent<BoxCollider2D>();
+            if (boxCollider != null)
+            {
+                extentX = boxCollider.size.x * 0.5f * Mathf.Abs(transform.localScale.x);
+                extentY = boxCollider.size.y * 0.5f * Mathf.Abs(transform.localScale.y);
+            }
+
+            bool hitWall = false;
+            Vector2 checkOrigin = (Vector2)transform.position + new Vector2(0f, -extentY * 0.3f);
+            RaycastHit2D[] wallHits = Physics2D.RaycastAll(checkOrigin, Vector2.right * dashDirection.x, extentX + 0.3f);
+            foreach (var hit in wallHits)
+            {
+                if (hit.collider != null && hit.collider.gameObject != gameObject && !hit.collider.isTrigger && hit.collider.CompareTag("Ground"))
+                {
+                    hitWall = true;
+                    break;
+                }
+            }
+
+            bool hasGroundAhead = false;
+            Vector2 ledgeOrigin = (Vector2)transform.position + new Vector2(dashDirection.x * (extentX + 0.2f), 0f);
+            RaycastHit2D[] ledgeHits = Physics2D.RaycastAll(ledgeOrigin, Vector2.down, extentY + 1.2f);
+            foreach (var hit in ledgeHits)
+            {
+                if (hit.collider != null && hit.collider.gameObject != gameObject && !hit.collider.isTrigger && hit.collider.CompareTag("Ground"))
+                {
+                    hasGroundAhead = true;
+                    break;
+                }
+            }
+
             if (Time.time >= dashEndTime || currentTarget == null ||
-                Vector2.Distance(transform.position, currentTarget.position) <= attackRange)
+                Vector2.Distance(transform.position, currentTarget.position) <= attackRange ||
+                hitWall || !hasGroundAhead)
             {
                 EndDash();
             }
@@ -214,32 +271,64 @@ public class EnemyPatrol2D : MonoBehaviour, IDamageable
             return;
         }
 
-        if (patrolPoint1 == null || patrolPoint2 == null)
+        float minX = startX - patrolRadius;
+        float maxX = startX + patrolRadius;
+
+        // Check if exceeded bounds
+        if (transform.position.x >= maxX && patrolDirection > 0f)
         {
-            // If patrol points are not configured, do not move horizontally
-            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
-            SetWalkState(false);
-            return;
+            patrolDirection = -1f;
+        }
+        else if (transform.position.x <= minX && patrolDirection < 0f)
+        {
+            patrolDirection = 1f;
         }
 
-        if (currentPatrolTarget == null)
+        // Auto-patrol: Wall and Ledge Check using BoxCollider2D bounds
+        float extentX = 0.5f;
+        float extentY = 0.5f;
+        var boxCollider = GetComponent<BoxCollider2D>();
+        if (boxCollider != null)
         {
-            currentPatrolTarget = patrolPoint1;
+            extentX = boxCollider.size.x * 0.5f * Mathf.Abs(transform.localScale.x);
+            extentY = boxCollider.size.y * 0.5f * Mathf.Abs(transform.localScale.y);
         }
 
-        float xDistance = currentPatrolTarget.position.x - transform.position.x;
-        float absDistance = Mathf.Abs(xDistance);
-
-        if (absDistance < 0.25f)
+        // 1. Check for wall in front
+        bool hitWall = false;
+        Vector2 checkOrigin = (Vector2)transform.position + new Vector2(0f, -extentY * 0.3f);
+        RaycastHit2D[] wallHits = Physics2D.RaycastAll(checkOrigin, Vector2.right * patrolDirection, extentX + 0.3f);
+        foreach (var hit in wallHits)
         {
-            currentPatrolTarget = currentPatrolTarget == patrolPoint1 ? patrolPoint2 : patrolPoint1;
-            xDistance = currentPatrolTarget.position.x - transform.position.x;
+            if (hit.collider != null && hit.collider.gameObject != gameObject && !hit.collider.isTrigger && hit.collider.CompareTag("Ground"))
+            {
+                hitWall = true;
+                break;
+            }
         }
 
-        float xDirection = Mathf.Sign(xDistance);
-        rb.linearVelocity = new Vector2(xDirection * moveSpeed, rb.linearVelocity.y);
+        // 2. Check for ledge in front (downward raycast)
+        bool hasGroundAhead = false;
+        Vector2 ledgeOrigin = (Vector2)transform.position + new Vector2(patrolDirection * (extentX + 0.2f), 0f);
+        RaycastHit2D[] ledgeHits = Physics2D.RaycastAll(ledgeOrigin, Vector2.down, extentY + 1.2f);
+        foreach (var hit in ledgeHits)
+        {
+            if (hit.collider != null && hit.collider.gameObject != gameObject && !hit.collider.isTrigger && hit.collider.CompareTag("Ground"))
+            {
+                hasGroundAhead = true;
+                break;
+            }
+        }
+
+        // Turn around if blocked or about to fall
+        if (hitWall || !hasGroundAhead)
+        {
+            patrolDirection = -patrolDirection;
+        }
+
+        rb.linearVelocity = new Vector2(patrolDirection * moveSpeed, rb.linearVelocity.y);
         SetWalkState(true);
-        UpdateFacing(xDirection);
+        UpdateFacing(patrolDirection);
     }
 
     private void PerformWalkMovement(Vector2 destination)
@@ -270,9 +359,52 @@ public class EnemyPatrol2D : MonoBehaviour, IDamageable
             xDirection = transform.localScale.x >= 0 ? 1f : -1f;
         }
 
-        rb.linearVelocity = new Vector2(xDirection * moveSpeed, rb.linearVelocity.y);
-        SetWalkState(true);
-        UpdateFacing(xDirection);
+        // Ledge & Wall Check for chasing
+        float extentX = 0.5f;
+        float extentY = 0.5f;
+        var boxCollider = GetComponent<BoxCollider2D>();
+        if (boxCollider != null)
+        {
+            extentX = boxCollider.size.x * 0.5f * Mathf.Abs(transform.localScale.x);
+            extentY = boxCollider.size.y * 0.5f * Mathf.Abs(transform.localScale.y);
+        }
+
+        bool hitWall = false;
+        Vector2 checkOrigin = (Vector2)transform.position + new Vector2(0f, -extentY * 0.3f);
+        RaycastHit2D[] wallHits = Physics2D.RaycastAll(checkOrigin, Vector2.right * xDirection, extentX + 0.3f);
+        foreach (var hit in wallHits)
+        {
+            if (hit.collider != null && hit.collider.gameObject != gameObject && !hit.collider.isTrigger && hit.collider.CompareTag("Ground"))
+            {
+                hitWall = true;
+                break;
+            }
+        }
+
+        bool hasGroundAhead = false;
+        Vector2 ledgeOrigin = (Vector2)transform.position + new Vector2(xDirection * (extentX + 0.2f), 0f);
+        RaycastHit2D[] ledgeHits = Physics2D.RaycastAll(ledgeOrigin, Vector2.down, extentY + 1.2f);
+        foreach (var hit in ledgeHits)
+        {
+            if (hit.collider != null && hit.collider.gameObject != gameObject && !hit.collider.isTrigger && hit.collider.CompareTag("Ground"))
+            {
+                hasGroundAhead = true;
+                break;
+            }
+        }
+
+        if (hitWall || !hasGroundAhead)
+        {
+            // Stop at edges/walls to avoid falling off
+            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+            SetWalkState(false);
+        }
+        else
+        {
+            rb.linearVelocity = new Vector2(xDirection * moveSpeed, rb.linearVelocity.y);
+            SetWalkState(true);
+            UpdateFacing(xDirection);
+        }
     }
 
     private void BeginAttack()
@@ -320,6 +452,34 @@ public class EnemyPatrol2D : MonoBehaviour, IDamageable
             xDirection = transform.localScale.x >= 0 ? 1f : -1f;
         }
 
+        // Check if there is a wall or ledge before starting the dash
+        float extentX = 0.5f;
+        float extentY = 0.5f;
+        var boxCollider = GetComponent<BoxCollider2D>();
+        if (boxCollider != null)
+        {
+            extentX = boxCollider.size.x * 0.5f * Mathf.Abs(transform.localScale.x);
+            extentY = boxCollider.size.y * 0.5f * Mathf.Abs(transform.localScale.y);
+        }
+
+        bool hasGroundAhead = false;
+        Vector2 ledgeOrigin = (Vector2)transform.position + new Vector2(xDirection * (extentX + 0.2f), 0f);
+        RaycastHit2D[] ledgeHits = Physics2D.RaycastAll(ledgeOrigin, Vector2.down, extentY + 1.2f);
+        foreach (var hit in ledgeHits)
+        {
+            if (hit.collider != null && hit.collider.gameObject != gameObject && !hit.collider.isTrigger && hit.collider.CompareTag("Ground"))
+            {
+                hasGroundAhead = true;
+                break;
+            }
+        }
+
+        if (!hasGroundAhead)
+        {
+            // Do not dash off ledges
+            return;
+        }
+
         dashDirection = new Vector2(xDirection, 0f);
         dashEndTime = Time.time + dashDuration;
         isDashing = true;
@@ -362,13 +522,24 @@ public class EnemyPatrol2D : MonoBehaviour, IDamageable
 
     private void UpdateFacing(float directionX)
     {
-        if (directionX > 0.1f)
+        float xDir = directionX;
+        // Fallback to actual Rigidbody2D velocity if direction parameter is not explicitly passed
+        if (Mathf.Abs(xDir) < 0.1f && rb != null)
         {
-            transform.localScale = new Vector3(1f, 1f, 1f);
+            xDir = rb.linearVelocity.x;
         }
-        else if (directionX < -0.1f)
+
+        if (Mathf.Abs(xDir) > 0.1f)
         {
-            transform.localScale = new Vector3(-1f, 1f, 1f);
+            float flipMultiplier = spriteFacesRight ? 1f : -1f;
+            if (xDir > 0.1f)
+            {
+                transform.localScale = new Vector3(Mathf.Abs(initialScale.x) * flipMultiplier, initialScale.y, initialScale.z);
+            }
+            else if (xDir < -0.1f)
+            {
+                transform.localScale = new Vector3(-Mathf.Abs(initialScale.x) * flipMultiplier, initialScale.y, initialScale.z);
+            }
         }
     }
 
@@ -462,21 +633,31 @@ public class EnemyPatrol2D : MonoBehaviour, IDamageable
             Debug.Log($"[Enemy] {name} took {damage} damage. Health now {currentHealth}/{maxHealth}.");
         }
 
-        if (animator != null && (_animParamNames.Contains(knockbackTriggerName) || forceDirectPlay))
+        SpriteJuice juice = GetComponent<SpriteJuice>();
+        if (juice != null)
         {
-            if (forceDirectPlay)
-                animator.Play(knockbackStateName);
-            else
-                animator.SetTrigger(knockbackTriggerName);
+            Transform player = GameObject.FindGameObjectWithTag("Player")?.transform;
+            Vector2 hitDir = player != null ? (transform.position - player.position).normalized : Vector2.right;
+            juice.PlayHitReaction(hitDir, 5.5f);
         }
-        else if (verboseLogs)
+        else
         {
-            Debug.LogWarning($"Animator trigger '{knockbackTriggerName}' not found on {name}");
-        }
+            if (animator != null && (_animParamNames.Contains(knockbackTriggerName) || forceDirectPlay))
+            {
+                if (forceDirectPlay)
+                    animator.Play(knockbackStateName);
+                else
+                    animator.SetTrigger(knockbackTriggerName);
+            }
+            else if (verboseLogs)
+            {
+                Debug.LogWarning($"Animator trigger '{knockbackTriggerName}' not found on {name}");
+            }
 
-        if (!isKnockedBack)
-        {
-            StartCoroutine(KnockbackRoutine());
+            if (!isKnockedBack)
+            {
+                StartCoroutine(KnockbackRoutine());
+            }
         }
 
         if (currentHealth <= 0)
@@ -493,9 +674,24 @@ public class EnemyPatrol2D : MonoBehaviour, IDamageable
     private System.Collections.IEnumerator KnockbackRoutine()
     {
         isKnockedBack = true;
+        
+        float pushDir = 1f;
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
+        {
+            pushDir = transform.position.x > player.transform.position.x ? 1f : -1f;
+            // Face the attacker when hit
+            float faceDirection = Mathf.Sign(player.transform.position.x - transform.position.x);
+            UpdateFacing(faceDirection);
+        }
+        else
+        {
+            pushDir = -Mathf.Sign(transform.localScale.x);
+        }
+
         if (rb != null)
         {
-            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+            rb.linearVelocity = new Vector2(pushDir * 5.5f, 2.5f); // horizontal pushback + vertical hop
         }
 
         SetWalkState(false);
@@ -524,13 +720,15 @@ public class EnemyPatrol2D : MonoBehaviour, IDamageable
             Gizmos.DrawLine(transform.position, TargetB.position);
         }
 
-        if (patrolPoint1 != null && patrolPoint2 != null)
-        {
-            Gizmos.color = Color.blue;
-            Gizmos.DrawLine(patrolPoint1.position, patrolPoint2.position);
-            Gizmos.DrawWireSphere(patrolPoint1.position, 0.3f);
-            Gizmos.DrawWireSphere(patrolPoint2.position, 0.3f);
-        }
+        // Draw patrol radius bounds
+        Gizmos.color = Color.blue;
+        float currentStartX = Application.isPlaying ? startX : transform.position.x;
+        Vector3 startPos = new Vector3(currentStartX, transform.position.y, transform.position.z);
+        Vector3 leftBound = startPos + Vector3.left * patrolRadius;
+        Vector3 rightBound = startPos + Vector3.right * patrolRadius;
+        Gizmos.DrawLine(leftBound, rightBound);
+        Gizmos.DrawWireSphere(leftBound, 0.2f);
+        Gizmos.DrawWireSphere(rightBound, 0.2f);
     }
 }
 

@@ -1,10 +1,16 @@
 fileFormatVersion: 2
-guid: d54c5518f711a254e8a041ceef78ad7d
+guid: 0404454de9f34484da96584e856ca140
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -2221076151759895870
-    second: chibi_spider_rig_0
+      213: 5504176216392022609
+    second: pause_restart_0
+  - first:
+      213: 8116493743574179453
+    second: pause_restart_1
+  - first:
+      213: -7088713919121433779
+    second: pause_restart_2
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +106,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: chibi_spider_rig_0
+      name: pause_restart_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 0
-        width: 1024
-        height: 1024
+        x: 46
+        y: 399
+        width: 1438
+        height: 415
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +121,52 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 2c2824bf1072d21e0800000000000000
-      internalID: -2221076151759895870
+      spriteID: 15a333f3b13c26c40800000000000000
+      internalID: 5504176216392022609
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: pause_restart_1
+      rect:
+        serializedVersion: 2
+        x: 1480
+        y: 609
+        width: 6
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d7e5b678e0493a070800000000000000
+      internalID: 8116493743574179453
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: pause_restart_2
+      rect:
+        serializedVersion: 2
+        x: 1485
+        y: 572
+        width: 6
+        height: 43
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d4b56688f34df9d90800000000000000
+      internalID: -7088713919121433779
       vertices: []
       indices: 
       edges: []
@@ -135,7 +185,9 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      chibi_spider_rig_0: -2221076151759895870
+      pause_restart_0: 5504176216392022609
+      pause_restart_1: 8116493743574179453
+      pause_restart_2: -7088713919121433779
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

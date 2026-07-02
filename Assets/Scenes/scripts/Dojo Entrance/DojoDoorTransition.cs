@@ -33,6 +33,11 @@ public class DojoDoorTransition : MonoBehaviour
     public GameObject[] enableOnArrival;
     public GameObject[] disableOnArrival;
 
+    [Header("Scene Loading (Optional Upgrade)")]
+    public bool loadScene = false;
+    public string targetSceneName = "";
+    public string spawnPointName = "";
+
     private bool playerInRange;
     private bool isTransitioning;
     private GameObject playerObject;
@@ -105,20 +110,31 @@ public class DojoDoorTransition : MonoBehaviour
         DojoTransitionFader fader = DojoTransitionFader.Ensure();
         fader.PlayFadeOutIn(fadeOutDuration, hiddenHoldDuration, fadeInDuration, () =>
         {
-            SwitchAreaObjects();
-
-            if (destinationPoint != null)
+            if (loadScene)
             {
-                player.transform.position = destinationPoint.position;
+                PlayerSpawnPointManager.targetSpawnPointName = spawnPointName;
+                UnityEngine.SceneManagement.SceneManager.LoadScene(targetSceneName);
             }
             else
             {
-                Debug.LogWarning($"{name}: destinationPoint is not assigned for {doorName}.");
+                SwitchAreaObjects();
+
+                if (destinationPoint != null)
+                {
+                    player.transform.position = destinationPoint.position;
+                }
+                else
+                {
+                    Debug.LogWarning($"{name}: destinationPoint is not assigned for {doorName}.");
+                }
             }
         }, () =>
         {
-            SetAnimatorTriggerIfPresent(animator, arriveTrigger);
-            SetPlayerControl(player, true);
+            if (!loadScene)
+            {
+                SetAnimatorTriggerIfPresent(animator, arriveTrigger);
+                SetPlayerControl(player, true);
+            }
             isTransitioning = false;
         });
 

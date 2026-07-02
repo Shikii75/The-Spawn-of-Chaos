@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Ground
   - enemy
+  - entersign
   layers:
   - Default
   - TransparentFX

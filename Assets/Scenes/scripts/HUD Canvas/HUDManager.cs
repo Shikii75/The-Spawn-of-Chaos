@@ -84,6 +84,7 @@ public class HUDManager : MonoBehaviour
         // ── Canvas (sort order 0) ──
         canvas = UIFactory.CreateCanvas("HUDCanvas", 0);
         canvas.transform.SetParent(null, false);
+        DontDestroyOnLoad(canvas.gameObject);
 
         // Calculate scaled dimensions and positions to keep alignment clean at any scale
         float leftMargin = 30f * Mathf.Min(hudScale, 2f);

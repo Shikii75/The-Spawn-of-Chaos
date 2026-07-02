@@ -8,6 +8,10 @@ public class NPCInteractable : MonoBehaviour
     [TextArea(3, 5)]
     public string[] dialogueLines;
 
+    [Header("Custom Character Dialogue")]
+    [Tooltip("If assigned, this NPC will use this custom dialogue asset instead of the raw fields above.")]
+    public CharacterDialogueAsset dialogueAsset;
+
     [Header("Special Triggers")]
     public bool isNyxaris = false;
     public bool isShopKeeper = false;
@@ -63,7 +67,17 @@ public class NPCInteractable : MonoBehaviour
         else if (isShopKeeper)
         {
             // First display greeting, then open shop
-            if (dialogueLines != null && dialogueLines.Length > 0 && NPCDialogueUI.Instance != null)
+            if (dialogueAsset != null && NPCDialogueUI.Instance != null)
+            {
+                NPCDialogueUI.Instance.ShowDialogue(dialogueAsset, () =>
+                {
+                    if (ShopUI.Instance != null)
+                    {
+                        ShopUI.Instance.OpenShop();
+                    }
+                });
+            }
+            else if (dialogueLines != null && dialogueLines.Length > 0 && NPCDialogueUI.Instance != null)
             {
                 NPCDialogueUI.Instance.ShowDialogue(npcName, dialogueLines, () =>
                 {
@@ -83,14 +97,28 @@ public class NPCInteractable : MonoBehaviour
             // Normal dialogue NPC
             if (NPCDialogueUI.Instance != null)
             {
-                NPCDialogueUI.Instance.ShowDialogue(npcName, dialogueLines, () =>
+                if (dialogueAsset != null)
                 {
-                    // Dialogue complete callback - show prompt again if player is still in range
-                    if (playerInRange && interactPrompt != null)
+                    NPCDialogueUI.Instance.ShowDialogue(dialogueAsset, () =>
                     {
-                        interactPrompt.SetActive(true);
-                    }
-                });
+                        // Dialogue complete callback - show prompt again if player is still in range
+                        if (playerInRange && interactPrompt != null)
+                        {
+                            interactPrompt.SetActive(true);
+                        }
+                    });
+                }
+                else
+                {
+                    NPCDialogueUI.Instance.ShowDialogue(npcName, dialogueLines, () =>
+                    {
+                        // Dialogue complete callback - show prompt again if player is still in range
+                        if (playerInRange && interactPrompt != null)
+                        {
+                            interactPrompt.SetActive(true);
+                        }
+                    });
+                }
             }
             else
             {

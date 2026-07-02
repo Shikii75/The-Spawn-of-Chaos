@@ -97,8 +97,17 @@ public class BaseMob : MonoBehaviour, IDamageable
         if (animator != null)
             animator.SetTrigger("hit");
 
-        if (spriteRenderer != null)
+        SpriteJuice juice = GetComponent<SpriteJuice>();
+        if (juice != null)
+        {
+            Transform player = GameObject.FindGameObjectWithTag("Player")?.transform;
+            Vector2 hitDir = player != null ? (transform.position - player.position).normalized : Vector2.right;
+            juice.PlayHitReaction(hitDir, 4f);
+        }
+        else if (spriteRenderer != null)
+        {
             StartCoroutine(FlashHit());
+        }
 
         if (currentHealth <= 0)
             Die();

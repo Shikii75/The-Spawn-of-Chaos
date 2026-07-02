@@ -78,6 +78,7 @@ public static class AIEditorBridge
     {
         try
         {
+            RegisterAllScenesInBuildSettings();
             listener = new HttpListener();
             listener.Prefixes.Add($"http://localhost:{PORT}/command/");
             listener.Start();
@@ -87,6 +88,29 @@ public static class AIEditorBridge
         catch (Exception e)
         {
             Debug.LogError($"[AIEditorBridge] Failed to start server: {e.Message}");
+        }
+    }
+
+    private static void RegisterAllScenesInBuildSettings()
+    {
+        try
+        {
+            string[] sceneGuids = AssetDatabase.FindAssets("t:Scene", new[] { "Assets/Scenes" });
+            var buildScenes = new System.Collections.Generic.List<EditorBuildSettingsScene>();
+            foreach (var guid in sceneGuids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                if (path.EndsWith(".unity"))
+                {
+                    buildScenes.Add(new EditorBuildSettingsScene(path, true));
+                }
+            }
+            EditorBuildSettings.scenes = buildScenes.ToArray();
+            Debug.Log($"[AIEditorBridge] Automatically registered {buildScenes.Count} scenes in Build Settings.");
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"[AIEditorBridge] Failed to register scenes: {e.Message}");
         }
     }
 
@@ -223,6 +247,11 @@ public static class AIEditorBridge
 
                 case "createsprite":
                     return CreateSpriteObject(cmd);
+
+                case "screenshot":
+                    string screenshotPath = @"C:\Users\tyram\.gemini\antigravity-ide\brain\a3193ed2-9ebb-44c8-977f-9e6fbb95b793\unity_review_screenshot.png";
+                    ScreenCapture.CaptureScreenshot(screenshotPath);
+                    return new CommandResponse { status = "success", message = "Screenshot requested.", data = screenshotPath };
 
                 case "buildlevel":
                     return BuildLevelRemainder();

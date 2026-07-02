@@ -142,7 +142,18 @@ public class DojoWaveManager : MonoBehaviour
         {
             if (gate != null)
             {
-                gate.SetActive(active);
+                DojoGateController gateCtrl = gate.GetComponent<DojoGateController>();
+                if (gateCtrl != null)
+                {
+                    if (active)
+                        gateCtrl.CloseGate();
+                    else
+                        gateCtrl.OpenGate();
+                }
+                else
+                {
+                    gate.SetActive(active);
+                }
             }
         }
     }
