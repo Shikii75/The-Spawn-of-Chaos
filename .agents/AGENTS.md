@@ -42,3 +42,21 @@
 
 2. **Combo/Style Feedback (Combo Meter)**:
    - A style counter (displaying D, C, B, A, S ranks) will track player combat hits and spells to reward fluid movement and spellcasting during the wave battles.
+
+### 2D Combat AI Design & Physics Safety
+
+1. **Dynamic Attack Ranges (Avoid Player Pushing)**:
+   - Do not rely solely on hardcoded center-to-center values (e.g. `distance <= attackRange`) to stop moving and start an attack. If the configured range is smaller than the combined widths of the enemy and player colliders, the enemy will collide and physically push the player.
+   - Always calculate an effective range dynamically based on both colliders' bounds:
+     `touchDistance = enemyColliderHalfWidth + playerColliderHalfWidth`
+     `effectiveRange = Mathf.Max(attackRange, touchDistance + buffer)`
+
+2. **Decouple Maneuver Cooldowns**:
+   - Do not share a single cooldown timestamp or timer between distinct movement features (like forward engage dashes and defensive backdashes). Doing so causes one action to lock out the other, ruining hit-and-run AI patterns. Use independent timers for each maneuver.
+
+3. **Chaining State Transitions Directly**:
+   - For tight, sequential actions (like immediately executing a backdash or a quick combo follow-up after an attack), do not rely on high-level state machine polling inside `Update()` or `FixedUpdate()`. Delayed state timers and frame updates can easily miss the window. Instead, chain them sequentially inside the coroutine using `yield return StartCoroutine()`.
+
+4. **Rigidbody2D vs Transform Manipulation**:
+   - Avoid directly modifying `transform.position` on active dynamic Rigidbody2D objects during movement or dashes. This conflicts with Unity's internal physics loop and creates stutter. Use `rb.linearVelocity` (or `rb.velocity`).
+   - If performing wall or ledge safety raycasts at the start of a dash, allow a brief grace period (e.g., 0.1s - 0.15s) before checks become active so the entity has time to begin moving away from its starting grid intersection.
