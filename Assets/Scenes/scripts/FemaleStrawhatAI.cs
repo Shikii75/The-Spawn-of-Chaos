@@ -372,19 +372,19 @@ public class FemaleStrawhatAI : MonoBehaviour, IDamageable
                 }
             }
             rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+        }
+
+        if (currentState == State.Dashing)
+        {
+            // Recovery pause — player's punish window
+            PlayAnimation(IDLE_STATE);
+            currentAnimState = ""; // Force re-play
+
+            yield return new WaitForSeconds(dashRecoveryPause);
 
             if (currentState == State.Dashing)
             {
-                // Recovery pause — player's punish window
-                PlayAnimation(IDLE_STATE);
-                currentAnimState = ""; // Force re-play
-
-                yield return new WaitForSeconds(dashRecoveryPause);
-
-                if (currentState == State.Dashing)
-                {
-                    currentState = State.Chasing;
-                }
+                currentState = State.Chasing;
             }
         }
     }
