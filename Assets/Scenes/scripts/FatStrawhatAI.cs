@@ -3,13 +3,15 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D), typeof(Collider2D))]
-public class FatStrawhatAI : MonoBehaviour
+public class FatStrawhatAI : MonoBehaviour, IDamageable
 {
     public enum State
     {
         Patrolling,
         Chasing,
-        Attacking
+        Attacking,
+        HitStun,
+        Dead
     }
 
     [Header("State")]
@@ -26,16 +28,31 @@ public class FatStrawhatAI : MonoBehaviour
     [Header("Combat Settings")]
     public float detectionRange = 6f;
     public float attackRange = 1.5f;
-    public float attackCooldown = 2f;
+    public float attackCooldown = 1.6f;
     [Tooltip("Chance (0 to 1) that an attack is a Normal Strike. Remainder is Jump Strike.")]
     [Range(0f, 1f)]
-    public float normalStrikeChance = 0.7f;
+    public float normalStrikeChance = 0.6f;
+    public float chargeSpeedMultiplier = 1.5f;
+    public float chargeRangeMin = 3f;
+    public float chargeRangeMax = 5f;
+    public float postAttackVulnerabilityDuration = 0.5f;
+
+    [Header("Health & Damage")]
+    public int maxHealth = 60;
+    [SerializeField] private int currentHealth;
+    public int baseDamage = 4;
+    public float knockbackForce = 3f;
+    public float hitStunDuration = 0.25f;
+    public float heavyStaggerDuration = 0.4f;
+    public float deathLaunchForce = 5f;
+    private SpriteJuice spriteJuice;
 
     // References
     private Animator anim;
     private Rigidbody2D rb;
     private Transform player;
     private Collider2D bodyCollider;
+    private SpriteRenderer spriteRenderer;
 
     // Internal States
     private Vector3 startingPosition;
@@ -44,6 +61,8 @@ public class FatStrawhatAI : MonoBehaviour
     private float waitTimer = 0f;
     private float lastAttackTime = -999f;
     private string currentAnimState = "";
+    private bool isCharging = false;
+    private float chargeTimer = 0f;
 
     // Animator State Names (FatStrawhat controller uses no parameters)
     private const string IDLE_STATE = "FatStrawhat";
@@ -56,6 +75,7 @@ public class FatStrawhatAI : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         bodyCollider = GetComponent<Collider2D>();
         anim = GetComponent<Animator>();
+        spriteRenderer = GetComponentInChildren<SpriteRenderer>();
 
         if (anim == null)
         {
@@ -67,6 +87,9 @@ public class FatStrawhatAI : MonoBehaviour
             rb.constraints = RigidbodyConstraints2D.FreezeRotation;
         }
 
+        currentHealth = maxHealth;
+        spriteJuice = GetComponent<SpriteJuice>();
+
         startingPosition = transform.position;
         FindPlayer();
         PlayAnimation(IDLE_STATE);
@@ -74,15 +97,12 @@ public class FatStrawhatAI : MonoBehaviour
 
     void Update()
     {
-        if (currentState == State.Attacking) return;
+        if (currentState == State.Attacking || currentState == State.Dead || currentState == State.HitStun)
+            return;
 
         if (player == null)
         {
             FindPlayer();
-            if (player != null)
-            {
-                Debug.Log($"[{name}] Player found on Update: {player.name} at position {player.position}");
-            }
         }
 
         // Spot player check
@@ -93,23 +113,22 @@ public class FatStrawhatAI : MonoBehaviour
             {
                 if (currentState != State.Chasing)
                 {
-                    Debug.Log($"[{name}] Player detected! Distance: {distanceToPlayer:F2} (Range: {detectionRange}). Switching to Chasing.");
                     currentState = State.Chasing;
                 }
             }
             else if (currentState == State.Chasing)
             {
-                Debug.Log($"[{name}] Player went out of range! Distance: {distanceToPlayer:F2}. Returning to Patrolling.");
                 // Return to patrolling if player is lost
                 currentState = State.Patrolling;
                 startingPosition = transform.position; // Reset patrol center
+                isCharging = false;
             }
         }
         else if (currentState == State.Chasing)
         {
-            Debug.Log($"[{name}] Player is dead or null. Returning to Patrolling.");
             currentState = State.Patrolling;
             startingPosition = transform.position;
+            isCharging = false;
         }
 
         if (currentState == State.Patrolling && isWaiting)
@@ -124,7 +143,8 @@ public class FatStrawhatAI : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (rb == null || currentState == State.Attacking) return;
+        if (rb == null || currentState == State.Attacking || currentState == State.Dead || currentState == State.HitStun)
+            return;
 
         if (currentState == State.Patrolling)
         {
@@ -169,22 +189,18 @@ public class FatStrawhatAI : MonoBehaviour
         {
             currentState = State.Patrolling;
             startingPosition = transform.position;
+            isCharging = false;
             return;
         }
 
-        float distanceToPlayer = GetDistanceToPlayer();
         float horizontalDist = GetHorizontalDistanceToPlayer();
         float playerDirection = player.position.x > transform.position.x ? 1f : -1f;
 
-        // Temporarily log values to diagnose pushing
-        if (Time.frameCount % 30 == 0) // Log once every 30 frames to avoid spamming
-        {
-            Debug.Log($"[{name}] HorizontalDist: {horizontalDist:F2}, EffRange: {GetEffectiveAttackRange():F2}, EnemyHalfWidth: {GetHalfWidth():F2}");
-        }
-
+        // 1. Attack Range — stop and swing
         if (horizontalDist <= GetEffectiveAttackRange())
         {
             rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+            isCharging = false;
             if (Time.time >= lastAttackTime + attackCooldown)
             {
                 StartCoroutine(PerformAttackRoutine());
@@ -197,8 +213,33 @@ public class FatStrawhatAI : MonoBehaviour
             return;
         }
 
+        // 2. Charge Walk — menacing approach at 1.5x speed when 3–5 units away
+        float currentMoveSpeed = moveSpeed;
+        if (horizontalDist >= chargeRangeMin && horizontalDist <= chargeRangeMax)
+        {
+            if (!isCharging)
+            {
+                isCharging = true;
+                chargeTimer = 1.0f; // charge for 1 second
+            }
+
+            if (chargeTimer > 0f)
+            {
+                currentMoveSpeed = moveSpeed * chargeSpeedMultiplier;
+                chargeTimer -= Time.fixedDeltaTime;
+            }
+            else
+            {
+                isCharging = false;
+            }
+        }
+        else
+        {
+            isCharging = false;
+        }
+
         // Walk towards player
-        rb.linearVelocity = new Vector2(playerDirection * moveSpeed, rb.linearVelocity.y);
+        rb.linearVelocity = new Vector2(playerDirection * currentMoveSpeed, rb.linearVelocity.y);
         PlayAnimation(WALK_STATE);
         FlipSprite(playerDirection);
     }
@@ -212,7 +253,16 @@ public class FatStrawhatAI : MonoBehaviour
         FlipSprite(playerDirection);
 
         // Weighted random choice for attack variation
-        bool useNormalStrike = Random.value < normalStrikeChance;
+        // If very close, bias toward jump strike for a punishing slam
+        float effectiveRange = GetEffectiveAttackRange();
+        float dist = GetHorizontalDistanceToPlayer();
+        float strikeChance = normalStrikeChance;
+        if (dist < effectiveRange * 0.8f)
+        {
+            strikeChance = 0.4f; // More likely to jump strike when right on top of player
+        }
+
+        bool useNormalStrike = Random.value < strikeChance;
         string attackState = useNormalStrike ? NORMAL_STRIKE_STATE : JUMP_STRIKE_STATE;
 
         PlayAnimation(attackState);
@@ -226,12 +276,44 @@ public class FatStrawhatAI : MonoBehaviour
             animLength = anim.GetCurrentAnimatorStateInfo(0).length;
         }
 
-        yield return new WaitForSeconds(animLength);
+        // Wait until the strike impact point
+        float damageDelay = useNormalStrike ? 0.35f : 0.45f;
+        damageDelay = Mathf.Min(damageDelay, animLength * 0.8f);
 
-        // Return to Idle to guarantee animation does not loop
+        yield return new WaitForSeconds(damageDelay);
+
+        // Check range and apply damage to the player
+        if (player != null && !IsPlayerDead())
+        {
+            float finalRange = GetEffectiveAttackRange() + 0.5f;
+            if (GetHorizontalDistanceToPlayer() <= finalRange)
+            {
+                Health playerHealth = player.GetComponent<Health>();
+                if (playerHealth == null) playerHealth = player.GetComponentInParent<Health>();
+                if (playerHealth != null)
+                {
+                    int dmg = useNormalStrike ? baseDamage : Mathf.RoundToInt(baseDamage * 1.5f);
+                    playerHealth.TakeDamage(dmg);
+                }
+            }
+        }
+
+        float remainingTime = animLength - damageDelay;
+        if (remainingTime > 0f)
+        {
+            yield return new WaitForSeconds(remainingTime);
+        }
+
+        // Post-attack vulnerability window — idle pause where player can punish
         PlayAnimation(IDLE_STATE);
         lastAttackTime = Time.time;
-        currentState = State.Chasing;
+
+        yield return new WaitForSeconds(postAttackVulnerabilityDuration);
+
+        if (currentState == State.Attacking)
+        {
+            currentState = State.Chasing;
+        }
     }
 
     private void FindPlayer()
@@ -342,5 +424,94 @@ public class FatStrawhatAI : MonoBehaviour
             if (col != null) center = col.bounds.center;
         }
         Gizmos.DrawWireSphere(center, GetEffectiveAttackRange());
+    }
+
+    // ── IDamageable ──────────────────────────────────────────────────
+
+    public void TakeDamage(int damage)
+    {
+        if (currentHealth <= 0 || currentState == State.Dead) return;
+
+        currentHealth -= damage;
+        currentHealth = Mathf.Max(currentHealth, 0);
+
+        // Interrupt whatever he's doing — rewards the player for landing hits
+        StopAllCoroutines();
+
+        // SpriteJuice visual feedback (flash + shake + knockback)
+        if (spriteJuice != null)
+        {
+            Vector2 hitDir = player != null ? (Vector2)(transform.position - player.position).normalized : Vector2.right;
+            spriteJuice.PlayHitReaction(hitDir, knockbackForce);
+        }
+
+        if (currentHealth <= 0)
+        {
+            StartCoroutine(DieRoutine());
+        }
+        else
+        {
+            // Heavy stagger when below 30% HP for dramatic feel
+            bool heavyStagger = currentHealth < maxHealth * 0.3f;
+            StartCoroutine(HitStunRoutine(heavyStagger ? heavyStaggerDuration : hitStunDuration));
+        }
+    }
+
+    private IEnumerator HitStunRoutine(float duration)
+    {
+        currentState = State.HitStun;
+        rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+        PlayAnimation(IDLE_STATE);
+        currentAnimState = ""; // Force re-play on next state change
+
+        yield return new WaitForSeconds(duration);
+
+        if (currentState == State.HitStun)
+        {
+            currentState = State.Chasing;
+        }
+    }
+
+    private IEnumerator DieRoutine()
+    {
+        currentState = State.Dead;
+
+        // Disable collider immediately to prevent ghost interactions
+        if (bodyCollider != null) bodyCollider.enabled = false;
+
+        PlayAnimation(IDLE_STATE);
+        currentAnimState = "";
+
+        // Dramatic upward + backward launch
+        if (rb != null)
+        {
+            rb.isKinematic = false;
+            Vector2 launchDir = player != null
+                ? (Vector2)(transform.position - player.position).normalized
+                : Vector2.right;
+            rb.linearVelocity = Vector2.zero;
+            rb.AddForce(new Vector2(launchDir.x * deathLaunchForce, deathLaunchForce * 1.2f), ForceMode2D.Impulse);
+        }
+
+        // Fade out the sprite over the death delay
+        float fadeDelay = 1.2f;
+        float elapsed = 0f;
+        while (elapsed < fadeDelay)
+        {
+            elapsed += Time.unscaledDeltaTime;
+
+            // Fade sprite alpha in the last 0.5s
+            if (spriteRenderer != null && elapsed > fadeDelay - 0.5f)
+            {
+                float fadeT = (elapsed - (fadeDelay - 0.5f)) / 0.5f;
+                Color c = spriteRenderer.color;
+                c.a = Mathf.Lerp(1f, 0f, fadeT);
+                spriteRenderer.color = c;
+            }
+
+            yield return null;
+        }
+
+        Destroy(gameObject);
     }
 }

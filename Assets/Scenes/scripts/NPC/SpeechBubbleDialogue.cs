@@ -446,9 +446,9 @@ public class SpeechBubbleDialogue : MonoBehaviour
         return go;
     }
 
-    /// <summary>Returns Unity's built-in 9-slice rounded-rect sprite.</summary>
+    /// <summary>Returns dynamic 9-slice rounded-rect sprite from UIFactory.</summary>
     private static Sprite GetRoundedSprite()
-        => Resources.GetBuiltinResource<Sprite>("UI/Skin/UISprite.psd");
+        => UIFactory.GetRoundedSprite();
 
     /// <summary>Generates a crisp circle sprite from pixels at runtime.</summary>
     private static Sprite MakeCircleSprite(int size)

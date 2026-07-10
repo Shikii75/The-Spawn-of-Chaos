@@ -54,7 +54,7 @@ public class NyxarisUIStyler : MonoBehaviour
     [Tooltip("Height of the bottom dialogue panel in pixels")]
     public float panelHeight = 260f;
 
-    [Header("Portrait – LEFT side")]
+    [Header("Portrait – RIGHT side")]
     [Tooltip("Portrait width in pixels (reference 1920×1080)")]
     public float portraitWidth  = 520f;
     [Tooltip("Portrait height in pixels")]

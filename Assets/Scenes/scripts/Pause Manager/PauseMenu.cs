@@ -4,9 +4,9 @@ using UnityEngine.SceneManagement;
 using TMPro;
 
 /// <summary>
-/// Pause menu that builds a small, centered pause box with styled buttons.
-/// Triggered by the "P" key or Escape.
-/// Canvas sort order 10 keeps it above other game UI.
+/// Pause menu with a dark fantasy / arcane aesthetic — soft glowing frames,
+/// mystical orbs, arcane rune patterns, and flowing violet energy.
+/// Triggered by P or Escape.
 /// </summary>
 public class PauseMenu : MonoBehaviour
 {
@@ -19,8 +19,24 @@ public class PauseMenu : MonoBehaviour
     /// </summary>
     public string menuSceneName = "MainMenu";
 
-    // ── Private UI references (built from code) ──
+    // ── Palette: void black + arcane violet + neon purple ──
+    private static readonly Color VoidOverlay       = new Color(0.03f, 0.01f, 0.07f, 0.90f);
+    private static readonly Color NeonPurple        = new Color(0.78f, 0.18f, 1f, 1f);
+    private static readonly Color NeonPurpleDim     = new Color(0.78f, 0.18f, 1f, 0.40f);
+    private static readonly Color ArcaneViolet      = new Color(0.50f, 0.30f, 0.90f, 1f);
+    private static readonly Color ArcaneVioletDim   = new Color(0.50f, 0.30f, 0.90f, 0.35f);
+    private static readonly Color DeepVoid          = new Color(0.04f, 0.02f, 0.10f, 0.95f);
+    private static readonly Color PanelInner        = new Color(0.06f, 0.03f, 0.14f, 0.93f);
+    private static readonly Color FrameGlow         = new Color(0.65f, 0.20f, 0.95f, 0.70f);
+    private static readonly Color FrameInner        = new Color(0.40f, 0.15f, 0.75f, 0.55f);
+
     private GameObject pauseOverlay;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatic()
+    {
+        Instance = null;
+    }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void AutoCreate()
@@ -37,27 +53,46 @@ public class PauseMenu : MonoBehaviour
     {
         Instance = this;
         BuildUI();
+        Time.timeScale = 1f;
+    }
+
+    void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        isPaused = false;
+        if (pauseOverlay != null)
+        {
+            pauseOverlay.SetActive(false);
+        }
+        Time.timeScale = 1f;
     }
 
     void Update()
     {
+        if (SceneManager.GetActiveScene().name == menuSceneName)
+        {
+            return;
+        }
+
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            // If any UI is active and can consume Escape, return early
             if (NyxarisManager.Instance != null && NyxarisManager.Instance.mainInterfacePanel != null && NyxarisManager.Instance.mainInterfacePanel.activeSelf)
-            {
                 return;
-            }
 
             if (ShopUI.Instance != null && ShopUI.Instance.IsShopActive)
-            {
                 return;
-            }
 
             if (NPCDialogueUI.Instance != null && NPCDialogueUI.Instance.IsDialogueActive)
-            {
                 return;
-            }
         }
 
         if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.P))
@@ -70,256 +105,322 @@ public class PauseMenu : MonoBehaviour
 
     private void BuildUI()
     {
-        // Canvas at sort order 10, above all other game UI
         Canvas canvas = UIFactory.CreateCanvas("PauseCanvas", 10);
         canvas.transform.SetParent(transform, false);
 
-        // Adjust CanvasScaler to match height (1.0f) to prevent vertical layout overflow
         CanvasScaler scaler = canvas.GetComponent<CanvasScaler>();
         if (scaler != null)
-        {
             scaler.matchWidthOrHeight = 1.0f;
-        }
 
-        // Full-screen dark semi-transparent overlay
+        // ── Layer 0: void overlay ──
         RectTransform overlayRT = UIFactory.CreateFullScreenPanel(
-            canvas.transform, "PauseOverlay", new Color(0f, 0f, 0f, 0.6f));
+            canvas.transform, "PauseOverlay", VoidOverlay);
         pauseOverlay = overlayRT.gameObject;
 
-        // The smaller box for the pause menu itself
-        RectTransform panelRT = UIFactory.CreatePanel(
-            overlayRT, "PauseBox", 
-            new Color(0.10f, 0.06f, 0.22f, 0.98f), // Dark gothic purple
+        // ── Layer 1: radial vignette (deep purple tinted) ──
+        Sprite vignetteSprite = CreateVignetteSprite(512, 512);
+        RectTransform vignetteRT = UIFactory.CreatePanel(
+            overlayRT, "Vignette", Color.white,
+            Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        Image vignetteImg = vignetteRT.GetComponent<Image>();
+        vignetteImg.sprite = vignetteSprite;
+        vignetteImg.raycastTarget = false;
+        vignetteImg.color = new Color(0.05f, 0.01f, 0.10f, 0.88f);
+
+        // ── Layer 2: arcane rune pattern (subtle tiled background) ──
+        Sprite runeSprite = CreateRunePatternSprite(64, 64);
+        RectTransform runeRT = UIFactory.CreatePanel(
+            overlayRT, "RunePattern", Color.white,
+            Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        Image runeImg = runeRT.GetComponent<Image>();
+        runeImg.sprite = runeSprite;
+        runeImg.type = Image.Type.Tiled;
+        runeImg.raycastTarget = false;
+        runeImg.color = new Color(0.65f, 0.20f, 0.95f, 0.035f);
+
+        // ── Layer 3: floating orb field (expanded area) ──
+        RectTransform orbFieldRT = UIFactory.CreatePanel(
+            overlayRT, "OrbField", Color.clear,
+            Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        orbFieldRT.GetComponent<Image>().raycastTarget = false;
+
+        // ── Layer 4: outer mystic glow (soft rounded) ──
+        Sprite roundedSprite = CreateRoundedFrameSprite(128, 128, 24);
+        RectTransform glowRT = UIFactory.CreatePanel(
+            overlayRT, "PauseGlow",
+            new Color(0.65f, 0.12f, 1f, 0.10f),
             new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
-        panelRT.sizeDelta = new Vector2(500f, 620f);
-        
-        // Add rounded corners to the box
+        glowRT.sizeDelta = new Vector2(620f, 720f);
+        Image glowImg = glowRT.GetComponent<Image>();
+        glowImg.sprite = roundedSprite;
+        glowImg.type = Image.Type.Sliced;
+        glowImg.raycastTarget = false;
+
+        // ── Layer 5: main panel (rounded, dark) ──
+        RectTransform panelRT = UIFactory.CreatePanel(
+            overlayRT, "PausePanel", DeepVoid,
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
+        panelRT.sizeDelta = new Vector2(560f, 680f);
+
         Image panelImg = panelRT.GetComponent<Image>();
-        Sprite roundedSprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/UISprite.psd");
-        if (roundedSprite != null)
-        {
-            panelImg.sprite = roundedSprite;
-            panelImg.type = Image.Type.Sliced;
-        }
+        panelImg.sprite = roundedSprite;
+        panelImg.type = Image.Type.Sliced;
 
-        // Add an outline border to the box
-        Outline outline = panelRT.gameObject.AddComponent<Outline>();
-        outline.effectColor = new Color(146f / 255f, 104f / 255f, 255f / 255f, 0.8f);
-        outline.effectDistance = new Vector2(3f, -3f);
+        // ── Soft outer border glow ──
+        RectTransform borderGlowRT = UIFactory.CreatePanel(
+            panelRT, "BorderGlow", Color.clear,
+            Vector2.zero, Vector2.one,
+            new Vector2(-3f, -3f), new Vector2(3f, 3f));
+        Image borderGlowImg = borderGlowRT.GetComponent<Image>();
+        borderGlowImg.sprite = roundedSprite;
+        borderGlowImg.type = Image.Type.Sliced;
+        borderGlowImg.color = FrameGlow;
 
-        // Vertical layout for centered content inside the small box
-        VerticalLayoutGroup vlg = UIFactory.AddVerticalLayout(panelRT.gameObject, 14f,
-            new RectOffset(30, 30, 36, 36), TextAnchor.UpperCenter);
+        // ── Inner border ring ──
+        RectTransform borderInnerRT = UIFactory.CreatePanel(
+            panelRT, "BorderInner", Color.clear,
+            Vector2.zero, Vector2.one,
+            new Vector2(2f, 2f), new Vector2(-2f, -2f));
+        Image borderInnerImg = borderInnerRT.GetComponent<Image>();
+        borderInnerImg.sprite = roundedSprite;
+        borderInnerImg.type = Image.Type.Sliced;
+        borderInnerImg.color = FrameInner;
+
+        // ── Inner fill ──
+        RectTransform innerRT = UIFactory.CreatePanel(
+            panelRT, "PanelInner", PanelInner,
+            Vector2.zero, Vector2.one,
+            new Vector2(5f, 5f), new Vector2(-5f, -5f));
+        Image innerImg = innerRT.GetComponent<Image>();
+        innerImg.sprite = roundedSprite;
+        innerImg.type = Image.Type.Sliced;
+
+        // ── Top mystic glow wash ──
+        RectTransform topGlowRT = UIFactory.CreatePanel(
+            innerRT, "TopGlow",
+            new Color(0.60f, 0.15f, 0.95f, 0.06f),
+            new Vector2(0f, 0.75f), new Vector2(1f, 1f),
+            new Vector2(16f, 0f), new Vector2(-16f, -8f));
+        Image topGlowImg = topGlowRT.GetComponent<Image>();
+        topGlowImg.sprite = roundedSprite;
+        topGlowImg.type = Image.Type.Sliced;
+        topGlowImg.raycastTarget = false;
+
+        // ── Content layout ──
+        VerticalLayoutGroup vlg = UIFactory.AddVerticalLayout(panelRT.gameObject, 10f,
+            new RectOffset(36, 36, 44, 36), TextAnchor.UpperCenter);
         vlg.childControlWidth = false;
         vlg.childForceExpandWidth = false;
         vlg.childForceExpandHeight = false;
 
-        // ── PAUSED title ──
+        // ── Ornament above title (arcane symbols) ──
+        TextMeshProUGUI topOrnament = UIFactory.CreateText(
+            panelRT, "TopOrnament", "⁕ ── ✦ ── ⁕",
+            16f, NeonPurpleDim, TextAlignmentOptions.Center);
+        topOrnament.characterSpacing = 6f;
+        UIFactory.AddLayoutElement(topOrnament.gameObject, preferredHeight: 28f, preferredWidth: 480f);
+
+        // ── Title ──
         TextMeshProUGUI titleText = UIFactory.CreateText(
             panelRT, "PausedTitle", "PAUSED",
-            64f, UIFactory.TextWhite, TextAlignmentOptions.Center);
+            72f, UIFactory.TextWhite, TextAlignmentOptions.Center);
         titleText.fontStyle = FontStyles.Bold;
-        titleText.characterSpacing = 12f;
-        UIFactory.AddLayoutElement(titleText.gameObject, preferredHeight: 85f, preferredWidth: 440f);
+        titleText.characterSpacing = 18f;
+        titleText.outlineColor = new Color32(170, 40, 255, 180);
+        titleText.outlineWidth = 0.30f;
+        UIFactory.AddLayoutElement(titleText.gameObject, preferredHeight: 90f, preferredWidth: 480f);
 
-        // Decorative Separator
-        RectTransform topDiv = UIFactory.CreateDivider(panelRT, "MenuTopDivider");
-        topDiv.sizeDelta = new Vector2(360f, 3f);
-        Image topDivImg = topDiv.GetComponent<Image>();
-        if (topDivImg != null) topDivImg.color = new Color(146f / 255f, 104f / 255f, 255f / 255f, 0.8f);
-        UIFactory.AddLayoutElement(topDiv.gameObject, preferredHeight: 3f, preferredWidth: 360f);
+        // ── Subtitle (dark fantasy) ──
+        TextMeshProUGUI subtitleText = UIFactory.CreateText(
+            panelRT, "Subtitle", "✧  TIME STANDS STILL  ✧",
+            18f, ArcaneVioletDim, TextAlignmentOptions.Center);
+        subtitleText.fontStyle = FontStyles.Italic;
+        subtitleText.characterSpacing = 3f;
+        UIFactory.AddLayoutElement(subtitleText.gameObject, preferredHeight: 30f, preferredWidth: 480f);
+
+        // ── Arcane divider ──
+        CreateArcaneDivider(panelRT, "TitleDivider");
 
         // Spacer
         RectTransform spacer = UIFactory.CreatePanel(panelRT, "Spacer", Color.clear,
             Vector2.zero, Vector2.zero);
-        UIFactory.AddLayoutElement(spacer.gameObject, preferredHeight: 16f, preferredWidth: 10f);
+        UIFactory.AddLayoutElement(spacer.gameObject, preferredHeight: 12f, preferredWidth: 10f);
 
-        // ── Load Sprites (Editor only for auto-pickup) ──
-        Sprite resumeSprite = null;
-        Sprite restartSprite = null;
-        Sprite quitSprite = null;
+        // ── Buttons ──
+        Vector2 buttonSize = new Vector2(420f, 72f);
 
-#if UNITY_EDITOR
-        resumeSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Scenes/art/pause_resume.png");
-        restartSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Scenes/art/pause_restart.png");
-        quitSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Scenes/art/pause_quit.png");
-#endif
-
-        // Also try loading from Resources as a fallback for builds
-        if (resumeSprite == null)  resumeSprite  = Resources.Load<Sprite>("pause_resume");
-        if (restartSprite == null) restartSprite = Resources.Load<Sprite>("pause_restart");
-        if (quitSprite == null)    quitSprite    = Resources.Load<Sprite>("pause_quit");
-
-        Vector2 buttonSize = new Vector2(400f, 120f); // Bigger size for the gothic bat-wing buttons
-
-        // ── RESUME button ──
-        Button resumeBtn;
-        if (resumeSprite != null)
-        {
-            resumeBtn = CreateImageButton(panelRT, "ResumeButton", resumeSprite, buttonSize, () => ResumeGame());
-        }
-        else
-        {
-            resumeBtn = CreateCustomButton(panelRT, "ResumeButton", "RESUME", 32f, new Vector2(340f, 70f), () => ResumeGame());
-        }
+        Button resumeBtn = CreateArcaneButton(panelRT, "ResumeButton", "RESUME", "▶", 28f, buttonSize, () => ResumeGame());
         UIFactory.AddLayoutElement(resumeBtn.gameObject, preferredWidth: buttonSize.x, preferredHeight: buttonSize.y);
 
-        // ── RESTART LEVEL button ──
-        Button restartBtn;
-        if (restartSprite != null)
-        {
-            restartBtn = CreateImageButton(panelRT, "RestartButton", restartSprite, buttonSize, () => RestartLevel());
-        }
-        else
-        {
-            restartBtn = CreateCustomButton(panelRT, "RestartButton", "RESTART", 32f, new Vector2(340f, 70f), () => RestartLevel());
-        }
+        Button restartBtn = CreateArcaneButton(panelRT, "RestartButton", "RESTART", "↻", 28f, buttonSize, () => RestartLevel());
         UIFactory.AddLayoutElement(restartBtn.gameObject, preferredWidth: buttonSize.x, preferredHeight: buttonSize.y);
 
-        // ── QUIT TO MENU button ──
-        Button quitBtn;
-        if (quitSprite != null)
-        {
-            quitBtn = CreateImageButton(panelRT, "QuitButton", quitSprite, buttonSize, () => QuitToMenu(menuSceneName));
-        }
-        else
-        {
-            quitBtn = CreateCustomButton(panelRT, "QuitButton", "QUIT", 32f, new Vector2(340f, 70f), () => QuitToMenu(menuSceneName));
-        }
+        Button quitBtn = CreateArcaneButton(panelRT, "QuitButton", "QUIT TO MENU", "⏻", 26f, buttonSize, () => QuitToMenu(menuSceneName));
         UIFactory.AddLayoutElement(quitBtn.gameObject, preferredWidth: buttonSize.x, preferredHeight: buttonSize.y);
 
-        // Start hidden
+        // Spacer
+        RectTransform spacer2 = UIFactory.CreatePanel(panelRT, "Spacer2", Color.clear,
+            Vector2.zero, Vector2.zero);
+        UIFactory.AddLayoutElement(spacer2.gameObject, preferredHeight: 8f, preferredWidth: 10f);
+
+        // ── Bottom divider + hint ──
+        CreateArcaneDivider(panelRT, "BottomDivider");
+
+        TextMeshProUGUI hintText = UIFactory.CreateText(
+            panelRT, "Hint", "ESC  ·  P  —  RESUME",
+            14f, new Color(0.55f, 0.35f, 0.75f, 0.65f), TextAlignmentOptions.Center);
+        hintText.characterSpacing = 4f;
+        UIFactory.AddLayoutElement(hintText.gameObject, preferredHeight: 24f, preferredWidth: 480f);
+
+        // ── Ambient animation driver ──
+        PauseMenuAmbientFX ambientFX = pauseOverlay.AddComponent<PauseMenuAmbientFX>();
+        ambientFX.Initialize(glowImg, orbFieldRT, glowImg.color);
+
         pauseOverlay.SetActive(false);
     }
 
-    // ── Button Generation Helpers ──
+    // ── Decorative Elements ────────────────────────────────────────
 
-    private Button CreateImageButton(Transform parent, string name, Sprite buttonSprite, Vector2 size, UnityEngine.Events.UnityAction onClick)
+    private void CreateArcaneDivider(Transform parent, string name)
     {
-        // 1. Create Container (invisible, captures clicks)
-        RectTransform containerRT = UIFactory.CreatePanel(
-            parent, name + "_Container", 
-            Color.clear,
-            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f)
-        );
-        containerRT.sizeDelta = size;
+        RectTransform rowRT = UIFactory.CreatePanel(
+            parent, name, Color.clear,
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
+        rowRT.sizeDelta = new Vector2(400f, 16f);
+        UIFactory.AddLayoutElement(rowRT.gameObject, preferredHeight: 16f, preferredWidth: 400f);
 
-        // 2. Create Glow Underlay (slightly larger, starts fully transparent)
-        RectTransform glowRT = UIFactory.CreatePanel(
-            containerRT, name + "_Glow", 
-            Color.clear,
-            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f)
-        );
-        glowRT.sizeDelta = size * 1.15f; 
-        Image glowImg = glowRT.gameObject.GetComponent<Image>();
-        glowImg.sprite = buttonSprite;
-        glowImg.color = new Color(0.8f, 0.4f, 1f, 0f); // Bright violet/purple glow
-        glowImg.preserveAspect = true;
+        HorizontalLayoutGroup hlg = UIFactory.AddHorizontalLayout(rowRT.gameObject, 0f,
+            new RectOffset(0, 0, 0, 0), TextAnchor.MiddleCenter);
+        hlg.childControlWidth = false;
+        hlg.childForceExpandWidth = false;
 
-        // 3. Create Button Image
-        RectTransform buttonRT = UIFactory.CreatePanel(
-            containerRT, name + "_Image", 
-            Color.white,
-            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f)
-        );
-        buttonRT.sizeDelta = size;
-        Image buttonImg = buttonRT.gameObject.GetComponent<Image>();
-        buttonImg.sprite = buttonSprite;
-        buttonImg.preserveAspect = true;
-
-        // 4. Add Button component to container
-        Button btn = containerRT.gameObject.AddComponent<Button>();
-        btn.targetGraphic = buttonImg;
-
-        ColorBlock cb = btn.colors;
-        cb.normalColor = new Color(0.9f, 0.9f, 0.9f, 1f);
-        cb.highlightedColor = Color.white;
-        cb.pressedColor = new Color(0.8f, 0.8f, 0.8f, 1f);
-        cb.disabledColor = new Color(0.5f, 0.5f, 0.5f, 0.5f);
-        cb.colorMultiplier = 1.1f;
-        cb.fadeDuration = 0.1f;
-        btn.colors = cb;
-
-        if (onClick != null)
-        {
-            btn.onClick.AddListener(onClick);
-        }
-
-        // 5. Add custom Hover/Scale/Glow effect script (from MainMenuController.cs)
-        ImageButtonEffects fx = containerRT.gameObject.AddComponent<ImageButtonEffects>();
-        fx.Initialize(buttonImg, glowImg);
-
-        return btn;
+        // Left fade line
+        CreateDividerSegment(rowRT, 140f, new Color(0.65f, 0.20f, 0.95f, 0.50f));
+        // Left small orb
+        CreateDividerOrb(rowRT, 6f, NeonPurpleDim);
+        // Center line
+        CreateDividerSegment(rowRT, 60f, new Color(0.50f, 0.15f, 0.85f, 0.65f));
+        // Center orb (larger, brighter)
+        CreateDividerOrb(rowRT, 10f, NeonPurple);
+        // Right line
+        CreateDividerSegment(rowRT, 60f, new Color(0.50f, 0.15f, 0.85f, 0.65f));
+        // Right small orb
+        CreateDividerOrb(rowRT, 6f, NeonPurpleDim);
+        // Right fade line
+        CreateDividerSegment(rowRT, 140f, new Color(0.65f, 0.20f, 0.95f, 0.50f));
     }
 
-    private Button CreateCustomButton(Transform parent, string name, string label, float fontSize, Vector2 size, UnityEngine.Events.UnityAction onClick)
+    private void CreateDividerSegment(Transform parent, float width, Color color)
     {
-        Sprite roundedSprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/UISprite.psd");
+        RectTransform segRT = UIFactory.CreatePanel(
+            parent, "Seg", color,
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
+        segRT.sizeDelta = new Vector2(width, 1.5f);
+        segRT.GetComponent<Image>().raycastTarget = false;
+        UIFactory.AddLayoutElement(segRT.gameObject, preferredWidth: width, preferredHeight: 2f);
+    }
 
-        // 1. Create Border Container
-        RectTransform borderRT = UIFactory.CreatePanel(
-            parent, name + "_Border", 
-            UIFactory.BorderColor, 
-            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f)
-        );
-        borderRT.sizeDelta = size;
-        
-        Image borderImg = borderRT.GetComponent<Image>();
-        if (roundedSprite != null)
-        {
-            borderImg.sprite = roundedSprite;
-            borderImg.type = Image.Type.Sliced;
-        }
-        borderImg.color = new Color(146f / 255f, 104f / 255f, 255f / 255f, 0.65f);
+    private void CreateDividerOrb(Transform parent, float size, Color color)
+    {
+        Sprite orbSprite = CreateOrbSprite(32);
+        RectTransform orbRT = UIFactory.CreatePanel(
+            parent, "DivOrb", Color.white,
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
+        orbRT.sizeDelta = new Vector2(size, size);
+        Image orbImg = orbRT.GetComponent<Image>();
+        orbImg.sprite = orbSprite;
+        orbImg.color = color;
+        orbImg.raycastTarget = false;
+        UIFactory.AddLayoutElement(orbRT.gameObject, preferredWidth: size + 6f, preferredHeight: size);
+    }
 
-        // 2. Create Inner Background
-        RectTransform innerRT = UIFactory.CreatePanel(
-            borderRT, name + "_Bg", 
-            new Color(0.08f, 0.04f, 0.18f, 0.94f),
+    // ── Arcane Button ──────────────────────────────────────────────
+
+    private Button CreateArcaneButton(Transform parent, string name, string label, string icon,
+        float fontSize, Vector2 size, UnityEngine.Events.UnityAction onClick)
+    {
+        Sprite roundedSprite = CreateRoundedFrameSprite(64, 64, 14);
+
+        RectTransform containerRT = UIFactory.CreatePanel(
+            parent, name, Color.clear,
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
+        containerRT.sizeDelta = size;
+
+        // Glow underlay
+        RectTransform glowRT = UIFactory.CreatePanel(
+            containerRT, name + "_Glow", Color.clear,
             Vector2.zero, Vector2.one,
-            new Vector2(3f, 3f), new Vector2(-3f, -3f)
-        );
+            new Vector2(-4f, -4f), new Vector2(4f, 4f));
+        Image glowImg = glowRT.GetComponent<Image>();
+        glowImg.sprite = roundedSprite;
+        glowImg.type = Image.Type.Sliced;
+        glowImg.color = new Color(0.65f, 0.12f, 1f, 0f);
+        glowImg.raycastTarget = false;
 
+        // Border
+        RectTransform borderRT = UIFactory.CreatePanel(
+            containerRT, name + "_Border", FrameGlow,
+            Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        Image borderImg = borderRT.GetComponent<Image>();
+        borderImg.sprite = roundedSprite;
+        borderImg.type = Image.Type.Sliced;
+
+        // Inner bg
+        RectTransform innerRT = UIFactory.CreatePanel(
+            borderRT, name + "_Bg", new Color(0.06f, 0.03f, 0.14f, 0.94f),
+            Vector2.zero, Vector2.one,
+            new Vector2(2f, 2f), new Vector2(-2f, -2f));
         Image innerImg = innerRT.GetComponent<Image>();
-        if (roundedSprite != null)
-        {
-            innerImg.sprite = roundedSprite;
-            innerImg.type = Image.Type.Sliced;
-        }
-        innerImg.color = new Color(0.10f, 0.06f, 0.22f, 0.96f);
+        innerImg.sprite = roundedSprite;
+        innerImg.type = Image.Type.Sliced;
 
-        // 3. Add Button component
-        Button btn = borderRT.gameObject.AddComponent<Button>();
+        // Left accent — soft glow bar instead of hard stripe
+        RectTransform accentRT = UIFactory.CreatePanel(
+            innerRT, "AccentGlow",
+            new Color(0.65f, 0.15f, 0.95f, 0.15f),
+            new Vector2(0f, 0f), new Vector2(0f, 1f),
+            new Vector2(4f, 6f), new Vector2(12f, -6f));
+        Image accentImg = accentRT.GetComponent<Image>();
+        accentImg.sprite = CreateOrbSprite(16);
+        accentImg.raycastTarget = false;
+
+        Button btn = containerRT.gameObject.AddComponent<Button>();
         btn.targetGraphic = innerImg;
-        
+
         ColorBlock cb = btn.colors;
-        cb.normalColor = new Color(0.12f, 0.08f, 0.25f, 0.92f);
-        cb.highlightedColor = new Color(0.45f, 0.28f, 1f, 0.95f);
-        cb.pressedColor = new Color(0.28f, 0.16f, 0.78f, 0.95f);
-        cb.disabledColor = new Color(0.18f, 0.14f, 0.22f, 0.45f);
-        cb.colorMultiplier = 1.1f;
-        cb.fadeDuration = 0.12f;
+        cb.normalColor = new Color(0.07f, 0.04f, 0.15f, 0.94f);
+        cb.highlightedColor = new Color(0.12f, 0.07f, 0.25f, 0.98f);
+        cb.pressedColor = new Color(0.08f, 0.04f, 0.18f, 0.98f);
+        cb.disabledColor = new Color(0.12f, 0.10f, 0.16f, 0.45f);
+        cb.colorMultiplier = 1f;
+        cb.fadeDuration = 0.08f;
         btn.colors = cb;
 
         if (onClick != null)
-        {
             btn.onClick.AddListener(onClick);
-        }
 
-        // 4. Add Text Label
+        // Icon
+        TextMeshProUGUI iconText = UIFactory.CreateText(
+            innerRT, "Icon", icon,
+            fontSize + 4f, NeonPurple, TextAlignmentOptions.Center);
+        UIFactory.SetRect(iconText.rectTransform,
+            new Vector2(0f, 0f), new Vector2(0f, 1f),
+            new Vector2(14f, 0f), new Vector2(54f, 0f));
+
+        // Label
         TextMeshProUGUI text = UIFactory.CreateText(
             innerRT, "Label", label,
-            fontSize, UIFactory.TextWhite, TextAlignmentOptions.Center
-        );
-        UIFactory.SetRect(text.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            fontSize, UIFactory.TextWhite, TextAlignmentOptions.Left);
+        UIFactory.SetRect(text.rectTransform,
+            new Vector2(0f, 0f), Vector2.one,
+            new Vector2(58f, 0f), new Vector2(-12f, 0f));
         text.fontStyle = FontStyles.Bold;
-        text.characterSpacing = 4f;
-        text.outlineColor = new Color(0f, 0f, 0f, 0.78f);
-        text.outlineWidth = 0.24f;
+        text.characterSpacing = 5f;
+        text.outlineColor = new Color(0.03f, 0f, 0.06f, 0.65f);
+        text.outlineWidth = 0.2f;
 
-        // 5. Add Custom Hover/Scale Script (from MainMenuController.cs)
-        MenuButtonEffects fx = borderRT.gameObject.AddComponent<MenuButtonEffects>();
-        fx.Initialize(text, innerImg, borderImg);
+        ArcaneButtonEffects fx = containerRT.gameObject.AddComponent<ArcaneButtonEffects>();
+        fx.Initialize(text, innerImg, borderImg, glowImg);
 
         return btn;
     }
@@ -349,7 +450,7 @@ public class PauseMenu : MonoBehaviour
     public void QuitToMenu(string menuSceneName)
     {
         Time.timeScale = 1f;
-        MainMenuController.isPlaying = false; // Reset play state so menu shows on reload
+        MainMenuController.isPlaying = false;
 
         if (Application.CanStreamedLevelBeLoaded(menuSceneName))
         {
@@ -357,8 +458,333 @@ public class PauseMenu : MonoBehaviour
         }
         else
         {
-            // If the menu scene doesn't exist, reload the current scene to go back to the start and show the menu
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
+    }
+
+    // ── Procedural Textures ────────────────────────────────────────
+
+    /// <summary>Rounded rectangle frame — 9-slice ready, soft edges.</summary>
+    private static Sprite CreateRoundedFrameSprite(int width, int height, int radius)
+    {
+        Texture2D tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Bilinear;
+        tex.wrapMode = TextureWrapMode.Clamp;
+
+        Color fill = Color.white;
+        Color clear = new Color(1f, 1f, 1f, 0f);
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                bool inside = IsInsideRoundedRect(x, y, width, height, radius);
+                if (inside)
+                {
+                    // Soft edge antialiasing
+                    float edgeDist = GetRoundedRectEdgeDist(x, y, width, height, radius);
+                    float alpha = Mathf.Clamp01(edgeDist + 0.5f);
+                    tex.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
+                }
+                else
+                {
+                    tex.SetPixel(x, y, clear);
+                }
+            }
+        }
+
+        tex.Apply();
+        int border = radius + 2;
+        return Sprite.Create(tex, new Rect(0, 0, width, height), new Vector2(0.5f, 0.5f), 100f,
+            0, SpriteMeshType.FullRect, new Vector4(border, border, border, border));
+    }
+
+    private static bool IsInsideRoundedRect(int x, int y, int w, int h, int r)
+    {
+        // Check corners
+        if (x < r && y < r) // bottom-left
+            return (r - x) * (r - x) + (r - y) * (r - y) <= r * r;
+        if (x >= w - r && y < r) // bottom-right
+            return (x - (w - r - 1)) * (x - (w - r - 1)) + (r - y) * (r - y) <= r * r;
+        if (x < r && y >= h - r) // top-left
+            return (r - x) * (r - x) + (y - (h - r - 1)) * (y - (h - r - 1)) <= r * r;
+        if (x >= w - r && y >= h - r) // top-right
+            return (x - (w - r - 1)) * (x - (w - r - 1)) + (y - (h - r - 1)) * (y - (h - r - 1)) <= r * r;
+        return true;
+    }
+
+    private static float GetRoundedRectEdgeDist(int x, int y, int w, int h, int r)
+    {
+        float cx = 0, cy = 0;
+        bool inCorner = false;
+
+        if (x < r && y < r) { cx = r; cy = r; inCorner = true; }
+        else if (x >= w - r && y < r) { cx = w - r - 1; cy = r; inCorner = true; }
+        else if (x < r && y >= h - r) { cx = r; cy = h - r - 1; inCorner = true; }
+        else if (x >= w - r && y >= h - r) { cx = w - r - 1; cy = h - r - 1; inCorner = true; }
+
+        if (inCorner)
+        {
+            float dist = Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+            return r - dist;
+        }
+
+        // Edge distances for non-corner areas
+        float minEdge = Mathf.Min(Mathf.Min(x, w - 1 - x), Mathf.Min(y, h - 1 - y));
+        return minEdge;
+    }
+
+    /// <summary>Creates a soft circular orb sprite with glow falloff.</summary>
+    private static Sprite CreateOrbSprite(int size)
+    {
+        Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Bilinear;
+        tex.wrapMode = TextureWrapMode.Clamp;
+
+        float center = size * 0.5f;
+        float radius = center * 0.85f;
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float dx = x - center;
+                float dy = y - center;
+                float dist = Mathf.Sqrt(dx * dx + dy * dy);
+                float norm = dist / radius;
+
+                // Soft falloff: bright center, fading edges
+                float alpha;
+                if (norm <= 0.5f)
+                    alpha = 1f;
+                else if (norm <= 1f)
+                    alpha = 1f - (norm - 0.5f) * 2f;
+                else
+                    alpha = Mathf.Max(0f, 1f - (norm - 1f) * 3f) * 0.3f; // faint outer glow
+
+                alpha = alpha * alpha; // quadratic falloff for softness
+                tex.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
+            }
+        }
+
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+    }
+
+    private static Sprite CreateVignetteSprite(int size, int _)
+    {
+        Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Bilinear;
+        tex.wrapMode = TextureWrapMode.Clamp;
+
+        float center = size * 0.5f;
+        float maxDist = center * 1.15f;
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float dx = (x - center) / maxDist;
+                float dy = (y - center) / maxDist;
+                float dist = Mathf.Sqrt(dx * dx + dy * dy);
+                float alpha = Mathf.Clamp01((dist - 0.15f) / 0.85f);
+                alpha = alpha * alpha;
+                tex.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
+            }
+        }
+
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+    }
+
+    /// <summary>Creates a subtle arcane rune/circle pattern tile.</summary>
+    private static Sprite CreateRunePatternSprite(int size, int _)
+    {
+        Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Bilinear;
+        tex.wrapMode = TextureWrapMode.Repeat;
+
+        Color clear = new Color(1f, 1f, 1f, 0f);
+        Color line = new Color(1f, 1f, 1f, 0.25f);
+        Color lineFaint = new Color(1f, 1f, 1f, 0.12f);
+
+        // Clear
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+                tex.SetPixel(x, y, clear);
+
+        float cx = size * 0.5f;
+        float cy = size * 0.5f;
+
+        // Draw concentric circles (arcane rings)
+        DrawCircle(tex, cx, cy, size * 0.38f, line);
+        DrawCircle(tex, cx, cy, size * 0.22f, lineFaint);
+
+        // Draw cross lines through center (mystic compass)
+        for (int i = 0; i < size; i++)
+        {
+            int mid = size / 2;
+            // Vertical line
+            if (Mathf.Abs(i - mid) > size * 0.15f)
+            {
+                if (i >= 0 && i < size)
+                    tex.SetPixel(mid, i, lineFaint);
+            }
+            // Horizontal line
+            if (Mathf.Abs(i - mid) > size * 0.15f)
+            {
+                if (i >= 0 && i < size)
+                    tex.SetPixel(i, mid, lineFaint);
+            }
+        }
+
+        // Small dots at cardinal points
+        DrawDot(tex, (int)cx, (int)(cy + size * 0.38f), 1, line);
+        DrawDot(tex, (int)cx, (int)(cy - size * 0.38f), 1, line);
+        DrawDot(tex, (int)(cx + size * 0.38f), (int)cy, 1, line);
+        DrawDot(tex, (int)(cx - size * 0.38f), (int)cy, 1, line);
+
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+    }
+
+    private static void DrawCircle(Texture2D tex, float cx, float cy, float radius, Color color)
+    {
+        int steps = Mathf.CeilToInt(radius * 8f);
+        for (int i = 0; i <= steps; i++)
+        {
+            float angle = (i / (float)steps) * Mathf.PI * 2f;
+            int x = Mathf.RoundToInt(cx + Mathf.Cos(angle) * radius);
+            int y = Mathf.RoundToInt(cy + Mathf.Sin(angle) * radius);
+            if (x >= 0 && x < tex.width && y >= 0 && y < tex.height)
+                tex.SetPixel(x, y, color);
+        }
+    }
+
+    private static void DrawDot(Texture2D tex, int cx, int cy, int radius, Color color)
+    {
+        for (int dy = -radius; dy <= radius; dy++)
+        {
+            for (int dx = -radius; dx <= radius; dx++)
+            {
+                if (dx * dx + dy * dy <= radius * radius)
+                {
+                    int px = cx + dx;
+                    int py = cy + dy;
+                    if (px >= 0 && px < tex.width && py >= 0 && py < tex.height)
+                        tex.SetPixel(px, py, color);
+                }
+            }
+        }
+    }
+}
+
+// ── Arcane button hover effects (unscaled time for pause compatibility) ──
+
+public class ArcaneButtonEffects : MonoBehaviour,
+    UnityEngine.EventSystems.IPointerEnterHandler,
+    UnityEngine.EventSystems.IPointerExitHandler,
+    UnityEngine.EventSystems.IPointerDownHandler,
+    UnityEngine.EventSystems.IPointerUpHandler
+{
+    private RectTransform rectTransform;
+    private TextMeshProUGUI buttonText;
+    private Image buttonImage;
+    private Image borderImage;
+    private Image glowImage;
+    private string originalText;
+
+    private Vector3 targetScale = Vector3.one;
+    private Color targetTextColor;
+    private Color targetBorderColor;
+    private float targetGlowAlpha;
+
+    private Color originalTextColor;
+    private Color originalBorderColor;
+    private Vector3 originalScale;
+
+    private float lerpSpeed = 10f; // slightly slower for a more mystical feel
+    private bool isHovered;
+
+    private static readonly Color ArcanePurple = new Color(0.78f, 0.18f, 1f, 1f);
+    private static readonly Color WarmHighlight = new Color(0.92f, 0.82f, 1f, 1f);
+
+    public void Initialize(TextMeshProUGUI txt, Image buttonBg, Image border, Image glow)
+    {
+        rectTransform = GetComponent<RectTransform>();
+        buttonText = txt;
+        buttonImage = buttonBg;
+        borderImage = border;
+        glowImage = glow;
+
+        originalScale = rectTransform.localScale;
+        targetScale = originalScale;
+
+        if (buttonText != null)
+        {
+            originalText = buttonText.text;
+            originalTextColor = buttonText.color;
+            targetTextColor = originalTextColor;
+        }
+
+        if (borderImage != null)
+        {
+            originalBorderColor = borderImage.color;
+            targetBorderColor = originalBorderColor;
+        }
+    }
+
+    void Update()
+    {
+        float dt = Time.unscaledDeltaTime * lerpSpeed;
+
+        rectTransform.localScale = Vector3.Lerp(rectTransform.localScale, targetScale, dt);
+
+        if (buttonText != null)
+            buttonText.color = Color.Lerp(buttonText.color, targetTextColor, dt);
+
+        if (borderImage != null)
+            borderImage.color = Color.Lerp(borderImage.color, targetBorderColor, dt);
+
+        if (glowImage != null)
+        {
+            Color c = glowImage.color;
+            c.a = Mathf.Lerp(c.a, targetGlowAlpha, dt);
+            glowImage.color = c;
+        }
+    }
+
+    public void OnPointerEnter(UnityEngine.EventSystems.PointerEventData eventData)
+    {
+        isHovered = true;
+        targetScale = originalScale * 1.03f;
+        targetTextColor = WarmHighlight;
+        targetBorderColor = ArcanePurple;
+        targetGlowAlpha = 0.30f;
+
+        if (buttonText != null)
+            buttonText.text = "✦  " + originalText;
+    }
+
+    public void OnPointerExit(UnityEngine.EventSystems.PointerEventData eventData)
+    {
+        isHovered = false;
+        targetScale = originalScale;
+        targetTextColor = originalTextColor;
+        targetBorderColor = originalBorderColor;
+        targetGlowAlpha = 0f;
+
+        if (buttonText != null)
+            buttonText.text = originalText;
+    }
+
+    public void OnPointerDown(UnityEngine.EventSystems.PointerEventData eventData)
+    {
+        targetScale = originalScale * 0.97f;
+    }
+
+    public void OnPointerUp(UnityEngine.EventSystems.PointerEventData eventData)
+    {
+        targetScale = isHovered ? originalScale * 1.03f : originalScale;
     }
 }

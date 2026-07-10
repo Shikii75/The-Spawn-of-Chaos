@@ -66,6 +66,30 @@ public class Health : MonoBehaviour, IDamageable
         Debug.Log($"{name} healed by {amount}. Health now {currentHealth}/{maxHealth}.");
     }
 
+    public void Resurrect()
+    {
+        currentHealth = maxHealth;
+        
+        move playerMove = GetComponent<move>();
+        if (playerMove != null) playerMove.enabled = true;
+
+        MageCombat playerCombat = GetComponent<MageCombat>();
+        if (playerCombat != null) playerCombat.enabled = true;
+
+        Rigidbody2D rb = GetComponent<Rigidbody2D>();
+        if (rb != null)
+        {
+            rb.isKinematic = false;
+            rb.linearVelocity = Vector2.zero;
+        }
+
+        Collider2D col = GetComponent<Collider2D>();
+        if (col != null) col.enabled = true;
+
+        Debug.Log($"{name} has been resurrected and fully reset.");
+        onDamageTaken?.Invoke(0); // redraw UI
+    }
+
     void Die()
     {
         Debug.Log($"{name} died.");
@@ -101,6 +125,7 @@ public class Health : MonoBehaviour, IDamageable
     private System.Collections.IEnumerator ReloadSceneRoutine(float delay)
     {
         yield return new WaitForSeconds(delay);
+        PlayerSpawnPointManager.isRespawning = true;
         UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
     }
 }

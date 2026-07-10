@@ -28,6 +28,8 @@ public class move : MonoBehaviour
     private float speedDebuffMultiplier = 1.0f;
     private float debuffTimer = 0f;
 
+    private System.Collections.Generic.HashSet<Collider2D> ignoredEnemyColliders = new System.Collections.Generic.HashSet<Collider2D>();
+
     private Rigidbody2D rb;
     private Animator anim;
     private bool isGrounded;
@@ -164,6 +166,53 @@ public class move : MonoBehaviour
         }
 
         anim.SetBool("isJumping", !isGrounded);
+
+        // Handle passing through enemies during dash or blob form
+        bool shouldIgnoreEnemies = isDashing || isBlobForm;
+        if (shouldIgnoreEnemies)
+        {
+            Collider2D[] playerColliders = GetComponents<Collider2D>();
+            Collider2D[] nearbyColliders = Physics2D.OverlapCircleAll(transform.position, 10f);
+            foreach (var col in nearbyColliders)
+            {
+                if (col != null && !col.isTrigger && col.gameObject != gameObject && 
+                    (col.CompareTag("enemy") || col.GetComponent<IDamageable>() != null || col.gameObject.name.Contains("Boss") || col.gameObject.name.Contains("Tsuchigumo")))
+                {
+                    if (!ignoredEnemyColliders.Contains(col))
+                    {
+                        foreach (var playerCol in playerColliders)
+                        {
+                            if (playerCol != null)
+                            {
+                                Physics2D.IgnoreCollision(playerCol, col, true);
+                            }
+                        }
+                        ignoredEnemyColliders.Add(col);
+                    }
+                }
+            }
+        }
+        else
+        {
+            if (ignoredEnemyColliders.Count > 0)
+            {
+                Collider2D[] playerColliders = GetComponents<Collider2D>();
+                foreach (var col in ignoredEnemyColliders)
+                {
+                    if (col != null)
+                    {
+                        foreach (var playerCol in playerColliders)
+                        {
+                            if (playerCol != null)
+                            {
+                                Physics2D.IgnoreCollision(playerCol, col, false);
+                            }
+                        }
+                    }
+                }
+                ignoredEnemyColliders.Clear();
+            }
+        }
     }
 
     private bool IsMovementBlocked()

@@ -8,15 +8,18 @@ public class PlayerSceneSpawner : MonoBehaviour
     private void Start()
     {
         string targetName = PlayerSpawnPointManager.targetSpawnPointName;
+        bool isRespawning = PlayerSpawnPointManager.isRespawning;
+        
         // Clear immediately so it does not persist across future play tests/restarts
         PlayerSpawnPointManager.targetSpawnPointName = "";
+        PlayerSpawnPointManager.isRespawning = false;
 
         GameObject player = GameObject.FindGameObjectWithTag("Player");
 
-        // If targetName is empty (no active door transition) and the player exists, leave them at their placed editor position.
-        if (string.IsNullOrEmpty(targetName) && player != null)
+        // If targetName is empty, not respawning, and the player exists, leave them at their placed editor position.
+        if (string.IsNullOrEmpty(targetName) && !isRespawning && player != null)
         {
-            Debug.Log("[PlayerSceneSpawner] No target spawn point set and Player exists. Leaving player at their placed editor position.");
+            Debug.Log("[PlayerSceneSpawner] No target spawn point set, not respawning, and Player exists. Leaving player at their placed editor position.");
             SetupCameraFollow(player);
             return;
         }
@@ -54,6 +57,13 @@ public class PlayerSceneSpawner : MonoBehaviour
         {
             player.transform.position = spawnPosition;
             Debug.Log($"[PlayerSceneSpawner] Moved existing player to '{targetName}'.");
+
+            // Resurrect/Reset the player since they died/respawned
+            Health playerHealth = player.GetComponent<Health>();
+            if (playerHealth != null)
+            {
+                playerHealth.Resurrect();
+            }
         }
 
         if (player != null)

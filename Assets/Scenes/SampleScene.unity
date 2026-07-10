@@ -10673,7 +10673,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 86, y: -1.9, z: 0}
-  m_LocalScale: {x: 1.0254555, y: 1.4861107, z: 0.5081022}
+  m_LocalScale: {x: 1.1414346, y: 1.6541898, z: 0.56556857}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 202528508}
@@ -21732,7 +21732,7 @@ Transform:
   m_GameObject: {fileID: 295244383}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: 0.010517083, w: 0.99994475}
-  m_LocalPosition: {x: 24.699951, y: 2.0999908, z: 0}
+  m_LocalPosition: {x: 24.699951, y: -6.3, z: 0}
   m_LocalScale: {x: 5.620472, y: 15.5123205, z: 5.6204724}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -50422,7 +50422,7 @@ Transform:
   m_GameObject: {fileID: 762901154}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: 0.010517083, w: 0.99994475}
-  m_LocalPosition: {x: -73.80005, y: -3.1100006, z: 0}
+  m_LocalPosition: {x: -75.6, y: -4.9, z: 0}
   m_LocalScale: {x: 5.177524, y: 13.377825, z: 5.6204724}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -87630,7 +87630,7 @@ SpriteRenderer:
   m_SortingOrder: 1
   m_MaskInteraction: 0
   m_Sprite: {fileID: 2189294413717155954, guid: 27dc8850c41ad4541aa5d980a682c555, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.5245282, g: 0.5096831, b: 0.5096831, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -97430,7 +97430,7 @@ Transform:
   m_GameObject: {fileID: 1571758157}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: 0.010517083, w: 0.99994475}
-  m_LocalPosition: {x: -94.6, y: 4.2, z: 0}
+  m_LocalPosition: {x: -100.6, y: 3.6, z: 0}
   m_LocalScale: {x: 6.467245, y: 13.377825, z: 5.6204724}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -118389,7 +118389,7 @@ Transform:
   m_GameObject: {fileID: 1878134044}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: 0.010517083, w: 0.99994475}
-  m_LocalPosition: {x: -16, y: -8.020004, z: 0}
+  m_LocalPosition: {x: -16, y: -14.6, z: 0}
   m_LocalScale: {x: 5.177524, y: 13.377825, z: 5.6204724}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -119029,7 +119029,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: 0.010517083, w: 0.99994475}
   m_LocalPosition: {x: -136.70007, y: 15.270004, z: 0}
-  m_LocalScale: {x: 7.484111, y: 19.337646, z: 8.124393}
+  m_LocalScale: {x: 7.484111, y: 11.97445, z: 8.124393}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1073734104}
@@ -125595,8 +125595,8 @@ Transform:
   m_GameObject: {fileID: 1994900097}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0.13226695, w: 0.99121416}
-  m_LocalPosition: {x: -389, y: 52.5, z: 0}
-  m_LocalScale: {x: 190.15538, y: 1.5662231, z: 1.5657}
+  m_LocalPosition: {x: -387.849, y: 51.8094, z: 0}
+  m_LocalScale: {x: 192.53233, y: 1.6083547, z: 1.5657}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 558486583}
@@ -125648,7 +125648,7 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: -1
   m_MaskInteraction: 0
   m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
   m_Color: {r: 0.431373, g: 0.439216, b: 0.470588, a: 1}
@@ -142755,7 +142755,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 689148594025504230, guid: b184f3e9cba5c9b4eb73f71eef868166, type: 3}
       propertyPath: portraitOffsetX
-      value: 1450
+      value: 1500
       objectReference: {fileID: 0}
     - target: {fileID: 2237228067969485138, guid: b184f3e9cba5c9b4eb73f71eef868166, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
@@ -142775,7 +142775,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2449613348032064375, guid: b184f3e9cba5c9b4eb73f71eef868166, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 1450
+      value: 1500
       objectReference: {fileID: 0}
     - target: {fileID: 2449613348032064375, guid: b184f3e9cba5c9b4eb73f71eef868166, type: 3}
       propertyPath: m_AnchoredPosition.y

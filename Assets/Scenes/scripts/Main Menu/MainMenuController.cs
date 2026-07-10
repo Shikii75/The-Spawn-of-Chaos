@@ -368,8 +368,8 @@ public class MainMenuController : MonoBehaviour
 
     private Button CreateCustomButton(Transform parent, string name, string label, float fontSize, Vector2 size, UnityEngine.Events.UnityAction onClick)
     {
-        // Load the built-in Unity 9-slice rounded rectangle sprite to support border radius (rounded corners)
-        Sprite roundedSprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/UISprite.psd");
+        // Load the dynamic 9-slice rounded rectangle sprite to support border radius (rounded corners)
+        Sprite roundedSprite = UIFactory.GetRoundedSprite();
 
         // 1. Create Border Container
         RectTransform borderRT = UIFactory.CreatePanel(
@@ -510,6 +510,13 @@ public class MainMenuController : MonoBehaviour
         // Hide panels immediately
         if (mainPanel != null) mainPanel.SetActive(false);
         if (optionsPanel != null) optionsPanel.SetActive(false);
+
+        // Reset pause menu state just in case (forces timeScale back to 1)
+        if (PauseMenu.Instance != null)
+        {
+            PauseMenu.Instance.ResumeGame();
+        }
+        Time.timeScale = 1f;
 
         // If we are already in a scene with the same name, just hide the menu and play the editor scene!
         string activeName = SceneManager.GetActiveScene().name;

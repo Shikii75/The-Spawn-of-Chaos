@@ -8,6 +8,12 @@ public class DojoTransitionFader : MonoBehaviour
 
     private Image overlay;
 
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatic()
+    {
+        Instance = null;
+    }
+
     public static DojoTransitionFader Ensure()
     {
         if (Instance != null)
@@ -16,6 +22,7 @@ public class DojoTransitionFader : MonoBehaviour
         }
 
         GameObject faderObject = new GameObject("DojoTransitionFader");
+        DontDestroyOnLoad(faderObject);
         return faderObject.AddComponent<DojoTransitionFader>();
     }
 
@@ -28,6 +35,7 @@ public class DojoTransitionFader : MonoBehaviour
         }
 
         Instance = this;
+        DontDestroyOnLoad(gameObject);
         BuildOverlay();
     }
 
@@ -47,7 +55,7 @@ public class DojoTransitionFader : MonoBehaviour
         onHidden?.Invoke();
         if (holdDuration > 0f)
         {
-            yield return new WaitForSeconds(holdDuration);
+            yield return new WaitForSecondsRealtime(holdDuration);
         }
         yield return FadeTo(0f, fadeInDuration);
     }
@@ -83,7 +91,7 @@ public class DojoTransitionFader : MonoBehaviour
 
         while (elapsed < duration)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime;
             color.a = Mathf.Lerp(startAlpha, targetAlpha, elapsed / duration);
             overlay.color = color;
             yield return null;

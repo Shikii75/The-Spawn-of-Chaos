@@ -128,7 +128,7 @@ public class DojoDoorTransition : MonoBehaviour
                     Debug.LogWarning($"{name}: destinationPoint is not assigned for {doorName}.");
                 }
             }
-        }, () =>
+        }, loadScene ? null : () =>
         {
             if (!loadScene)
             {

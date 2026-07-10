@@ -111,6 +111,19 @@ public class entersign : MonoBehaviour
             StopCoroutine(animationCoroutine);
         }
 
+        if (!gameObject.activeInHierarchy)
+        {
+            // If the game object is inactive, we can't start a coroutine on it.
+            // Directly apply the target states to ensure consistency.
+            SetRenderersEnabled(visible);
+            SetVisualAlpha(visible ? (spriteRenderer != null ? targetColor.a : 1f) : 0f);
+            if (uiPromptObject != gameObject && promptTransform != null)
+            {
+                promptTransform.localScale = visible ? targetScale : Vector3.zero;
+            }
+            return;
+        }
+
         SetRenderersEnabled(true);
         animationCoroutine = StartCoroutine(PlayAppearAnimation(visible));
     }

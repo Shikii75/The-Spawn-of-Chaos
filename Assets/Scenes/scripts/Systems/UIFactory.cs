@@ -311,4 +311,67 @@ public static class UIFactory
         csf.verticalFit = verticalFit;
         return csf;
     }
+
+    private static Sprite roundedSpriteCache;
+
+    /// <summary>
+    /// Generates a clean 9-sliced rounded-rectangle sprite dynamically at runtime.
+    /// This replaces native resource loading dependencies that fail in newer Unity versions.
+    /// </summary>
+    public static Sprite GetRoundedSprite()
+    {
+        if (roundedSpriteCache != null)
+        {
+            return roundedSpriteCache;
+        }
+
+        int size = 64;
+        int radius = 16;
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false)
+                  { filterMode = FilterMode.Bilinear };
+
+        Color[] colors = new Color[size * size];
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                // Determine if (x,y) is inside the rounded rectangle
+                bool inside = true;
+                if (x < radius && y < radius) // Bottom-Left
+                {
+                    float dx = x - radius;
+                    float dy = y - radius;
+                    inside = (dx * dx + dy * dy <= radius * radius);
+                }
+                else if (x >= size - radius && y < radius) // Bottom-Right
+                {
+                    float dx = x - (size - radius - 1);
+                    float dy = y - radius;
+                    inside = (dx * dx + dy * dy <= radius * radius);
+                }
+                else if (x < radius && y >= size - radius) // Top-Left
+                {
+                    float dx = x - radius;
+                    float dy = y - (size - radius - 1);
+                    inside = (dx * dx + dy * dy <= radius * radius);
+                }
+                else if (x >= size - radius && y >= size - radius) // Top-Right
+                {
+                    float dx = x - (size - radius - 1);
+                    float dy = y - (size - radius - 1);
+                    inside = (dx * dx + dy * dy <= radius * radius);
+                }
+
+                colors[y * size + x] = inside ? Color.white : Color.clear;
+            }
+        }
+
+        tex.SetPixels(colors);
+        tex.Apply();
+
+        // 9-slice border: left, bottom, right, top
+        Vector4 border = new Vector4(radius, radius, radius, radius);
+        roundedSpriteCache = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, border);
+        return roundedSpriteCache;
+    }
 }
