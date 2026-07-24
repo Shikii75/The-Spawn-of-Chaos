@@ -19,16 +19,28 @@ public class PauseMenu : MonoBehaviour
     /// </summary>
     public string menuSceneName = "MainMenu";
 
-    // ── Palette: void black + arcane violet + neon purple ──
-    private static readonly Color VoidOverlay       = new Color(0.03f, 0.01f, 0.07f, 0.90f);
-    private static readonly Color NeonPurple        = new Color(0.78f, 0.18f, 1f, 1f);
-    private static readonly Color NeonPurpleDim     = new Color(0.78f, 0.18f, 1f, 0.40f);
-    private static readonly Color ArcaneViolet      = new Color(0.50f, 0.30f, 0.90f, 1f);
-    private static readonly Color ArcaneVioletDim   = new Color(0.50f, 0.30f, 0.90f, 0.35f);
-    private static readonly Color DeepVoid          = new Color(0.04f, 0.02f, 0.10f, 0.95f);
-    private static readonly Color PanelInner        = new Color(0.06f, 0.03f, 0.14f, 0.93f);
-    private static readonly Color FrameGlow         = new Color(0.65f, 0.20f, 0.95f, 0.70f);
-    private static readonly Color FrameInner        = new Color(0.40f, 0.15f, 0.75f, 0.55f);
+    // ── Palette: midnight void + aether cyan + restrained violet ──
+    private static readonly Color VoidOverlay       = new Color(0.015f, 0.025f, 0.06f, 0.88f);
+    private static readonly Color NeonPurple        = new Color(0.34f, 0.88f, 1f, 1f);
+    private static readonly Color NeonPurpleDim     = new Color(0.34f, 0.88f, 1f, 0.42f);
+    private static readonly Color ArcaneViolet      = new Color(0.45f, 0.48f, 0.95f, 1f);
+    private static readonly Color ArcaneVioletDim   = new Color(0.45f, 0.48f, 0.95f, 0.35f);
+    private static readonly Color DeepVoid          = new Color(0.025f, 0.045f, 0.11f, 0.97f);
+    private static readonly Color PanelInner        = new Color(0.035f, 0.075f, 0.15f, 0.96f);
+    private static readonly Color FrameGlow         = new Color(0.28f, 0.82f, 1f, 0.70f);
+    private static readonly Color FrameInner        = new Color(0.30f, 0.38f, 0.92f, 0.55f);
+
+    [Header("Title Screen Artwork & Button Sprites")]
+    [Tooltip("Logo sprite from the title screen. Automatically loads Assets/Scenes/art/mainmenulogo.png.")]
+    public Sprite logoSprite;
+    [Tooltip("Background sprite. Automatically loads Assets/Scenes/art/main_menu_bg.png.")]
+    public Sprite backgroundSprite;
+    [Tooltip("Resume button sprite. Automatically loads Assets/Scenes/art/pause_resume.png or play_btn.png.")]
+    public Sprite resumeButtonSprite;
+    [Tooltip("Restart button sprite. Automatically loads Assets/Scenes/art/pause_restart.png.")]
+    public Sprite restartButtonSprite;
+    [Tooltip("Quit button sprite. Automatically loads Assets/Scenes/art/pause_quit.png or quit_btn.png.")]
+    public Sprite quitButtonSprite;
 
     private GameObject pauseOverlay;
 
@@ -49,11 +61,59 @@ public class PauseMenu : MonoBehaviour
         }
     }
 
+    void Reset()
+    {
+        AutoLoadSprites();
+    }
+
     void Awake()
     {
         Instance = this;
+        AutoLoadSprites();
         BuildUI();
         Time.timeScale = 1f;
+    }
+
+    public void AutoLoadSprites()
+    {
+        if (logoSprite == null)
+        {
+            logoSprite = LoadSpriteDirectly("mainmenulogo") ?? LoadSpriteDirectly("main_menu_logo");
+        }
+        if (backgroundSprite == null)
+        {
+            backgroundSprite = LoadSpriteDirectly("main_menu_bg");
+        }
+        if (resumeButtonSprite == null)
+        {
+            resumeButtonSprite = LoadSpriteDirectly("pause_resume") ?? LoadSpriteDirectly("play_btn");
+        }
+        if (restartButtonSprite == null)
+        {
+            restartButtonSprite = LoadSpriteDirectly("pause_restart");
+        }
+        if (quitButtonSprite == null)
+        {
+            quitButtonSprite = LoadSpriteDirectly("pause_quit") ?? LoadSpriteDirectly("quit_btn");
+        }
+    }
+
+    private Sprite LoadSpriteDirectly(string nameNoExt)
+    {
+        Sprite s = Resources.Load<Sprite>(nameNoExt);
+        if (s != null) return s;
+#if UNITY_EDITOR
+        string[] paths = new[] {
+            "Assets/Scenes/art/" + nameNoExt + ".png",
+            "Assets/Scenes/" + nameNoExt + ".png"
+        };
+        foreach (string p in paths)
+        {
+            s = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(p);
+            if (s != null) return s;
+        }
+#endif
+        return null;
     }
 
     void OnEnable()
@@ -83,17 +143,13 @@ public class PauseMenu : MonoBehaviour
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (NyxarisManager.IsTyping || NyxarisManager.IsChatActive)
         {
-            if (NyxarisManager.Instance != null && NyxarisManager.Instance.mainInterfacePanel != null && NyxarisManager.Instance.mainInterfacePanel.activeSelf)
-                return;
-
-            if (ShopUI.Instance != null && ShopUI.Instance.IsShopActive)
-                return;
-
-            if (NPCDialogueUI.Instance != null && NPCDialogueUI.Instance.IsDialogueActive)
-                return;
+            return;
         }
+
+        if (ShopUI.Instance != null && ShopUI.Instance.IsShopActive) return;
+        if (NPCDialogueUI.Instance != null && NPCDialogueUI.Instance.IsDialogueActive) return;
 
         if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.P))
         {
@@ -105,6 +161,8 @@ public class PauseMenu : MonoBehaviour
 
     private void BuildUI()
     {
+        AutoLoadSprites();
+
         Canvas canvas = UIFactory.CreateCanvas("PauseCanvas", 10);
         canvas.transform.SetParent(transform, false);
 
@@ -112,12 +170,23 @@ public class PauseMenu : MonoBehaviour
         if (scaler != null)
             scaler.matchWidthOrHeight = 1.0f;
 
-        // ── Layer 0: void overlay ──
+        // ── Layer 0: background image + dark overlay ──
         RectTransform overlayRT = UIFactory.CreateFullScreenPanel(
             canvas.transform, "PauseOverlay", VoidOverlay);
         pauseOverlay = overlayRT.gameObject;
 
-        // ── Layer 1: radial vignette (deep purple tinted) ──
+        if (backgroundSprite != null)
+        {
+            RectTransform bgRT = UIFactory.CreatePanel(
+                overlayRT, "TitleBackground", Color.white,
+                Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            Image bgImgComp = bgRT.GetComponent<Image>();
+            bgImgComp.sprite = backgroundSprite;
+            bgImgComp.color = new Color(0.35f, 0.32f, 0.50f, 0.45f); // Soft dark violet overlay tint
+            bgImgComp.raycastTarget = false;
+        }
+
+        // ── Layer 1: radial vignette ──
         Sprite vignetteSprite = CreateVignetteSprite(512, 512);
         RectTransform vignetteRT = UIFactory.CreatePanel(
             overlayRT, "Vignette", Color.white,
@@ -125,30 +194,13 @@ public class PauseMenu : MonoBehaviour
         Image vignetteImg = vignetteRT.GetComponent<Image>();
         vignetteImg.sprite = vignetteSprite;
         vignetteImg.raycastTarget = false;
-        vignetteImg.color = new Color(0.05f, 0.01f, 0.10f, 0.88f);
+        vignetteImg.color = new Color(0.05f, 0.01f, 0.10f, 0.82f);
 
-        // ── Layer 2: arcane rune pattern (subtle tiled background) ──
-        Sprite runeSprite = CreateRunePatternSprite(64, 64);
-        RectTransform runeRT = UIFactory.CreatePanel(
-            overlayRT, "RunePattern", Color.white,
-            Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-        Image runeImg = runeRT.GetComponent<Image>();
-        runeImg.sprite = runeSprite;
-        runeImg.type = Image.Type.Tiled;
-        runeImg.raycastTarget = false;
-        runeImg.color = new Color(0.65f, 0.20f, 0.95f, 0.035f);
-
-        // ── Layer 3: floating orb field (expanded area) ──
-        RectTransform orbFieldRT = UIFactory.CreatePanel(
-            overlayRT, "OrbField", Color.clear,
-            Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-        orbFieldRT.GetComponent<Image>().raycastTarget = false;
-
-        // ── Layer 4: outer mystic glow (soft rounded) ──
+        // ── Layer 2: main card panel (Semi-transparent gothic glass card) ──
         Sprite roundedSprite = CreateRoundedFrameSprite(128, 128, 24);
         RectTransform glowRT = UIFactory.CreatePanel(
             overlayRT, "PauseGlow",
-            new Color(0.65f, 0.12f, 1f, 0.10f),
+            new Color(0.22f, 0.78f, 1f, 0.18f),
             new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
         glowRT.sizeDelta = new Vector2(620f, 720f);
         Image glowImg = glowRT.GetComponent<Image>();
@@ -156,27 +208,16 @@ public class PauseMenu : MonoBehaviour
         glowImg.type = Image.Type.Sliced;
         glowImg.raycastTarget = false;
 
-        // ── Layer 5: main panel (rounded, dark) ──
         RectTransform panelRT = UIFactory.CreatePanel(
-            overlayRT, "PausePanel", DeepVoid,
+            overlayRT, "PausePanel", new Color(0.04f, 0.03f, 0.09f, 0.82f),
             new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
-        panelRT.sizeDelta = new Vector2(560f, 680f);
+        panelRT.sizeDelta = new Vector2(580f, 680f);
 
         Image panelImg = panelRT.GetComponent<Image>();
         panelImg.sprite = roundedSprite;
         panelImg.type = Image.Type.Sliced;
 
-        // ── Soft outer border glow ──
-        RectTransform borderGlowRT = UIFactory.CreatePanel(
-            panelRT, "BorderGlow", Color.clear,
-            Vector2.zero, Vector2.one,
-            new Vector2(-3f, -3f), new Vector2(3f, 3f));
-        Image borderGlowImg = borderGlowRT.GetComponent<Image>();
-        borderGlowImg.sprite = roundedSprite;
-        borderGlowImg.type = Image.Type.Sliced;
-        borderGlowImg.color = FrameGlow;
-
-        // ── Inner border ring ──
+        // Border ring & inner fill
         RectTransform borderInnerRT = UIFactory.CreatePanel(
             panelRT, "BorderInner", Color.clear,
             Vector2.zero, Vector2.one,
@@ -186,97 +227,144 @@ public class PauseMenu : MonoBehaviour
         borderInnerImg.type = Image.Type.Sliced;
         borderInnerImg.color = FrameInner;
 
-        // ── Inner fill ──
         RectTransform innerRT = UIFactory.CreatePanel(
-            panelRT, "PanelInner", PanelInner,
+            panelRT, "PanelInner", new Color(0.03f, 0.05f, 0.12f, 0.88f),
             Vector2.zero, Vector2.one,
             new Vector2(5f, 5f), new Vector2(-5f, -5f));
         Image innerImg = innerRT.GetComponent<Image>();
         innerImg.sprite = roundedSprite;
         innerImg.type = Image.Type.Sliced;
 
-        // ── Top mystic glow wash ──
-        RectTransform topGlowRT = UIFactory.CreatePanel(
-            innerRT, "TopGlow",
-            new Color(0.60f, 0.15f, 0.95f, 0.06f),
-            new Vector2(0f, 0.75f), new Vector2(1f, 1f),
-            new Vector2(16f, 0f), new Vector2(-16f, -8f));
-        Image topGlowImg = topGlowRT.GetComponent<Image>();
-        topGlowImg.sprite = roundedSprite;
-        topGlowImg.type = Image.Type.Sliced;
-        topGlowImg.raycastTarget = false;
-
-        // ── Content layout ──
-        VerticalLayoutGroup vlg = UIFactory.AddVerticalLayout(panelRT.gameObject, 10f,
-            new RectOffset(36, 36, 44, 36), TextAnchor.UpperCenter);
+        // Content vertical layout
+        VerticalLayoutGroup vlg = UIFactory.AddVerticalLayout(panelRT.gameObject, 12f,
+            new RectOffset(32, 32, 24, 20), TextAnchor.UpperCenter);
         vlg.childControlWidth = false;
+        vlg.childControlHeight = false;
         vlg.childForceExpandWidth = false;
         vlg.childForceExpandHeight = false;
 
-        // ── Ornament above title (arcane symbols) ──
-        TextMeshProUGUI topOrnament = UIFactory.CreateText(
-            panelRT, "TopOrnament", "⁕ ── ✦ ── ⁕",
-            16f, NeonPurpleDim, TextAlignmentOptions.Center);
-        topOrnament.characterSpacing = 6f;
-        UIFactory.AddLayoutElement(topOrnament.gameObject, preferredHeight: 28f, preferredWidth: 480f);
+        // ── Logo / Title Header ──
+        if (logoSprite != null)
+        {
+            GameObject logoGO = new GameObject("TitleLogo", typeof(RectTransform), typeof(Image));
+            logoGO.transform.SetParent(panelRT, false);
+            Image logoImgComp = logoGO.GetComponent<Image>();
+            logoImgComp.sprite = logoSprite;
+            logoImgComp.preserveAspect = true;
+            logoImgComp.raycastTarget = false;
+            
+            LayoutElement le = logoGO.AddComponent<LayoutElement>();
+            le.preferredWidth = 460f;
+            le.preferredHeight = 160f;
+            le.minWidth = 460f;
+            le.minHeight = 160f;
+        }
+        else
+        {
+            TextMeshProUGUI titleText = UIFactory.CreateText(
+                panelRT, "PausedTitle", "PAUSED",
+                56f, UIFactory.TextWhite, TextAlignmentOptions.Center);
+            titleText.fontStyle = FontStyles.Bold;
+            titleText.characterSpacing = 12f;
+            
+            LayoutElement le = titleText.gameObject.AddComponent<LayoutElement>();
+            le.preferredWidth = 500f;
+            le.preferredHeight = 70f;
+        }
 
-        // ── Title ──
-        TextMeshProUGUI titleText = UIFactory.CreateText(
-            panelRT, "PausedTitle", "PAUSED",
-            72f, UIFactory.TextWhite, TextAlignmentOptions.Center);
-        titleText.fontStyle = FontStyles.Bold;
-        titleText.characterSpacing = 18f;
-        titleText.outlineColor = new Color32(170, 40, 255, 180);
-        titleText.outlineWidth = 0.30f;
-        UIFactory.AddLayoutElement(titleText.gameObject, preferredHeight: 90f, preferredWidth: 480f);
-
-        // ── Subtitle (dark fantasy) ──
+        // Subtitle & divider
         TextMeshProUGUI subtitleText = UIFactory.CreateText(
-            panelRT, "Subtitle", "✧  TIME STANDS STILL  ✧",
-            18f, ArcaneVioletDim, TextAlignmentOptions.Center);
-        subtitleText.fontStyle = FontStyles.Italic;
-        subtitleText.characterSpacing = 3f;
-        UIFactory.AddLayoutElement(subtitleText.gameObject, preferredHeight: 30f, preferredWidth: 480f);
+            panelRT, "Subtitle", "GAME PAUSED",
+            16f, NeonPurpleDim, TextAlignmentOptions.Center);
+        subtitleText.characterSpacing = 6f;
+        subtitleText.fontStyle = FontStyles.Bold;
+        
+        LayoutElement subLe = subtitleText.gameObject.AddComponent<LayoutElement>();
+        subLe.preferredWidth = 500f;
+        subLe.preferredHeight = 22f;
 
-        // ── Arcane divider ──
         CreateArcaneDivider(panelRT, "TitleDivider");
 
-        // Spacer
-        RectTransform spacer = UIFactory.CreatePanel(panelRT, "Spacer", Color.clear,
-            Vector2.zero, Vector2.zero);
-        UIFactory.AddLayoutElement(spacer.gameObject, preferredHeight: 12f, preferredWidth: 10f);
+        // ── Custom Sprite Buttons (Matching Title Screen Dimensions) ──
+        Button resumeBtn = CreateCustomSpriteButton(panelRT, "ResumeButton", resumeButtonSprite, "RESUME", () => ResumeGame(), new Vector2(320f, 96f));
+        Button restartBtn = CreateCustomSpriteButton(panelRT, "RestartButton", restartButtonSprite, "RESTART", () => RestartLevel(), new Vector2(320f, 92f));
+        Button minigamesBtn = CreateArcaneButton(panelRT, "MinigamesButton", "MINIGAMES", "🎮", 18f, new Vector2(320f, 52f), () => OpenMinigamesMenu(), true);
+        Button quitBtn = CreateCustomSpriteButton(panelRT, "QuitButton", quitButtonSprite, "QUIT TO MENU", () => QuitToMenu(menuSceneName), new Vector2(320f, 88f));
 
-        // ── Buttons ──
-        Vector2 buttonSize = new Vector2(420f, 72f);
-
-        Button resumeBtn = CreateArcaneButton(panelRT, "ResumeButton", "RESUME", "▶", 28f, buttonSize, () => ResumeGame());
-        UIFactory.AddLayoutElement(resumeBtn.gameObject, preferredWidth: buttonSize.x, preferredHeight: buttonSize.y);
-
-        Button restartBtn = CreateArcaneButton(panelRT, "RestartButton", "RESTART", "↻", 28f, buttonSize, () => RestartLevel());
-        UIFactory.AddLayoutElement(restartBtn.gameObject, preferredWidth: buttonSize.x, preferredHeight: buttonSize.y);
-
-        Button quitBtn = CreateArcaneButton(panelRT, "QuitButton", "QUIT TO MENU", "⏻", 26f, buttonSize, () => QuitToMenu(menuSceneName));
-        UIFactory.AddLayoutElement(quitBtn.gameObject, preferredWidth: buttonSize.x, preferredHeight: buttonSize.y);
-
-        // Spacer
-        RectTransform spacer2 = UIFactory.CreatePanel(panelRT, "Spacer2", Color.clear,
-            Vector2.zero, Vector2.zero);
-        UIFactory.AddLayoutElement(spacer2.gameObject, preferredHeight: 8f, preferredWidth: 10f);
-
-        // ── Bottom divider + hint ──
+        // Footer hint
         CreateArcaneDivider(panelRT, "BottomDivider");
 
         TextMeshProUGUI hintText = UIFactory.CreateText(
-            panelRT, "Hint", "ESC  ·  P  —  RESUME",
-            14f, new Color(0.55f, 0.35f, 0.75f, 0.65f), TextAlignmentOptions.Center);
-        hintText.characterSpacing = 4f;
-        UIFactory.AddLayoutElement(hintText.gameObject, preferredHeight: 24f, preferredWidth: 480f);
+            panelRT, "Hint", "PRESS ESC OR P TO RESUME",
+            13f, new Color(0.45f, 0.67f, 0.84f, 0.72f), TextAlignmentOptions.Center);
+        hintText.characterSpacing = 2f;
+        
+        LayoutElement hintLe = hintText.gameObject.AddComponent<LayoutElement>();
+        hintLe.preferredWidth = 500f;
+        hintLe.preferredHeight = 22f;
 
-        // ── Ambient animation driver ──
+        // Ambient FX
         PauseMenuAmbientFX ambientFX = pauseOverlay.AddComponent<PauseMenuAmbientFX>();
-        ambientFX.Initialize(glowImg, orbFieldRT, glowImg.color);
+        ambientFX.Initialize(glowImg, vignetteRT, glowImg.color);
 
         pauseOverlay.SetActive(false);
+    }
+
+    private Button CreateCustomSpriteButton(Transform parent, string name, Sprite btnSprite, string fallbackText, UnityEngine.Events.UnityAction onClick, Vector2 size)
+    {
+        GameObject containerGO = new GameObject(name, typeof(RectTransform));
+        containerGO.transform.SetParent(parent, false);
+        RectTransform containerRT = containerGO.GetComponent<RectTransform>();
+        containerRT.sizeDelta = size;
+
+        LayoutElement le = containerGO.AddComponent<LayoutElement>();
+        le.minWidth = size.x;
+        le.minHeight = size.y;
+        le.preferredWidth = size.x;
+        le.preferredHeight = size.y;
+        le.flexibleWidth = 0f;
+        le.flexibleHeight = 0f;
+
+        Image btnImg = containerGO.AddComponent<Image>();
+
+        if (btnSprite != null)
+        {
+            btnImg.sprite = btnSprite;
+            btnImg.color = Color.white;
+            btnImg.preserveAspect = true;
+        }
+        else
+        {
+            // Fallback styled background
+            btnImg.sprite = CreateRoundedFrameSprite(64, 64, 14);
+            btnImg.type = Image.Type.Sliced;
+            btnImg.color = new Color(0.08f, 0.15f, 0.28f, 0.95f);
+
+            TextMeshProUGUI label = UIFactory.CreateText(
+                containerRT, "Label", fallbackText,
+                22f, UIFactory.TextWhite, TextAlignmentOptions.Center);
+            label.fontStyle = FontStyles.Bold;
+            label.characterSpacing = 4f;
+        }
+
+        Button btn = containerRT.gameObject.AddComponent<Button>();
+        btn.targetGraphic = btnImg;
+
+        ColorBlock cb = btn.colors;
+        cb.normalColor = Color.white;
+        cb.highlightedColor = new Color(1f, 1f, 1f, 1f);
+        cb.pressedColor = new Color(0.82f, 0.82f, 0.92f, 1f);
+        cb.fadeDuration = 0.08f;
+        btn.colors = cb;
+
+        if (onClick != null)
+            btn.onClick.AddListener(onClick);
+
+        // Attach interactive scaling hover/press animation
+        PauseSpriteButtonFX fx = containerRT.gameObject.AddComponent<PauseSpriteButtonFX>();
+        fx.Initialize(btnImg);
+
+        return btn;
     }
 
     // ── Decorative Elements ────────────────────────────────────────
@@ -337,7 +425,7 @@ public class PauseMenu : MonoBehaviour
     // ── Arcane Button ──────────────────────────────────────────────
 
     private Button CreateArcaneButton(Transform parent, string name, string label, string icon,
-        float fontSize, Vector2 size, UnityEngine.Events.UnityAction onClick)
+        float fontSize, Vector2 size, UnityEngine.Events.UnityAction onClick, bool isPrimary = false)
     {
         Sprite roundedSprite = CreateRoundedFrameSprite(64, 64, 14);
 
@@ -359,7 +447,7 @@ public class PauseMenu : MonoBehaviour
 
         // Border
         RectTransform borderRT = UIFactory.CreatePanel(
-            containerRT, name + "_Border", FrameGlow,
+            containerRT, name + "_Border", isPrimary ? new Color(0.34f, 0.88f, 1f, 0.95f) : FrameGlow,
             Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
         Image borderImg = borderRT.GetComponent<Image>();
         borderImg.sprite = roundedSprite;
@@ -367,7 +455,9 @@ public class PauseMenu : MonoBehaviour
 
         // Inner bg
         RectTransform innerRT = UIFactory.CreatePanel(
-            borderRT, name + "_Bg", new Color(0.06f, 0.03f, 0.14f, 0.94f),
+            borderRT, name + "_Bg", isPrimary
+                ? new Color(0.05f, 0.28f, 0.40f, 0.98f)
+                : new Color(0.035f, 0.075f, 0.15f, 0.96f),
             Vector2.zero, Vector2.one,
             new Vector2(2f, 2f), new Vector2(-2f, -2f));
         Image innerImg = innerRT.GetComponent<Image>();
@@ -377,7 +467,7 @@ public class PauseMenu : MonoBehaviour
         // Left accent — soft glow bar instead of hard stripe
         RectTransform accentRT = UIFactory.CreatePanel(
             innerRT, "AccentGlow",
-            new Color(0.65f, 0.15f, 0.95f, 0.15f),
+            isPrimary ? new Color(0.40f, 0.94f, 1f, 0.36f) : new Color(0.28f, 0.68f, 1f, 0.15f),
             new Vector2(0f, 0f), new Vector2(0f, 1f),
             new Vector2(4f, 6f), new Vector2(12f, -6f));
         Image accentImg = accentRT.GetComponent<Image>();
@@ -388,9 +478,9 @@ public class PauseMenu : MonoBehaviour
         btn.targetGraphic = innerImg;
 
         ColorBlock cb = btn.colors;
-        cb.normalColor = new Color(0.07f, 0.04f, 0.15f, 0.94f);
-        cb.highlightedColor = new Color(0.12f, 0.07f, 0.25f, 0.98f);
-        cb.pressedColor = new Color(0.08f, 0.04f, 0.18f, 0.98f);
+        cb.normalColor = isPrimary ? new Color(0.05f, 0.28f, 0.40f, 0.98f) : new Color(0.035f, 0.075f, 0.15f, 0.96f);
+        cb.highlightedColor = isPrimary ? new Color(0.08f, 0.43f, 0.58f, 1f) : new Color(0.07f, 0.13f, 0.25f, 0.98f);
+        cb.pressedColor = isPrimary ? new Color(0.04f, 0.20f, 0.30f, 1f) : new Color(0.04f, 0.09f, 0.18f, 0.98f);
         cb.disabledColor = new Color(0.12f, 0.10f, 0.16f, 0.45f);
         cb.colorMultiplier = 1f;
         cb.fadeDuration = 0.08f;
@@ -432,6 +522,8 @@ public class PauseMenu : MonoBehaviour
         isPaused = !isPaused;
         pauseOverlay?.SetActive(isPaused);
         Time.timeScale = isPaused ? 0f : 1f;
+        HUDManager.Instance?.UpdateVisibility();
+        SpawnOfChaos.Minigames.HUDOrbPanel.Instance?.UpdateVisibility();
     }
 
     public void ResumeGame()
@@ -439,6 +531,11 @@ public class PauseMenu : MonoBehaviour
         if (!isPaused)
             return;
         TogglePause();
+    }
+
+    public void OpenMinigamesMenu()
+    {
+        SpawnOfChaos.Minigames.MinigameHubUI.OpenHub();
     }
 
     public void RestartLevel()
@@ -706,8 +803,8 @@ public class ArcaneButtonEffects : MonoBehaviour,
     private float lerpSpeed = 10f; // slightly slower for a more mystical feel
     private bool isHovered;
 
-    private static readonly Color ArcanePurple = new Color(0.78f, 0.18f, 1f, 1f);
-    private static readonly Color WarmHighlight = new Color(0.92f, 0.82f, 1f, 1f);
+    private static readonly Color ArcanePurple = new Color(0.34f, 0.88f, 1f, 1f);
+    private static readonly Color WarmHighlight = new Color(0.88f, 0.98f, 1f, 1f);
 
     public void Initialize(TextMeshProUGUI txt, Image buttonBg, Image border, Image glow)
     {
@@ -786,5 +883,69 @@ public class ArcaneButtonEffects : MonoBehaviour,
     public void OnPointerUp(UnityEngine.EventSystems.PointerEventData eventData)
     {
         targetScale = isHovered ? originalScale * 1.03f : originalScale;
+    }
+}
+
+public class PauseSpriteButtonFX : MonoBehaviour,
+    UnityEngine.EventSystems.IPointerEnterHandler,
+    UnityEngine.EventSystems.IPointerExitHandler,
+    UnityEngine.EventSystems.IPointerDownHandler,
+    UnityEngine.EventSystems.IPointerUpHandler
+{
+    private RectTransform rectTransform;
+    private Image buttonImage;
+    private Vector3 originalScale;
+    private Vector3 targetScale = Vector3.one;
+    private Color originalColor = Color.white;
+    private Color targetColor = Color.white;
+    private bool isHovered;
+
+    public void Initialize(Image img)
+    {
+        rectTransform = GetComponent<RectTransform>();
+        buttonImage = img;
+        originalScale = rectTransform.localScale;
+        targetScale = originalScale;
+        if (buttonImage != null)
+        {
+            originalColor = buttonImage.color;
+            targetColor = originalColor;
+        }
+    }
+
+    void Update()
+    {
+        float dt = Time.unscaledDeltaTime * 12f;
+        rectTransform.localScale = Vector3.Lerp(rectTransform.localScale, targetScale, dt);
+        if (buttonImage != null)
+        {
+            buttonImage.color = Color.Lerp(buttonImage.color, targetColor, dt);
+        }
+    }
+
+    public void OnPointerEnter(UnityEngine.EventSystems.PointerEventData eventData)
+    {
+        isHovered = true;
+        targetScale = originalScale * 1.06f;
+        targetColor = new Color(1f, 1f, 1f, 1f);
+    }
+
+    public void OnPointerExit(UnityEngine.EventSystems.PointerEventData eventData)
+    {
+        isHovered = false;
+        targetScale = originalScale;
+        targetColor = originalColor;
+    }
+
+    public void OnPointerDown(UnityEngine.EventSystems.PointerEventData eventData)
+    {
+        targetScale = originalScale * 0.94f;
+        targetColor = new Color(0.85f, 0.85f, 0.95f, 1f);
+    }
+
+    public void OnPointerUp(UnityEngine.EventSystems.PointerEventData eventData)
+    {
+        targetScale = isHovered ? originalScale * 1.06f : originalScale;
+        targetColor = isHovered ? new Color(1f, 1f, 1f, 1f) : originalColor;
     }
 }

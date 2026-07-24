@@ -32,6 +32,8 @@ public class InspectableDojoObject : MonoBehaviour
 
     private void Update()
     {
+        if (NyxarisManager.IsTyping || NyxarisManager.IsChatActive) return;
+
         if (isPlayerInRange && Input.GetKeyDown(KeyCode.E))
         {
             // Trigger the global dialogue box

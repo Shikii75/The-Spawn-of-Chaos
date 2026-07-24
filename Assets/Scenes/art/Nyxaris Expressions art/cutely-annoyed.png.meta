@@ -109,10 +109,10 @@ TextureImporter:
       name: cutely-annoyed_0
       rect:
         serializedVersion: 2
-        x: 1696
-        y: 1034
-        width: 12
-        height: 7
+        x: 1850
+        y: 0
+        width: 4315
+        height: 4320
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}

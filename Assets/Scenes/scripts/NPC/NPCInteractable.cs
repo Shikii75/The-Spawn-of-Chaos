@@ -35,6 +35,8 @@ public class NPCInteractable : MonoBehaviour
 
     void Update()
     {
+        if (NyxarisManager.IsTyping || NyxarisManager.IsChatActive) return;
+
         if (playerInRange)
         {
             // Check if player presses interaction key E

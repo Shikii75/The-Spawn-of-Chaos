@@ -527,6 +527,8 @@ public class NPCDialogueUI : MonoBehaviour
         if (dialoguePanel != null)
         {
             dialoguePanel.SetActive(true);
+            HUDManager.Instance?.UpdateVisibility();
+            SpawnOfChaos.Minigames.HUDOrbPanel.Instance?.UpdateVisibility();
         }
 
         // Verify the GameObject is active in the hierarchy
@@ -549,6 +551,8 @@ public class NPCDialogueUI : MonoBehaviour
         if (dialoguePanel != null)
         {
             dialoguePanel.SetActive(false);
+            HUDManager.Instance?.UpdateVisibility();
+            SpawnOfChaos.Minigames.HUDOrbPanel.Instance?.UpdateVisibility();
         }
 
         isTyping = false;

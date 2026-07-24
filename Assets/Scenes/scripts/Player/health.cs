@@ -13,11 +13,22 @@ public class Health : MonoBehaviour, IDamageable
     public event Action<int> onMaxHealthChanged;
     public event Action onDeath;
 
+    private SpriteRenderer playerSpriteRenderer;
+    private Coroutine flashCoroutine;
+    private Color originalPlayerColor = Color.white;
+    private bool hasOriginalPlayerColor = false;
+
     void Start()
     {
         if (CompareTag("Player"))
         {
             maxHealth = 14; // Force player max health to 14 (7 units) to override Unity inspector value
+            playerSpriteRenderer = GetComponentInChildren<SpriteRenderer>();
+            if (playerSpriteRenderer != null)
+            {
+                originalPlayerColor = playerSpriteRenderer.color;
+                hasOriginalPlayerColor = true;
+            }
         }
         currentHealth = maxHealth;
     }
@@ -36,6 +47,12 @@ public class Health : MonoBehaviour, IDamageable
         currentHealth = Mathf.Max(currentHealth, 0);
         Debug.Log($"{name} took {damage} damage. Health now {currentHealth}/{maxHealth}.");
 
+        if (CompareTag("Player") && playerSpriteRenderer != null)
+        {
+            if (flashCoroutine != null) StopCoroutine(flashCoroutine);
+            flashCoroutine = StartCoroutine(FlashPlayerRed());
+        }
+
         EnemyPatrol2D enemy = GetComponent<EnemyPatrol2D>();
         if (enemy != null)
         {
@@ -49,6 +66,32 @@ public class Health : MonoBehaviour, IDamageable
             Die();
         }
     }
+
+    private System.Collections.IEnumerator FlashPlayerRed()
+    {
+        if (playerSpriteRenderer == null) yield break;
+        if (!hasOriginalPlayerColor)
+        {
+            originalPlayerColor = playerSpriteRenderer.color;
+            hasOriginalPlayerColor = true;
+        }
+
+        playerSpriteRenderer.color = Color.red;
+        yield return new WaitForSeconds(hitFlashDuration);
+        playerSpriteRenderer.color = originalPlayerColor;
+        flashCoroutine = null;
+    }
+
+    private void OnDisable()
+    {
+        if (playerSpriteRenderer != null && hasOriginalPlayerColor)
+        {
+            playerSpriteRenderer.color = originalPlayerColor;
+        }
+    }
+
+    [Header("Hit Flash (Player)")]
+    public float hitFlashDuration = 0.15f;
 
     public void IncreaseMaxHealth(int amount)
     {

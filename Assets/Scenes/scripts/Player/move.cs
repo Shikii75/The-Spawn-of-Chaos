@@ -220,7 +220,7 @@ public class move : MonoBehaviour
         if (PauseMenu.Instance != null && PauseMenu.Instance.isPaused) return true;
         if (NPCDialogueUI.Instance != null && NPCDialogueUI.Instance.IsDialogueActive) return true;
         if (ShopUI.Instance != null && ShopUI.Instance.IsShopActive) return true;
-        if (NyxarisManager.Instance != null && NyxarisManager.Instance.mainInterfacePanel != null && NyxarisManager.Instance.mainInterfacePanel.activeSelf) return true;
+        if (NyxarisManager.IsChatActive || NyxarisManager.IsTyping) return true;
 
         // Block movement if any UI text input has active keyboard focus
         if (UnityEngine.EventSystems.EventSystem.current != null && UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject != null)

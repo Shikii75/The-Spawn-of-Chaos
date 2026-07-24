@@ -48,6 +48,10 @@ public class FemaleStrawhatAI : MonoBehaviour, IDamageable
     [Range(0f, 1f)]
     public float feintRedashChance = 0.25f;  // Chance to backdash then immediately re-dash attack
 
+    [Header("Approach Settings")]
+    [Tooltip("How close she walks/runs to the player before stopping to plan a move (instead of pushing the player).")]
+    public float approachStopRange = 3.5f;
+
     [Header("Circling Behavior")]
     public float circleRangeMin = 3f;
     public float circleRangeMax = 5f;
@@ -82,6 +86,12 @@ public class FemaleStrawhatAI : MonoBehaviour, IDamageable
     private bool isCircling = false;
     private float circleTimer = 0f;
     private float circleDirection = 1f;
+    private readonly List<Collider2D> ignoredDashColliders = new List<Collider2D>();
+    private float planCooldownTimer = 0f;          // Prevents re-rolling maneuver decisions every frame
+
+    [Header("Approach Planning")]
+    [Tooltip("How long (seconds) she idles before committing to a maneuver when inside the approach stop range.")]
+    public float planDecisionInterval = 0.4f;
 
     // Animator State Names
     private const string IDLE_STATE = "FemaleStrawhatIdle";
@@ -106,13 +116,6 @@ public class FemaleStrawhatAI : MonoBehaviour, IDamageable
         {
             rb.constraints = RigidbodyConstraints2D.FreezeRotation;
         }
-
-        // Force design values to override Unity inspector serialized overrides
-        phantomDashSpeed = 22f;
-        phantomDashDuration = 0.55f;
-        dashRange = 8f;
-        dashMaxRange = 12f;
-        detectionRange = 12f;
 
         currentHealth = maxHealth;
         spriteJuice = GetComponent<SpriteJuice>();
@@ -169,7 +172,7 @@ public class FemaleStrawhatAI : MonoBehaviour, IDamageable
 
     void FixedUpdate()
     {
-        if (rb == null || currentState == State.Dead || currentState == State.HitStun || currentState == State.Dashing || currentState == State.Attacking)
+        if (rb == null || currentState == State.Attacking || currentState == State.Dead || currentState == State.HitStun || currentState == State.Dashing)
             return;
 
         if (currentState == State.Patrolling)
@@ -227,6 +230,7 @@ public class FemaleStrawhatAI : MonoBehaviour, IDamageable
         {
             rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
             isCircling = false;
+            planCooldownTimer = 0f;
             if (Time.time >= lastAttackTime + attackCooldown)
             {
                 StartCoroutine(PerformAttackRoutine());
@@ -239,15 +243,67 @@ public class FemaleStrawhatAI : MonoBehaviour, IDamageable
             return;
         }
 
-        // 2. Phantom Dash — Hornet-style long lunge from far away
+        // 2. Approach Stop Range — stop running, go idle, then plan ONE maneuver
+        //    The planCooldownTimer prevents spamming coroutines every FixedUpdate frame.
+        if (horizontalDist <= approachStopRange)
+        {
+            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+            isCircling = false;
+            PlayAnimation(IDLE_STATE);
+            FlipSprite(playerDirection);
+
+            // Tick down the planning cooldown
+            if (planCooldownTimer > 0f)
+            {
+                planCooldownTimer -= Time.fixedDeltaTime;
+                return;
+            }
+
+            // Ready to plan — pick ONE maneuver and set a cooldown so we don't re-roll next frame
+            if (Time.time >= lastDashTime + dashCooldown)
+            {
+                planCooldownTimer = planDecisionInterval;
+
+                float choice = Random.value;
+                if (choice < 0.35f && Time.time >= lastBackdashTime + backdashCooldown)
+                {
+                    // Feint Re-dash (backdash then forward dash attack)
+                    StartCoroutine(PerformFeintRedashRoutine(playerDirection));
+                }
+                else if (choice < 0.75f)
+                {
+                    // Phantom Dash directly at the player
+                    StartCoroutine(PerformPhantomDashRoutine(playerDirection));
+                }
+                else if (Time.time >= lastBackdashTime + backdashCooldown)
+                {
+                    // Defensive backdash to create space
+                    StartCoroutine(PerformBackdashRoutine(-playerDirection));
+                }
+                else
+                {
+                    // All maneuvers on cooldown — just wait idle
+                    planCooldownTimer = 0.3f;
+                }
+            }
+            else
+            {
+                // Dash still on cooldown — idle-wait with a short timer to avoid re-checking every frame
+                planCooldownTimer = 0.2f;
+            }
+            return;
+        }
+
+        // 3. Phantom Dash — Hornet-style long lunge from far away
         if (horizontalDist >= dashRange && horizontalDist <= dashMaxRange && Time.time >= lastDashTime + dashCooldown)
         {
             isCircling = false;
+            planCooldownTimer = 0f;
             StartCoroutine(PerformPhantomDashRoutine(playerDirection));
             return;
         }
 
-        // 3. Circling Behavior — pacing back and forth at mid-range before committing
+        // 4. Circling Behavior — pacing back and forth at mid-range before committing
         if (horizontalDist >= circleRangeMin && horizontalDist <= circleRangeMax
             && Time.time >= lastAttackTime + attackCooldown * 0.5f)
         {
@@ -255,7 +311,6 @@ public class FemaleStrawhatAI : MonoBehaviour, IDamageable
             {
                 isCircling = true;
                 circleTimer = circleDuration;
-                // Choose a random direction to pace
                 circleDirection = Random.value > 0.5f ? 1f : -1f;
             }
 
@@ -264,17 +319,17 @@ public class FemaleStrawhatAI : MonoBehaviour, IDamageable
                 circleTimer -= Time.fixedDeltaTime;
                 rb.linearVelocity = new Vector2(circleDirection * circleSpeed, rb.linearVelocity.y);
                 PlayAnimation(RUN_STATE);
-                FlipSprite(playerDirection); // Always face the player while circling
+                FlipSprite(playerDirection);
                 return;
             }
             else
             {
                 isCircling = false;
-                // After circling, either dash or run in
             }
         }
 
-        // 4. Normal Chase Run
+        // 5. Normal Chase Run — reset planning timer when running
+        planCooldownTimer = 0f;
         rb.linearVelocity = new Vector2(playerDirection * moveSpeed, rb.linearVelocity.y);
         PlayAnimation(RUN_STATE);
         FlipSprite(playerDirection);
@@ -289,6 +344,13 @@ public class FemaleStrawhatAI : MonoBehaviour, IDamageable
         PlayAnimation(DASH_STATE);
         FlipSprite(direction);
 
+        // Match the burst to the actual animation instead of a disconnected timer.
+        // The destination is chosen once, so a moving player cannot pull the dash around.
+        float dashDuration = GetAnimationDuration(DASH_STATE, phantomDashDuration);
+        float playerDistance = GetHorizontalDistanceToPlayer();
+        float dashDistance = Mathf.Clamp(playerDistance + dashOvershootDistance * 0.35f, 4.5f, 8.5f);
+        float dashSpeed = dashDistance / Mathf.Max(dashDuration, 0.05f);
+
         // Disable physical collision with player so we pass through
         Collider2D[] playerColliders = player != null ? player.GetComponentsInChildren<Collider2D>() : null;
         if (playerColliders != null && bodyCollider != null)
@@ -298,6 +360,7 @@ public class FemaleStrawhatAI : MonoBehaviour, IDamageable
                 if (pCol != null && !pCol.isTrigger)
                 {
                     Physics2D.IgnoreCollision(bodyCollider, pCol, true);
+                    ignoredDashColliders.Add(pCol);
                 }
             }
         }
@@ -309,11 +372,11 @@ public class FemaleStrawhatAI : MonoBehaviour, IDamageable
             float elapsed = 0f;
             float graceTime = 0.08f; // Brief grace before wall checks
 
-            while (elapsed < phantomDashDuration)
+            while (elapsed < dashDuration)
             {
                 if (currentState == State.Dead || currentState == State.HitStun) yield break;
 
-                rb.linearVelocity = new Vector2(direction * phantomDashSpeed, rb.linearVelocity.y);
+                rb.linearVelocity = new Vector2(direction * dashSpeed, rb.linearVelocity.y);
 
                 // Slash damage on pass-through (AABB overlap check)
                 if (!hasDealtDamage && player != null && playerColliders != null)
@@ -360,17 +423,7 @@ public class FemaleStrawhatAI : MonoBehaviour, IDamageable
         }
         finally
         {
-            // Restore physical collision with player
-            if (playerColliders != null && bodyCollider != null)
-            {
-                foreach (var pCol in playerColliders)
-                {
-                    if (pCol != null)
-                    {
-                        Physics2D.IgnoreCollision(bodyCollider, pCol, false);
-                    }
-                }
-            }
+            RestoreDashCollisions();
             rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
         }
 
@@ -387,6 +440,32 @@ public class FemaleStrawhatAI : MonoBehaviour, IDamageable
                 currentState = State.Chasing;
             }
         }
+    }
+
+    private void RestoreDashCollisions()
+    {
+        if (bodyCollider != null)
+        {
+            foreach (Collider2D playerCollider in ignoredDashColliders)
+            {
+                if (playerCollider != null)
+                    Physics2D.IgnoreCollision(bodyCollider, playerCollider, false);
+            }
+        }
+        ignoredDashColliders.Clear();
+    }
+
+    private float GetAnimationDuration(string stateName, float fallback)
+    {
+        if (anim == null || anim.runtimeAnimatorController == null)
+            return fallback;
+
+        foreach (AnimationClip clip in anim.runtimeAnimatorController.animationClips)
+        {
+            if (clip != null && clip.name == stateName && clip.length > 0.01f)
+                return clip.length;
+        }
+        return fallback;
     }
 
     // ── Backdash (defensive disengage) ────────────────────────────
@@ -559,8 +638,8 @@ public class FemaleStrawhatAI : MonoBehaviour, IDamageable
     {
         if (anim == null) return;
 
-        // Force transition if state changes
-        if (currentAnimState != stateName)
+        bool stateChanged = currentAnimState != stateName;
+        if (stateChanged)
         {
             anim.Play(stateName);
             currentAnimState = stateName;
@@ -576,21 +655,21 @@ public class FemaleStrawhatAI : MonoBehaviour, IDamageable
         }
 
         // Fire animator triggers to keep the Animator state machine updated
-        if (stateName == DASH_STATE)
+        if (stateChanged && stateName == DASH_STATE)
         {
             if (AnimatorHasParameter("dash", AnimatorControllerParameterType.Trigger))
             {
                 anim.SetTrigger("dash");
             }
         }
-        else if (stateName == COMBO_STATE)
+        else if (stateChanged && stateName == COMBO_STATE)
         {
             if (AnimatorHasParameter("Attack1", AnimatorControllerParameterType.Trigger))
             {
                 anim.SetTrigger("Attack1");
             }
         }
-        else if (stateName == DOUBLE_HIT_STATE)
+        else if (stateChanged && stateName == DOUBLE_HIT_STATE)
         {
             if (AnimatorHasParameter("attack", AnimatorControllerParameterType.Trigger))
             {
@@ -690,11 +769,13 @@ public class FemaleStrawhatAI : MonoBehaviour, IDamageable
         currentHealth = Mathf.Max(currentHealth, 0);
 
         // Interrupt everything — rewards the player for landing hits
+        RestoreDashCollisions();
+        Vector2 hitDir = player != null ? (Vector2)(transform.position - player.position).normalized : Vector2.right;
+        SpawnHitParticles(hitDir);
         StopAllCoroutines();
 
         if (spriteJuice != null)
         {
-            Vector2 hitDir = player != null ? (Vector2)(transform.position - player.position).normalized : Vector2.right;
             spriteJuice.PlayHitReaction(hitDir, knockbackForce);
         }
 
@@ -705,6 +786,21 @@ public class FemaleStrawhatAI : MonoBehaviour, IDamageable
         else
         {
             StartCoroutine(HitStunRoutine());
+        }
+    }
+
+    private void SpawnHitParticles(Vector2 hitDirection)
+    {
+        const int sparkCount = 7;
+        Vector3 origin = bodyCollider != null ? bodyCollider.bounds.center : transform.position;
+        int sortingOrder = spriteRenderer != null ? spriteRenderer.sortingOrder + 1 : 1;
+
+        for (int i = 0; i < sparkCount; i++)
+        {
+            Vector2 direction = Quaternion.Euler(0f, 0f, Random.Range(-70f, 70f)) * hitDirection;
+            Vector2 velocity = direction.normalized * Random.Range(2.2f, 4.4f) + Vector2.up * Random.Range(0.4f, 1.6f);
+            Color color = Color.Lerp(new Color(1f, 0.72f, 0.35f), new Color(1f, 0.25f, 0.18f), Random.value);
+            HitSpark.Create(origin, velocity, color, sortingOrder);
         }
     }
 
@@ -789,5 +885,49 @@ public class FemaleStrawhatAI : MonoBehaviour, IDamageable
 
         Gizmos.color = Color.blue;
         Gizmos.DrawWireSphere(center, dashMaxRange);
+    }
+}
+
+/// <summary>Small code-driven impact sparks; no prefab or particle asset required.</summary>
+public class HitSpark : MonoBehaviour
+{
+    private SpriteRenderer spriteRenderer;
+    private Vector2 velocity;
+    private float lifetime;
+    private float age;
+
+    public static void Create(Vector3 position, Vector2 initialVelocity, Color color, int sortingOrder)
+    {
+        GameObject spark = new GameObject("HitSpark");
+        spark.transform.position = position + (Vector3)Random.insideUnitCircle * 0.12f;
+        spark.transform.localScale = Vector3.one * Random.Range(0.045f, 0.09f);
+
+        SpriteRenderer renderer = spark.AddComponent<SpriteRenderer>();
+        renderer.sprite = Sprite.Create(Texture2D.whiteTexture, new Rect(0f, 0f, 1f, 1f), new Vector2(0.5f, 0.5f));
+        renderer.color = color;
+        renderer.sortingOrder = sortingOrder;
+
+        HitSpark behaviour = spark.AddComponent<HitSpark>();
+        behaviour.spriteRenderer = renderer;
+        behaviour.velocity = initialVelocity;
+        behaviour.lifetime = Random.Range(0.18f, 0.32f);
+    }
+
+    private void Update()
+    {
+        age += Time.deltaTime;
+        velocity += Physics2D.gravity * 0.35f * Time.deltaTime;
+        transform.position += (Vector3)(velocity * Time.deltaTime);
+
+        float remaining = 1f - age / lifetime;
+        if (spriteRenderer != null)
+        {
+            Color color = spriteRenderer.color;
+            color.a = Mathf.Clamp01(remaining) * 0.9f;
+            spriteRenderer.color = color;
+        }
+
+        if (age >= lifetime)
+            Destroy(gameObject);
     }
 }

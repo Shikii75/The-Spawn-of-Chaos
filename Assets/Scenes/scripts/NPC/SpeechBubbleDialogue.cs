@@ -152,6 +152,8 @@ public class SpeechBubbleDialogue : MonoBehaviour
 
     private void HandleInput()
     {
+        if (NyxarisManager.IsTyping || NyxarisManager.IsChatActive) return;
+
         // Open
         if (_playerNear && !_isOpen && Input.GetKeyDown(interactKey))
         {

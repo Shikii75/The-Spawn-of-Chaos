@@ -104,11 +104,12 @@ public class MainMenuController : MonoBehaviour
 
     void Awake()
     {
-        if (isPlaying)
-        {
-            gameObject.SetActive(false);
-            return;
-        }
+        // Ensure static isPlaying is reset to false when title screen initializes
+        isPlaying = false;
+
+        // Force HUD & Orbs visibility refresh
+        if (HUDManager.Instance != null) HUDManager.Instance.UpdateVisibility();
+        if (SpawnOfChaos.Minigames.HUDOrbPanel.Instance != null) SpawnOfChaos.Minigames.HUDOrbPanel.Instance.UpdateVisibility();
 
         // Editor runtime auto-load fallback
 #if UNITY_EDITOR
@@ -506,6 +507,10 @@ public class MainMenuController : MonoBehaviour
     {
         PlayClickSFX();
         isPlaying = true; // Set playing to true so menu clears on reload
+
+        // Instantly notify HUD and Orbs to activate on gameplay start
+        if (HUDManager.Instance != null) HUDManager.Instance.UpdateVisibility();
+        if (SpawnOfChaos.Minigames.HUDOrbPanel.Instance != null) SpawnOfChaos.Minigames.HUDOrbPanel.Instance.UpdateVisibility();
 
         // Hide panels immediately
         if (mainPanel != null) mainPanel.SetActive(false);

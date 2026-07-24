@@ -66,6 +66,11 @@ public class entersign : MonoBehaviour
 
     private void Update()
     {
+        if (NyxarisManager.IsTyping || NyxarisManager.IsChatActive)
+        {
+            return;
+        }
+
         // If the player is inside and presses the interact key, load the destination scene
         if (isPlayerInside)
         {

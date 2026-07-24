@@ -189,7 +189,13 @@ public class SpiderBoss : MonoBehaviour
         for (int i = 0; i < count; i++)
         {
             Vector3 offset = new Vector3((i - 1) * 0.8f, -0.5f, 0);
-            Instantiate(spiderlingPrefab, webSpawnPoint.position + offset, Quaternion.identity);
+            GameObject sObj = Instantiate(spiderlingPrefab, webSpawnPoint.position + offset, Quaternion.identity);
+            EnemySpawnFX spawnFX = sObj.GetComponent<EnemySpawnFX>();
+            if (spawnFX == null)
+            {
+                spawnFX = sObj.AddComponent<EnemySpawnFX>();
+                spawnFX.spawnStyle = EnemySpawnFX.SpawnStyle.GroundRise;
+            }
         }
     }
 

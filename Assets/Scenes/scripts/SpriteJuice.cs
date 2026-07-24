@@ -28,6 +28,8 @@ public class SpriteJuice : MonoBehaviour
     private Vector3 originalLocalPosition;
     private Coroutine juiceCoroutine;
     private MaterialPropertyBlock propBlock;
+    private Color baseSpriteColor = Color.white;
+    private bool hasBaseSpriteColor = false;
 
     private static readonly int FlashColorId = Shader.PropertyToID("_FlashColor");
     private static readonly int FlashAmountId = Shader.PropertyToID("_FlashAmount");
@@ -42,6 +44,8 @@ public class SpriteJuice : MonoBehaviour
         if (spriteRenderer != null)
         {
             originalLocalPosition = spriteRenderer.transform.localPosition;
+            baseSpriteColor = spriteRenderer.color;
+            hasBaseSpriteColor = true;
         }
     }
 
@@ -67,11 +71,10 @@ public class SpriteJuice : MonoBehaviour
 
     private IEnumerator JuiceRoutine()
     {
-        // Keep track of original sprite color/material settings
-        Color originalColor = Color.white;
-        if (spriteRenderer != null)
+        if (spriteRenderer != null && !hasBaseSpriteColor)
         {
-            originalColor = spriteRenderer.color;
+            baseSpriteColor = spriteRenderer.color;
+            hasBaseSpriteColor = true;
         }
 
         // --- A. Apply Hit-Stop (Freeze Animator) ---
@@ -84,7 +87,7 @@ public class SpriteJuice : MonoBehaviour
         if (enableFlash && spriteRenderer != null)
         {
             // Check if the material supports our custom flash shader properties
-            if (spriteRenderer.sharedMaterial.HasProperty(FlashAmountId))
+            if (spriteRenderer.sharedMaterial != null && spriteRenderer.sharedMaterial.HasProperty(FlashAmountId))
             {
                 spriteRenderer.GetPropertyBlock(propBlock);
                 propBlock.SetColor(FlashColorId, flashColor);
@@ -111,7 +114,7 @@ public class SpriteJuice : MonoBehaviour
             // Restore Flash mid-way if flash duration ends before shake
             if (enableFlash && spriteRenderer != null && elapsed >= flashDuration)
             {
-                ClearFlash(originalColor);
+                ClearFlash();
             }
 
             elapsed += Time.unscaledDeltaTime;
@@ -122,7 +125,7 @@ public class SpriteJuice : MonoBehaviour
         if (spriteRenderer != null)
         {
             spriteRenderer.transform.localPosition = originalLocalPosition;
-            ClearFlash(originalColor);
+            ClearFlash();
         }
 
         if (enableHitStop && anim != null)
@@ -133,19 +136,19 @@ public class SpriteJuice : MonoBehaviour
         juiceCoroutine = null;
     }
 
-    private void ClearFlash(Color originalColor)
+    private void ClearFlash()
     {
         if (spriteRenderer == null) return;
 
-        if (spriteRenderer.sharedMaterial.HasProperty(FlashAmountId))
+        if (spriteRenderer.sharedMaterial != null && spriteRenderer.sharedMaterial.HasProperty(FlashAmountId))
         {
             spriteRenderer.GetPropertyBlock(propBlock);
             propBlock.SetFloat(FlashAmountId, 0f);
             spriteRenderer.SetPropertyBlock(propBlock);
         }
-        else
+        else if (hasBaseSpriteColor)
         {
-            spriteRenderer.color = originalColor;
+            spriteRenderer.color = baseSpriteColor;
         }
     }
 
@@ -156,12 +159,7 @@ public class SpriteJuice : MonoBehaviour
         if (spriteRenderer != null)
         {
             spriteRenderer.transform.localPosition = originalLocalPosition;
-            if (spriteRenderer.sharedMaterial.HasProperty(FlashAmountId))
-            {
-                spriteRenderer.GetPropertyBlock(propBlock);
-                propBlock.SetFloat(FlashAmountId, 0f);
-                spriteRenderer.SetPropertyBlock(propBlock);
-            }
+            ClearFlash();
         }
     }
 }

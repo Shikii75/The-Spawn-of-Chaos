@@ -67,12 +67,22 @@ public class HUDManager : MonoBehaviour
 
         BuildUI();
 
-        // Hide HUD if the main menu is active and not playing yet
-        MainMenuController menu = FindObjectOfType<MainMenuController>();
-        if (menu != null && !MainMenuController.isPlaying)
+        // Ensure PlayerLevelSystem exists
+        if (SpawnOfChaos.Systems.PlayerLevelSystem.Instance == null)
         {
-            canvas.gameObject.SetActive(false);
+            GameObject levelSysGO = new GameObject("PlayerLevelSystem");
+            levelSysGO.AddComponent<SpawnOfChaos.Systems.PlayerLevelSystem>();
         }
+
+        // Add real-time Procedural Orbs HUD Panel to the Canvas
+        if (SpawnOfChaos.Minigames.HUDOrbPanel.Instance == null && canvas != null)
+        {
+            GameObject orbPanelGO = new GameObject("HUDOrbPanelManager");
+            orbPanelGO.transform.SetParent(canvas.transform, false);
+            orbPanelGO.AddComponent<SpawnOfChaos.Minigames.HUDOrbPanel>();
+        }
+
+        UpdateVisibility();
     }
 
     // ══════════════════════════════════════════════════════════════════
@@ -81,8 +91,8 @@ public class HUDManager : MonoBehaviour
 
     private void BuildUI()
     {
-        // ── Canvas (sort order 0) ──
-        canvas = UIFactory.CreateCanvas("HUDCanvas", 0);
+        // ── Canvas (sort order -10, layered below menus & overlays) ──
+        canvas = UIFactory.CreateCanvas("HUDCanvas", -10);
         canvas.transform.SetParent(null, false);
         DontDestroyOnLoad(canvas.gameObject);
 
@@ -245,25 +255,96 @@ public class HUDManager : MonoBehaviour
             UIFactory.SetRect(waveRT2, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
         }
 
-        if (playerGameObject == null)
+        RebindPlayerReferences();
+        UpdateVisibility();
+    }
+
+    void OnEnable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    void OnDisable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+        UnsubscribePlayerEvents();
+    }
+
+    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        RebindPlayerReferences();
+        UpdateVisibility();
+    }
+
+    public Canvas Canvas => canvas;
+
+    public static bool IsInMainMenu()
+    {
+        MainMenuController menu = FindObjectOfType<MainMenuController>(true);
+        if (menu != null)
         {
-            playerGameObject = GameObject.FindGameObjectWithTag("Player");
+            if (!MainMenuController.isPlaying || menu.gameObject.activeInHierarchy)
+            {
+                return true;
+            }
         }
 
+        string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        if (!MainMenuController.isPlaying && (sceneName.Equals("SampleScene", System.StringComparison.OrdinalIgnoreCase) || sceneName.Equals("MainMenu", System.StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    public static bool IsGameplayActive()
+    {
+        // Hide during Main Menu / Title Screen
+        if (IsInMainMenu()) return false;
+
+        // Hide during Pause Menu
+        if (PauseMenu.Instance != null && PauseMenu.Instance.isPaused) return false;
+
+        // Hide during Shop UI
+        if (ShopUI.Instance != null && ShopUI.Instance.IsShopActive) return false;
+
+        // Hide during Nyxaris AI Chat
+        if (NyxarisManager.IsChatActive) return false;
+
+        // Hide during NPC Speech Bubble Dialogue
+        if (NPCDialogueUI.Instance != null && NPCDialogueUI.Instance.IsDialogueActive) return false;
+
+        return true;
+    }
+
+    public void UpdateVisibility()
+    {
+        bool shouldShowHUD = IsGameplayActive();
+
+        if (canvas != null && canvas.gameObject.activeSelf != shouldShowHUD)
+        {
+            canvas.gameObject.SetActive(shouldShowHUD);
+        }
+    }
+
+    public void RebindPlayerReferences()
+    {
+        UnsubscribePlayerEvents();
+
+        playerGameObject = GameObject.FindGameObjectWithTag("Player");
         if (playerGameObject != null)
         {
             playerHealth = playerGameObject.GetComponent<Health>();
             playerCombat = playerGameObject.GetComponent<MageCombat>();
             playerCurrency = playerGameObject.GetComponent<PlayerCurrency>();
 
-            // Subscribe to Health Events
             if (playerHealth != null)
             {
                 playerHealth.onDamageTaken += UpdateHealthUI;
                 playerHealth.onMaxHealthChanged += UpdateMaxHealthUI;
             }
 
-            // Subscribe to Currency Events
             if (playerCurrency != null)
             {
                 playerCurrency.onCoinsChanged += UpdateCoinsUI;
@@ -274,9 +355,8 @@ public class HUDManager : MonoBehaviour
         }
     }
 
-    void OnDestroy()
+    private void UnsubscribePlayerEvents()
     {
-        // Unsubscribe to prevent memory leaks
         if (playerHealth != null)
         {
             playerHealth.onDamageTaken -= UpdateHealthUI;
@@ -290,8 +370,19 @@ public class HUDManager : MonoBehaviour
         }
     }
 
+    void OnDestroy()
+    {
+        UnsubscribePlayerEvents();
+    }
+
     void Update()
     {
+        UpdateVisibility();
+
+        if (playerGameObject == null)
+        {
+            RebindPlayerReferences();
+        }
         // Smoothly drain the catch-up health fills
         for (int i = 0; i < unitCatchUpFills.Count; i++)
         {

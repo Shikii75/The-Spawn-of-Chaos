@@ -113,12 +113,21 @@ public class BaseMob : MonoBehaviour, IDamageable
             Die();
     }
 
+    private Color baseMobSpriteColor = Color.white;
+    private bool hasCachedMobColor = false;
+
     private System.Collections.IEnumerator FlashHit()
     {
-        Color original = spriteRenderer.color;
+        if (spriteRenderer == null) yield break;
+        if (!hasCachedMobColor)
+        {
+            baseMobSpriteColor = spriteRenderer.color;
+            hasCachedMobColor = true;
+        }
+
         spriteRenderer.color = Color.red;
         yield return new WaitForSeconds(hitFlashDuration);
-        spriteRenderer.color = original;
+        spriteRenderer.color = baseMobSpriteColor;
     }
 
     private void Die()

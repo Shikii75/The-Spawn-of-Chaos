@@ -117,12 +117,21 @@ public class Spiderling : MonoBehaviour, IDamageable
         }
     }
 
+    private Color baseSpiderlingColor = Color.white;
+    private bool hasCachedSpiderlingColor = false;
+
     private System.Collections.IEnumerator FlashRed(SpriteRenderer sr)
     {
-        Color orig = sr.color;
+        if (sr == null) yield break;
+        if (!hasCachedSpiderlingColor)
+        {
+            baseSpiderlingColor = sr.color;
+            hasCachedSpiderlingColor = true;
+        }
+
         sr.color = Color.red;
         yield return new WaitForSeconds(0.1f);
-        sr.color = orig;
+        sr.color = baseSpiderlingColor;
     }
 
     private void Die()
@@ -138,15 +147,8 @@ public class Spiderling : MonoBehaviour, IDamageable
             anim.SetTrigger("Die");
         }
 
-        // Spawn a coin on death (30% chance)
-        if (Random.value < 0.3f)
-        {
-            PlayerCurrency pc = FindFirstObjectByType<PlayerCurrency>();
-            if (pc != null)
-            {
-                pc.AddCoins(2);
-            }
-        }
+        // Spawn collectible Health, Mana, Currency, and EXP Orbs on death!
+        SpawnOfChaos.Systems.OrbSpawner.SpawnLootCluster(transform.position, Random.Range(2, 4));
 
         Destroy(gameObject, 0.5f);
     }

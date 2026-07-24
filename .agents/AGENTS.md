@@ -60,3 +60,26 @@
 4. **Rigidbody2D vs Transform Manipulation**:
    - Avoid directly modifying `transform.position` on active dynamic Rigidbody2D objects during movement or dashes. This conflicts with Unity's internal physics loop and creates stutter. Use `rb.linearVelocity` (or `rb.velocity`).
    - If performing wall or ledge safety raycasts at the start of a dash, allow a brief grace period (e.g., 0.1s - 0.15s) before checks become active so the entity has time to begin moving away from its starting grid intersection.
+
+### Game Dev OS: Procedural Orbs, Collectibles & Level Progression Standards
+
+1. **Procedural Liquid Splash HUD Orbs**:
+   - Do not rely solely on static UI images for Health, Mana, Currency, and EXP meters.
+   - Use `ProceduralOrbRenderer` and `ProceduralOrbUI` to generate dynamic C# dual-wave fluid physics, glass shell highlights, procedural core emblem overlays (Heart, Arcane Star, Coin, EXP Star), and splash particle physics.
+   - Call `HUDOrbPanel.Instance.TriggerSplash(orbType, intensity)` whenever player takes damage, spends mana, loots currency, or collects EXP.
+
+2. **2D Collectible World Orbs & Magnetic Homing**:
+   - Defeated enemies, bosses, chests, and breakables should drop 2D `CollectibleOrb` items using `OrbSpawner.SpawnLootCluster(position, count)`.
+   - `CollectibleOrb` entities feature automatic 2D procedural glowing sprites, gentle floating bobbing, and magnetic homing acceleration when the Player comes within `4.5` units.
+   - Upon collection, orb pickup immediately restores stats (HP, MP, Coins, EXP) and triggers a real-time liquid splash burst on the matching HUD Orb container.
+
+3. **Player Level & EXP Progression Engine**:
+   - EXP collected from EP Orbs increases `PlayerLevelSystem.Instance.CurrentExp`.
+   - When `CurrentExp >= ExpToNextLevel`, `PlayerLevelSystem` automatically triggers a **Level Up**:
+     - Player level increments (`Lv 1` -> `Lv 2`, etc.).
+     - `ExpToNextLevel` scales up by `1.5x`.
+     - Player Health & Mana are fully restored to maximum.
+     - Triggers a violent plasma explosion on the EP HUD Orb and displays the screen-wide "LEVEL UP! REACHED LEVEL X" banner popup animation.
+
+4. **Arcade Minigame Integration**:
+   - Arcade minigames (like `OrbSplashArcadeUI`, `ShadowRunnerArcadeUI`, `VoidSpectrumArcadeUI`, `SkyboundArcadeUI`) must be registered as playable cards inside `MinigameHubUI.cs` so players can launch them directly from the pause menu.

@@ -118,6 +118,8 @@ public class ShopUI : MonoBehaviour
             shopPanel.SetActive(true);
             UpdateCurrencyUI();
             RefreshShopItems();
+            HUDManager.Instance?.UpdateVisibility();
+            SpawnOfChaos.Minigames.HUDOrbPanel.Instance?.UpdateVisibility();
         }
     }
 
@@ -126,6 +128,8 @@ public class ShopUI : MonoBehaviour
         if (shopPanel != null)
         {
             shopPanel.SetActive(false);
+            HUDManager.Instance?.UpdateVisibility();
+            SpawnOfChaos.Minigames.HUDOrbPanel.Instance?.UpdateVisibility();
         }
     }
 

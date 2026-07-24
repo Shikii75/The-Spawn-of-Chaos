@@ -42,15 +42,21 @@ public class BreakableObject : MonoBehaviour, IDamageable
         }
     }
 
+    private Color baseBreakableColor = Color.white;
+    private bool hasCachedBreakableColor = false;
+
     private System.Collections.IEnumerator HitFlash()
     {
-        if (sr != null)
+        if (sr == null) yield break;
+        if (!hasCachedBreakableColor)
         {
-            Color origColor = sr.color;
-            sr.color = Color.red;
-            yield return new WaitForSeconds(0.1f);
-            sr.color = origColor;
+            baseBreakableColor = sr.color;
+            hasCachedBreakableColor = true;
         }
+
+        sr.color = Color.red;
+        yield return new WaitForSeconds(0.1f);
+        sr.color = baseBreakableColor;
     }
 
     private void Break()
