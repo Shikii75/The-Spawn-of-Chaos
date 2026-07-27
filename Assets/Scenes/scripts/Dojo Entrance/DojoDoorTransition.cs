@@ -128,13 +128,10 @@ public class DojoDoorTransition : MonoBehaviour
                     Debug.LogWarning($"{name}: destinationPoint is not assigned for {doorName}.");
                 }
             }
-        }, loadScene ? null : () =>
+        }, () =>
         {
-            if (!loadScene)
-            {
-                SetAnimatorTriggerIfPresent(animator, arriveTrigger);
-                SetPlayerControl(player, true);
-            }
+            SetAnimatorTriggerIfPresent(animator, arriveTrigger);
+            SetPlayerControl(player, true);
             isTransitioning = false;
         });
 

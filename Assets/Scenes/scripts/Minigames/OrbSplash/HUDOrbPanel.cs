@@ -138,7 +138,7 @@ namespace SpawnOfChaos.Minigames
         {
             if (damageTaken > 0 && healthOrbUI != null)
             {
-                healthOrbUI.TriggerSplash(1.5f);
+                healthOrbUI.TriggerShake(1.5f, 0.4f);
             }
         }
 
@@ -295,18 +295,18 @@ namespace SpawnOfChaos.Minigames
                 DontDestroyOnLoad(canvas.gameObject);
             }
 
-            // Top-Right Container Panel
+            // Top-Left Container Panel (Primary HUD Orbs)
             panelGO = new GameObject("HUDOrbPanel", typeof(RectTransform));
             panelGO.transform.SetParent(canvas.transform, false);
 
             RectTransform panelRT = panelGO.GetComponent<RectTransform>();
-            UIFactory.SetRectFixed(panelRT, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-155f, -40f), new Vector2(280f, 75f));
+            UIFactory.SetRectFixed(panelRT, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(155f, -40f), new Vector2(280f, 75f));
 
             HorizontalLayoutGroup hlg = panelGO.AddComponent<HorizontalLayoutGroup>();
             hlg.spacing = 10f;
             hlg.childControlWidth = false;
             hlg.childControlHeight = false;
-            hlg.childAlignment = TextAnchor.MiddleRight;
+            hlg.childAlignment = TextAnchor.MiddleLeft;
 
             // Create 4 Orbs
             healthOrbUI = CreateOrbItem(panelRT, OrbType.Health, "HP");

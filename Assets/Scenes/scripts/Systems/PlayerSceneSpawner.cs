@@ -1,5 +1,12 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using System.Collections;
 
+/// <summary>
+/// Handles player spawning/transport on scene transitions.
+/// Finds the persistent DontDestroyOnLoad player, moves them to the target spawn point,
+/// re-enables controls, and binds the camera.
+/// </summary>
 public class PlayerSceneSpawner : MonoBehaviour
 {
     public GameObject playerPrefab;
@@ -7,86 +14,343 @@ public class PlayerSceneSpawner : MonoBehaviour
 
     private void Start()
     {
+        // Guarantee game time is unpaused upon scene load
+        Time.timeScale = 1f;
+
+        string sceneName = SceneManager.GetActiveScene().name;
+        Debug.Log($"[PlayerSceneSpawner] ===== START in scene '{sceneName}' =====");
+
         string targetName = PlayerSpawnPointManager.targetSpawnPointName;
         bool isRespawning = PlayerSpawnPointManager.isRespawning;
-        
+
+        Debug.Log($"[PlayerSceneSpawner] targetSpawnPointName='{targetName}', isRespawning={isRespawning}");
+
         // Clear immediately so it does not persist across future play tests/restarts
         PlayerSpawnPointManager.targetSpawnPointName = "";
         PlayerSpawnPointManager.isRespawning = false;
 
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        // --- Step 1: Find the persistent player ---
+        GameObject player = FindPersistentPlayer();
+        Debug.Log($"[PlayerSceneSpawner] FindPersistentPlayer returned: {(player != null ? player.name : "NULL")}");
 
-        // If targetName is empty, not respawning, and the player exists, leave them at their placed editor position.
+        // --- Step 2: Clean up duplicates ---
+        CleanupDuplicatePlayers(ref player);
+
+        // --- Step 3: No spawn point and no respawn = editor play mode, leave player in place ---
         if (string.IsNullOrEmpty(targetName) && !isRespawning && player != null)
         {
-            Debug.Log("[PlayerSceneSpawner] No target spawn point set, not respawning, and Player exists. Leaving player at their placed editor position.");
-            SetupCameraFollow(player);
+            Debug.Log("[PlayerSceneSpawner] No target spawn point set, not respawning, and Player exists. Leaving at editor position.");
+            ActivateAndSetupPlayer(player);
             return;
         }
 
+        // --- Step 4: Resolve spawn point name ---
         if (string.IsNullOrEmpty(targetName))
         {
             targetName = defaultSpawnPointName;
+            Debug.Log($"[PlayerSceneSpawner] Using default spawn point: '{targetName}'");
         }
 
-        GameObject spawnPoint = GameObject.Find(targetName);
+        // --- Step 5: Find spawn point position ---
         Vector3 spawnPosition = Vector3.zero;
+        GameObject spawnPoint = GameObject.Find(targetName);
 
         if (spawnPoint != null)
         {
             spawnPosition = spawnPoint.transform.position;
+            Debug.Log($"[PlayerSceneSpawner] Found spawn point '{targetName}' at position {spawnPosition}");
         }
         else
         {
-            Debug.LogWarning($"[PlayerSceneSpawner] Spawn point '{targetName}' not found. Spawning at origin.");
+            Debug.LogWarning($"[PlayerSceneSpawner] Spawn point '{targetName}' NOT FOUND in scene '{sceneName}'. Using origin.");
         }
 
+        // --- Step 6: Instantiate or transport ---
         if (player == null)
         {
             if (playerPrefab != null)
             {
                 player = Instantiate(playerPrefab, spawnPosition, Quaternion.identity);
-                Debug.Log($"[PlayerSceneSpawner] Instantiated player prefab at '{targetName}'.");
+                Debug.Log($"[PlayerSceneSpawner] INSTANTIATED new player at '{targetName}' pos={spawnPosition}");
             }
             else
             {
-                Debug.LogError("[PlayerSceneSpawner] Player prefab is not assigned and no Player found in scene!");
+                Debug.LogError("[PlayerSceneSpawner] CRITICAL: No player found and no playerPrefab assigned! Player will be missing!");
+                return;
             }
         }
         else
         {
             player.transform.position = spawnPosition;
-            Debug.Log($"[PlayerSceneSpawner] Moved existing player to '{targetName}'.");
+            Debug.Log($"[PlayerSceneSpawner] TRANSPORTED existing player '{player.name}' to '{targetName}' pos={spawnPosition}");
+        }
 
-            // Resurrect/Reset the player since they died/respawned
+        // Reset health if respawning (player died and is being resurrected)
+        if (isRespawning)
+        {
             Health playerHealth = player.GetComponent<Health>();
             if (playerHealth != null)
             {
                 playerHealth.Resurrect();
+                Debug.Log("[PlayerSceneSpawner] Resurrected player health.");
             }
         }
 
-        if (player != null)
+        // --- Step 7: Activate and setup ---
+        ActivateAndSetupPlayer(player);
+
+        // --- Step 8: Delayed verification ---
+        StartCoroutine(VerifyPlayerAfterFrame(player));
+    }
+
+    /// <summary>
+    /// Find the player using singleton instances first, then tag search as fallback.
+    /// </summary>
+    private GameObject FindPersistentPlayer()
+    {
+        // Priority 1: move.Instance (set in move.Awake via DontDestroyOnLoad)
+        if (move.Instance != null)
         {
-            DontDestroyOnLoad(player);
+            Debug.Log($"[PlayerSceneSpawner] Found player via move.Instance: '{move.Instance.gameObject.name}' active={move.Instance.gameObject.activeInHierarchy}");
+            return move.Instance.gameObject;
         }
 
+        // Priority 2: PlayerPersistence.Instance
+        if (PlayerPersistence.Instance != null)
+        {
+            Debug.Log($"[PlayerSceneSpawner] Found player via PlayerPersistence.Instance: '{PlayerPersistence.Instance.gameObject.name}'");
+            return PlayerPersistence.Instance.gameObject;
+        }
+
+        // Priority 3: Tag search (finds any player including DontDestroyOnLoad objects)
+        GameObject taggedPlayer = GameObject.FindGameObjectWithTag("Player");
+        if (taggedPlayer != null)
+        {
+            Debug.Log($"[PlayerSceneSpawner] Found player via tag search: '{taggedPlayer.name}' active={taggedPlayer.activeInHierarchy}");
+            return taggedPlayer;
+        }
+
+        // Priority 4: FindObjectOfType on move component (searches inactive objects too)
+        move moveComponent = FindObjectOfType<move>(true);
+        if (moveComponent != null)
+        {
+            Debug.Log($"[PlayerSceneSpawner] Found player via FindObjectOfType<move>: '{moveComponent.gameObject.name}' active={moveComponent.gameObject.activeInHierarchy}");
+            return moveComponent.gameObject;
+        }
+
+        Debug.LogWarning("[PlayerSceneSpawner] No persistent player found by any method.");
+        return null;
+    }
+
+    /// <summary>
+    /// Destroy any duplicate player objects, keeping only the primary player.
+    /// </summary>
+    private void CleanupDuplicatePlayers(ref GameObject primaryPlayer)
+    {
+        GameObject[] allPlayers = GameObject.FindGameObjectsWithTag("Player");
+        Debug.Log($"[PlayerSceneSpawner] Found {(allPlayers != null ? allPlayers.Length : 0)} objects tagged 'Player'");
+
+        if (allPlayers == null || allPlayers.Length == 0)
+        {
+            return;
+        }
+
+        // If no primary player was found via singletons, pick the first tagged one
+        if (primaryPlayer == null)
+        {
+            primaryPlayer = allPlayers[0];
+            Debug.Log($"[PlayerSceneSpawner] Assigned '{primaryPlayer.name}' as primary player from tag search");
+        }
+
+        // Destroy any extras
+        foreach (GameObject p in allPlayers)
+        {
+            if (p != null && p != primaryPlayer)
+            {
+                Debug.Log($"[PlayerSceneSpawner] DESTROYING duplicate player '{p.name}' (instanceID={p.GetInstanceID()})");
+                Destroy(p);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Ensure the player is fully active, has DontDestroyOnLoad, controls enabled, and camera bound.
+    /// </summary>
+    private void ActivateAndSetupPlayer(GameObject player)
+    {
+        if (player == null)
+        {
+            Debug.LogError("[PlayerSceneSpawner] ActivateAndSetupPlayer called with null player!");
+            return;
+        }
+
+        // Ensure the GameObject is active
+        if (!player.activeInHierarchy)
+        {
+            player.SetActive(true);
+            Debug.Log($"[PlayerSceneSpawner] Activated player '{player.name}'");
+        }
+
+        // Mark as persistent (must be root object for DontDestroyOnLoad)
+        if (player.transform.parent != null)
+        {
+            player.transform.SetParent(null);
+        }
+        DontDestroyOnLoad(player);
+
+        // Re-enable all controls
+        EnablePlayerControl(player);
+
+        // Bind camera
         SetupCameraFollow(player);
+
+        Debug.Log($"[PlayerSceneSpawner] Player '{player.name}' setup complete at position {player.transform.position}");
+    }
+
+    private void EnablePlayerControl(GameObject player)
+    {
+        if (player == null) return;
+
+        // Movement
+        move movement = player.GetComponent<move>();
+        if (movement != null)
+        {
+            movement.enabled = true;
+            Debug.Log("[PlayerSceneSpawner] Enabled move component");
+        }
+        else
+        {
+            Debug.LogWarning("[PlayerSceneSpawner] move component NOT FOUND on player!");
+        }
+
+        // Combat
+        MageCombat combat = player.GetComponent<MageCombat>();
+        if (combat != null)
+        {
+            combat.enabled = true;
+        }
+
+        // Sprite visibility
+        SpriteRenderer sr = player.GetComponent<SpriteRenderer>();
+        if (sr != null)
+        {
+            sr.enabled = true;
+            sr.color = new Color(sr.color.r, sr.color.g, sr.color.b, 1f); // Ensure full alpha
+            Debug.Log($"[PlayerSceneSpawner] SpriteRenderer enabled, sortingOrder={sr.sortingOrder}, sortingLayer={sr.sortingLayerName}");
+        }
+        else
+        {
+            Debug.LogWarning("[PlayerSceneSpawner] SpriteRenderer NOT FOUND on player root!");
+        }
+
+        // Also check child sprite renderers
+        SpriteRenderer[] childRenderers = player.GetComponentsInChildren<SpriteRenderer>(true);
+        foreach (SpriteRenderer csr in childRenderers)
+        {
+            csr.enabled = true;
+        }
+        Debug.Log($"[PlayerSceneSpawner] Enabled {childRenderers.Length} total SpriteRenderer(s) on player hierarchy");
+
+        // Physics
+        Rigidbody2D rb = player.GetComponent<Rigidbody2D>();
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector2.zero;
+            rb.simulated = true;
+            rb.isKinematic = false; // Ensure physics are active (death sets isKinematic=true)
+            Debug.Log("[PlayerSceneSpawner] Rigidbody2D reset: velocity=zero, simulated=true, isKinematic=false");
+        }
+
+        // Collider
+        Collider2D col = player.GetComponent<Collider2D>();
+        if (col != null)
+        {
+            col.enabled = true;
+        }
+
+        // Animator — ensure it's playing
+        Animator anim = player.GetComponent<Animator>();
+        if (anim != null)
+        {
+            anim.enabled = true;
+        }
     }
 
     private void SetupCameraFollow(GameObject player)
     {
-        var cam = Camera.main;
-        if (cam != null && player != null)
+        Camera cam = Camera.main;
+        if (cam == null)
         {
-            var follow = cam.GetComponent<CameraFollow>();
-            if (follow == null)
+            Debug.LogWarning("[PlayerSceneSpawner] Camera.main is NULL! Cannot bind camera follow.");
+            return;
+        }
+
+        if (player == null)
+        {
+            Debug.LogWarning("[PlayerSceneSpawner] Player is null in SetupCameraFollow!");
+            return;
+        }
+
+        CameraFollow follow = cam.GetComponent<CameraFollow>();
+        if (follow == null)
+        {
+            follow = cam.GetComponentInChildren<CameraFollow>(true);
+        }
+
+        if (follow != null)
+        {
+            follow.player = player.transform;
+            follow.SnapToTarget();
+            Debug.Log($"[PlayerSceneSpawner] Camera bound to player. Camera pos={cam.transform.position}, Player pos={player.transform.position}");
+        }
+        else
+        {
+            Debug.LogWarning("[PlayerSceneSpawner] CameraFollow component NOT FOUND on Main Camera!");
+        }
+    }
+
+    /// <summary>
+    /// Wait one frame then verify the player is alive and visible.
+    /// If not, attempt emergency recovery.
+    /// </summary>
+    private IEnumerator VerifyPlayerAfterFrame(GameObject player)
+    {
+        yield return null; // Wait 1 frame
+
+        if (player == null)
+        {
+            Debug.LogError("[PlayerSceneSpawner] VERIFICATION FAILED: Player was destroyed after 1 frame! Attempting emergency recovery...");
+
+            // Emergency: try to find any surviving player
+            GameObject recovered = FindPersistentPlayer();
+            if (recovered != null)
             {
-                follow = cam.GetComponentInChildren<CameraFollow>(true);
+                Debug.Log($"[PlayerSceneSpawner] Emergency recovery found player: '{recovered.name}'");
+                ActivateAndSetupPlayer(recovered);
             }
-            if (follow != null)
+            else if (playerPrefab != null)
             {
-                follow.player = player.transform;
+                // Last resort: instantiate from prefab at default spawn
+                GameObject spawnPoint = GameObject.Find(defaultSpawnPointName);
+                Vector3 pos = spawnPoint != null ? spawnPoint.transform.position : Vector3.zero;
+                GameObject emergency = Instantiate(playerPrefab, pos, Quaternion.identity);
+                Debug.LogWarning($"[PlayerSceneSpawner] Emergency instantiated player at {pos}");
+                ActivateAndSetupPlayer(emergency);
+            }
+            else
+            {
+                Debug.LogError("[PlayerSceneSpawner] FATAL: Cannot recover player — no prefab assigned.");
+            }
+        }
+        else
+        {
+            Debug.Log($"[PlayerSceneSpawner] VERIFICATION OK: Player '{player.name}' alive at {player.transform.position}, active={player.activeInHierarchy}");
+
+            // Double-check sprite renderer visibility
+            SpriteRenderer sr = player.GetComponent<SpriteRenderer>();
+            if (sr != null)
+            {
+                Debug.Log($"[PlayerSceneSpawner] SpriteRenderer check: enabled={sr.enabled}, alpha={sr.color.a}, sortOrder={sr.sortingOrder}, sortLayer={sr.sortingLayerName}");
             }
         }
     }

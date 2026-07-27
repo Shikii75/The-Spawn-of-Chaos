@@ -15,4 +15,12 @@ public class CameraFollow : MonoBehaviour
         float t = 1f - Mathf.Exp(-smoothSpeed * Time.deltaTime);
         transform.position = Vector3.Lerp(transform.position, targetPosition, t);
     }
+
+    public void SnapToTarget()
+    {
+        if (player != null)
+        {
+            transform.position = player.position + offset;
+        }
+    }
 }

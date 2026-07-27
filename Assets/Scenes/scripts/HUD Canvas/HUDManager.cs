@@ -102,83 +102,11 @@ public class HUDManager : MonoBehaviour
         float unitSize = healthUnitSize * hudScale; // Configurable unit size
         float healthY = -topMargin - 30f * Mathf.Min(hudScale, 2f);
 
-        // ──────────────────── TOP-LEFT: Health ────────────────────
-
-        // 1. Container for health units (left-aligned)
-        GameObject containerGo = new GameObject("HealthUnitsContainer");
-        containerGo.transform.SetParent(canvas.transform, false);
-        healthUnitsContainer = containerGo.AddComponent<RectTransform>();
-        healthUnitsContainer.anchorMin = new Vector2(0f, 1f);
-        healthUnitsContainer.anchorMax = new Vector2(0f, 1f);
-        healthUnitsContainer.pivot = new Vector2(0f, 1f);
-        healthUnitsContainer.anchoredPosition = new Vector2(leftMargin, healthY);
-        healthUnitsContainer.sizeDelta = new Vector2(1000f * hudScale, unitSize);
-
-        // 2. Health Text Overlay - Removed to save vertical space and keep it tidy
+        // Old rectangular HP units and MP bar sliders removed — replaced by procedural liquid Orbs (HUDOrbPanel)
+        healthUnitsContainer = null;
         healthText = null;
-
-        // ──────────────────── TOP-LEFT: Mana ────────────────────
-
-        float manaWidth = 250f * hudScale;
-        float manaHeight = 16f * hudScale;
-        float gap = 6f * Mathf.Min(hudScale, 2f); // Reduced gap from 12f
-        float manaX = leftMargin + (manaWidth / 2f);
-        float manaY = healthY - unitSize - gap - (manaHeight / 2f);
-
-        // 4. Mana Bar Outer Border Panel (Made transparent to remove outline box)
-        RectTransform manaBorderPanel = UIFactory.CreatePanel(
-            canvas.transform, "ManaBorder", 
-            Color.clear,
-            new Vector2(0f, 1f), new Vector2(0f, 1f)
-        );
-        UIFactory.SetRectFixed(manaBorderPanel,
-            new Vector2(0f, 1f), new Vector2(0f, 1f),
-            new Vector2(manaX, manaY), new Vector2(manaWidth, manaHeight)
-        );
-
-        // 5. Mana Bar Inner BG (Made transparent to remove background box)
-        RectTransform manaInnerBg = UIFactory.CreatePanel(
-            manaBorderPanel, "ManaInnerBg", 
-            Color.clear,
-            Vector2.zero, Vector2.one,
-            Vector2.zero, Vector2.zero
-        );
-
-        // 6. Mana Catch-Up Slider (Under-fill mana indicator)
-        catchUpManaSlider = UIFactory.CreateSlider(manaInnerBg, "CatchUpManaSlider", new Color(0f, 180f/255f, 220f/255f, 0.7f));
-        Transform catchUpBgTransform = catchUpManaSlider.transform.Find("Background");
-        if (catchUpBgTransform != null)
-        {
-            Image catchUpBgImg = catchUpBgTransform.GetComponent<Image>();
-            if (catchUpBgImg != null) catchUpBgImg.color = Color.clear; // Make background transparent
-        }
-        if (catchUpManaSlider.fillRect != null)
-        {
-            Image catchUpFillImg = catchUpManaSlider.fillRect.GetComponent<Image>();
-            if (catchUpFillImg != null) catchUpFillImg.color = Color.clear; // Make solid fill transparent
-        }
-        UIFactory.SetRect(catchUpManaSlider.GetComponent<RectTransform>(),
-            Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero
-        );
-
-        // 7. Main Mana Slider
-        manaSlider = UIFactory.CreateSlider(manaInnerBg, "ManaSlider", UIFactory.SliderManaFill);
-        Transform manaBgTransform = manaSlider.transform.Find("Background");
-        if (manaBgTransform != null)
-        {
-            Image manaBgImg = manaBgTransform.GetComponent<Image>();
-            if (manaBgImg != null) manaBgImg.color = Color.clear; // Make background transparent
-        }
-        if (manaSlider.fillRect != null)
-        {
-            Image manaFillImg = manaSlider.fillRect.GetComponent<Image>();
-            if (manaFillImg != null) manaFillImg.color = Color.clear; // Make solid fill transparent
-        }
-        UIFactory.SetRect(manaSlider.GetComponent<RectTransform>(),
-            Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero
-        );
-
-        // 8. Mana Text Overlay - Disabled to hide numbers entirely
+        manaSlider = null;
+        catchUpManaSlider = null;
         manaText = null;
 
         // ──────────────────── TOP-RIGHT: Coins & Potions ────────────────

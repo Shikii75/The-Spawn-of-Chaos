@@ -22,16 +22,36 @@ namespace SpawnOfChaos.Minigames
 
         private RawImage rawImage;
         private ProceduralOrbRenderer orbRenderer;
+        private RectTransform rectTransform;
+
+        // Visual lerp & hit shake fields
+        private float currentVisualFill = 0.75f;
+        private Vector2 baseAnchoredPosition;
+        private bool hasBasePosition = false;
+        private float shakeTimer = 0f;
+        private float shakeDuration = 0.35f;
+        private float shakeIntensity = 1.0f;
 
         public ProceduralOrbRenderer Renderer => orbRenderer;
 
         void Awake()
         {
+            rectTransform = GetComponent<RectTransform>();
+            if (rectTransform != null)
+            {
+                baseAnchoredPosition = rectTransform.anchoredPosition;
+                hasBasePosition = true;
+            }
             InitializeRenderer();
         }
 
         void OnEnable()
         {
+            if (rectTransform != null && !hasBasePosition)
+            {
+                baseAnchoredPosition = rectTransform.anchoredPosition;
+                hasBasePosition = true;
+            }
             if (orbRenderer == null)
             {
                 InitializeRenderer();
@@ -41,9 +61,17 @@ namespace SpawnOfChaos.Minigames
         public void InitializeRenderer()
         {
             rawImage = GetComponent<RawImage>();
+            rectTransform = GetComponent<RectTransform>();
+            if (rectTransform != null && !hasBasePosition)
+            {
+                baseAnchoredPosition = rectTransform.anchoredPosition;
+                hasBasePosition = true;
+            }
+
+            currentVisualFill = fillAmount;
             orbRenderer = new ProceduralOrbRenderer(textureResolution, textureResolution);
             orbRenderer.CurrentOrbType = orbType;
-            orbRenderer.FillAmount = fillAmount;
+            orbRenderer.FillAmount = currentVisualFill;
             orbRenderer.WaveSpeed = waveSpeed;
 
             if (rawImage != null)
@@ -69,9 +97,33 @@ namespace SpawnOfChaos.Minigames
                 fillAmount = 0.5f + Mathf.Sin(Time.unscaledTime * 1.5f) * 0.35f;
             }
 
+            // Smooth liquid fill drain/level reduction lerp
+            currentVisualFill = Mathf.Lerp(currentVisualFill, fillAmount, Time.unscaledDeltaTime * 6f);
+            if (Mathf.Abs(currentVisualFill - fillAmount) < 0.002f)
+            {
+                currentVisualFill = fillAmount;
+            }
+
             orbRenderer.CurrentOrbType = orbType;
-            orbRenderer.FillAmount = fillAmount;
+            orbRenderer.FillAmount = currentVisualFill;
             orbRenderer.WaveSpeed = waveSpeed;
+
+            // Handle hit shake animation on the UI RectTransform
+            if (shakeTimer > 0f && rectTransform != null)
+            {
+                shakeTimer -= Time.unscaledDeltaTime;
+                float progress = Mathf.Clamp01(shakeTimer / Mathf.Max(0.01f, shakeDuration));
+                float currentMag = 12f * shakeIntensity * progress;
+
+                float offsetX = Random.Range(-currentMag, currentMag);
+                float offsetY = Random.Range(-currentMag, currentMag);
+                rectTransform.anchoredPosition = baseAnchoredPosition + new Vector2(offsetX, offsetY);
+
+                if (shakeTimer <= 0f)
+                {
+                    rectTransform.anchoredPosition = baseAnchoredPosition;
+                }
+            }
 
             orbRenderer.UpdateAndRender(Time.unscaledDeltaTime);
         }
@@ -85,6 +137,26 @@ namespace SpawnOfChaos.Minigames
             {
                 orbRenderer.TriggerSplash(intensity);
             }
+        }
+
+        /// <summary>
+        /// Triggers a punchy visual shake on the Orb UI element when hit or taking damage!
+        /// </summary>
+        public void TriggerShake(float intensity = 1f, float duration = 0.35f)
+        {
+            if (rectTransform != null)
+            {
+                if (shakeTimer <= 0f || !hasBasePosition)
+                {
+                    baseAnchoredPosition = rectTransform.anchoredPosition;
+                    hasBasePosition = true;
+                }
+                shakeIntensity = intensity;
+                shakeDuration = duration;
+                shakeTimer = duration;
+            }
+
+            TriggerSplash(intensity * 1.2f);
         }
     }
 }

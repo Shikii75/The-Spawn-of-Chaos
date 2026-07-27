@@ -46,7 +46,7 @@ public class DojoTransitionFader : MonoBehaviour
 
         RectTransform overlayRect = UIFactory.CreateFullScreenPanel(canvas.transform, "DojoFadeOverlay", Color.clear);
         overlay = overlayRect.GetComponent<Image>();
-        overlay.raycastTarget = true;
+        overlay.raycastTarget = false;
     }
 
     public IEnumerator FadeOutIn(float fadeOutDuration, float holdDuration, float fadeInDuration, System.Action onHidden)
@@ -99,5 +99,6 @@ public class DojoTransitionFader : MonoBehaviour
 
         color.a = targetAlpha;
         overlay.color = color;
+        overlay.raycastTarget = targetAlpha > 0.01f;
     }
 }

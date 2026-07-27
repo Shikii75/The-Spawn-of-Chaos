@@ -34,16 +34,31 @@ public class move : MonoBehaviour
     private Animator anim;
     private bool isGrounded;
 
-    private static move instance;
+    public static move Instance { get; private set; }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatic()
+    {
+        Instance = null;
+    }
 
     void Awake()
     {
-        if (instance != null && instance != this)
+        if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
             return;
         }
-        instance = this;
+        Instance = this;
+
+        // DontDestroyOnLoad only works on root GameObjects.
+        // The Player may be parented under a holder object (e.g. "playerholder") in the scene.
+        // Detach first so the player persists across scene transitions.
+        if (transform.parent != null)
+        {
+            Debug.Log($"[move] Detaching Player from parent '{transform.parent.name}' to enable DontDestroyOnLoad.");
+            transform.SetParent(null);
+        }
         DontDestroyOnLoad(gameObject);
 
         rb = GetComponent<Rigidbody2D>();
