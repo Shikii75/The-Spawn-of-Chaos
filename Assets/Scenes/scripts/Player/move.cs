@@ -6,6 +6,11 @@ public class move : MonoBehaviour
     public float jumpForce = 12f;
     public float gravityScale = 1f;
     
+    [Header("Teleport Jump Settings")]
+    [Tooltip("If true, jumping teleports the player up a set distance with pixelated dissolve/rebuild FX instead of using standard jump animations.")]
+    public bool useTeleportJump = true;
+    public float teleportJumpDistance = 4.2f;
+
     [Header("Blob Form Settings")]
     public float blobSpeedMultiplier = 1.5f; // Makes the blob dash faster than normal running
     private bool isBlobForm = false;
@@ -32,6 +37,7 @@ public class move : MonoBehaviour
 
     private Rigidbody2D rb;
     private Animator anim;
+    private PlayerPixelDissolveFX dissolveFX;
     private bool isGrounded;
 
     public static move Instance { get; private set; }
@@ -63,6 +69,8 @@ public class move : MonoBehaviour
 
         rb = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
+        dissolveFX = GetComponent<PlayerPixelDissolveFX>();
+        if (dissolveFX == null) dissolveFX = gameObject.AddComponent<PlayerPixelDissolveFX>();
         rb.gravityScale = gravityScale;
     }
 
@@ -109,6 +117,14 @@ public class move : MonoBehaviour
                 return;
             }
         }
+
+        // 👇 Evaluate grounding with grace buffer at top of Update
+        groundedGraceTimer -= Time.deltaTime;
+        if (CheckIsGrounded())
+        {
+            groundedGraceTimer = 0.15f; // Grace buffer prevents 1-frame flickering
+        }
+        isGrounded = (groundedGraceTimer > 0f);
 
         if (dashCooldownTimer > 0f)
         {
@@ -168,19 +184,58 @@ public class move : MonoBehaviour
         anim.SetBool("isBlob", isBlobForm);
 
         // Flip sprite based on movement direction (preserving your exact inspector scales)
-        if (horizontalInput > 0)
-            transform.localScale = new Vector3(1.145f, 1.1842f, 1.1042f);
-        else if (horizontalInput < 0)
-            transform.localScale = new Vector3(-1.145f, 1.1842f, 1.1042f);
+        float facing = lastFacingSign != 0 ? lastFacingSign : 1f;
+        transform.localScale = new Vector3(facing * 1.145f, 1.1842f, 1.1042f);
 
         // 👇 Jump logic (disable jumping while in blob form)
         if (Input.GetButtonDown("Jump") && isGrounded && !isBlobForm)
         {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
-            isGrounded = false;
+            groundedGraceTimer = 0f; // Reset grace timer on jump
+            if (useTeleportJump)
+            {
+                // Calculate target position in air with ceiling raycast check
+                Vector2 startPos = transform.position;
+                float maxDist = teleportJumpDistance;
+                RaycastHit2D hit = Physics2D.Raycast(startPos, Vector2.up, maxDist, ~0);
+                float actualDist = (hit.collider != null && !hit.collider.isTrigger && hit.collider.gameObject != gameObject) ? Mathf.Max(0.5f, hit.distance - 0.5f) : maxDist;
+                Vector2 targetPos = startPos + new Vector2(0f, actualDist);
+
+                // Execute Pixelated Dissolve & Rebuild Visual FX
+                if (dissolveFX != null)
+                {
+                    dissolveFX.PlayDissolveTeleport(startPos, targetPos, () => {
+                        rb.linearVelocity = new Vector2(rb.linearVelocity.x, 3.5f); // Natural air float momentum
+                    });
+                }
+                else
+                {
+                    transform.position = targetPos;
+                    rb.linearVelocity = new Vector2(rb.linearVelocity.x, 3.5f);
+                }
+                isGrounded = false;
+            }
+            else
+            {
+                // Standard physics jump
+                rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+                isGrounded = false;
+            }
         }
 
         anim.SetBool("isJumping", !isGrounded);
+
+        // Safeguard: Instantly force exit from jump state when grounded
+        if (isGrounded && anim != null)
+        {
+            var stateInfo = anim.GetCurrentAnimatorStateInfo(0);
+            if (stateInfo.IsName("jump") || stateInfo.IsName("Jump"))
+            {
+                if (horizontalInput != 0 && !isBlobForm)
+                    anim.Play("walk");
+                else
+                    anim.Play("idle");
+            }
+        }
 
         // Handle passing through enemies during dash or blob form
         bool shouldIgnoreEnemies = isDashing || isBlobForm;
@@ -255,6 +310,38 @@ public class move : MonoBehaviour
         // Constant gravity is managed natively by Rigidbody2D, no manual velocity addition needed.
     }
 
+    [Header("Ground Check Settings")]
+    public Vector2 feetOffset = new Vector2(0f, -0.8f);
+    public Vector2 feetBoxSize = new Vector2(0.65f, 0.5f);
+    private float groundedGraceTimer = 0f;
+
+    private bool CheckIsGrounded()
+    {
+        Vector2 checkPos = (Vector2)transform.position + feetOffset;
+        Collider2D[] hits = Physics2D.OverlapBoxAll(checkPos, feetBoxSize, 0f);
+
+        foreach (var col in hits)
+        {
+            if (col == null || col.isTrigger || col.gameObject == gameObject) continue;
+            if (col.transform.IsChildOf(transform)) continue;
+
+            // Ignore enemy colliders
+            if (col.CompareTag("enemy") || col.GetComponent<IDamageable>() != null) continue;
+
+            // Valid solid ground/platform surface found!
+            return true;
+        }
+
+        return false;
+    }
+
+    void OnDrawGizmosSelected()
+    {
+        Gizmos.color = isGrounded ? Color.green : Color.red;
+        Vector2 checkPos = (Vector2)transform.position + feetOffset;
+        Gizmos.DrawWireCube(checkPos, feetBoxSize);
+    }
+
     void OnCollisionEnter2D(Collision2D collision)
     {
         if (collision.gameObject.CompareTag("Ground"))
@@ -265,19 +352,9 @@ public class move : MonoBehaviour
 
     void OnCollisionStay2D(Collision2D collision)
     {
-        // Continuously verify ground contact so walking off a ledge resets isGrounded reliably
         if (collision.gameObject.CompareTag("Ground"))
         {
-            bool touchingFromAbove = false;
-            foreach (ContactPoint2D contact in collision.contacts)
-            {
-                if (contact.normal.y > 0.5f)
-                {
-                    touchingFromAbove = true;
-                    break;
-                }
-            }
-            isGrounded = touchingFromAbove;
+            isGrounded = true;
         }
     }
 
@@ -285,7 +362,7 @@ public class move : MonoBehaviour
     {
         if (collision.gameObject.CompareTag("Ground"))
         {
-            isGrounded = false;
+            isGrounded = CheckIsGrounded();
         }
     }
 }

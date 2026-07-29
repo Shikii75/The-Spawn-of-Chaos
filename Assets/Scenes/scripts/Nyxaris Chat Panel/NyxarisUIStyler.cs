@@ -544,7 +544,8 @@ public class NyxarisUIStyler : MonoBehaviour
 
     public void AnimateOpen()
     {
-        if (!gameObject.activeSelf) gameObject.SetActive(true);
+        if (!gameObject.activeInHierarchy) gameObject.SetActive(true);
+        if (!gameObject.activeInHierarchy) return;
 
         if (openCloseCoroutine != null) StopCoroutine(openCloseCoroutine);
         openCloseCoroutine = StartCoroutine(DoOpenAnimation());
@@ -552,6 +553,8 @@ public class NyxarisUIStyler : MonoBehaviour
 
     public void AnimateClose()
     {
+        if (!gameObject.activeInHierarchy) return;
+
         if (openCloseCoroutine != null) StopCoroutine(openCloseCoroutine);
         openCloseCoroutine = StartCoroutine(DoCloseAnimation());
     }
@@ -606,7 +609,7 @@ public class NyxarisUIStyler : MonoBehaviour
 
     public void BouncePortrait()
     {
-        if (portraitImage == null) return;
+        if (portraitImage == null || !gameObject.activeInHierarchy) return;
         
         Transform target = portraitImage.transform;
         StartCoroutine(DoPortraitBounce(target));

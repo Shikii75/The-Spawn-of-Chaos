@@ -36,8 +36,12 @@ namespace SpawnOfChaos.Minigames
 
         public OrbType CurrentOrbType = OrbType.Health;
         public float FillAmount = 0.75f; // 0.0 (empty) to 1.0 (full)
+        public float CatchUpFillAmount = 0.75f; // Trailing damage ghost fill ratio
         public float WaveSpeed = 3.5f;
         public float WaveHeight = 4.5f;
+
+        public float DamageFlashTimer = 0f;
+        public float DamageFlashDuration = 0.4f;
 
         private Texture2D texture;
         private Color32[] pixelBuffer;
@@ -91,8 +95,20 @@ namespace SpawnOfChaos.Minigames
             }
         }
 
+        public void TriggerDamageFlash(float duration = 0.4f)
+        {
+            DamageFlashDuration = Mathf.Max(0.01f, duration);
+            DamageFlashTimer = DamageFlashDuration;
+        }
+
         public void UpdateAndRender(float deltaTime)
         {
+            if (DamageFlashTimer > 0f)
+            {
+                DamageFlashTimer -= deltaTime;
+                if (DamageFlashTimer < 0f) DamageFlashTimer = 0f;
+            }
+
             animTime += deltaTime * WaveSpeed;
 
             // Update splash particles
@@ -124,9 +140,14 @@ namespace SpawnOfChaos.Minigames
 
         private float GetLiquidBaseY()
         {
+            return GetLiquidBaseY(FillAmount);
+        }
+
+        private float GetLiquidBaseY(float fillRatio)
+        {
             float margin = Height * 0.12f;
             float usableH = Height - (margin * 2f);
-            return margin + (usableH * Mathf.Clamp01(FillAmount));
+            return margin + (usableH * Mathf.Clamp01(fillRatio));
         }
 
         private void RenderBuffer()
@@ -139,12 +160,22 @@ namespace SpawnOfChaos.Minigames
             float radius = Width * 0.40f;
             float glassRadius = Width * 0.42f;
 
+            float flashRatio = DamageFlashTimer > 0f ? Mathf.Clamp01(DamageFlashTimer / DamageFlashDuration) : 0f;
+            float activeWaveHeight = WaveHeight * (1f + flashRatio * 1.6f);
+
             Color32 baseLiquidCol = GetPrimaryColor(CurrentOrbType);
             Color32 deepLiquidCol = GetSecondaryColor(CurrentOrbType);
             Color32 highlightCol = GetHighlightColor(CurrentOrbType);
             Color32 foamCol = GetFoamColor(CurrentOrbType);
 
-            float liquidBaseY = GetLiquidBaseY();
+            if (flashRatio > 0f)
+            {
+                baseLiquidCol = Color32.Lerp(baseLiquidCol, new Color32(255, 30, 60, 255), flashRatio * 0.6f);
+                foamCol = Color32.Lerp(foamCol, new Color32(255, 180, 180, 255), flashRatio);
+            }
+
+            float liquidBaseY = GetLiquidBaseY(FillAmount);
+            float catchUpBaseY = GetLiquidBaseY(CatchUpFillAmount);
 
             // 1. Draw Glass Frame & Shadow (Background)
             for (int y = 0; y < Height; y++)
@@ -171,6 +202,31 @@ namespace SpawnOfChaos.Minigames
                 }
             }
 
+            // 1.5 Render Trailing Damage Fill (gothic crimson damage ghost layer between FillAmount and CatchUpFillAmount)
+            if (CatchUpFillAmount > FillAmount + 0.005f)
+            {
+                Color32 damageGhostCol = new Color32(200, 20, 35, 210);
+                for (int y = 0; y < Height; y++)
+                {
+                    int row = y * Width;
+                    for (int x = 0; x < Width; x++)
+                    {
+                        float dx = x - cx;
+                        float dy = y - cy;
+                        float distSq = dx * dx + dy * dy;
+
+                        if (distSq < (radius - 1f) * (radius - 1f))
+                        {
+                            float waveGhostY = catchUpBaseY + Mathf.Sin((x * 0.14f) + animTime) * activeWaveHeight;
+                            if (y <= waveGhostY && y > liquidBaseY)
+                            {
+                                pixelBuffer[row + x] = Blend(pixelBuffer[row + x], damageGhostCol);
+                            }
+                        }
+                    }
+                }
+            }
+
             // 2. Render Secondary (Back) Wave Layer
             for (int y = 0; y < Height; y++)
             {
@@ -183,7 +239,7 @@ namespace SpawnOfChaos.Minigames
 
                     if (distSq < (radius - 1f) * (radius - 1f))
                     {
-                        float waveY = liquidBaseY + Mathf.Sin((x * 0.12f) - (animTime * 1.3f)) * (WaveHeight * 0.8f) + 2f;
+                        float waveY = liquidBaseY + Mathf.Sin((x * 0.12f) - (animTime * 1.3f)) * (activeWaveHeight * 0.8f) + 2f;
                         if (y <= waveY)
                         {
                             Color32 c = Blend(pixelBuffer[row + x], deepLiquidCol);
@@ -207,8 +263,8 @@ namespace SpawnOfChaos.Minigames
                     {
                         // Double sine wave equation
                         float waveY = liquidBaseY 
-                            + Mathf.Sin((x * 0.16f) + animTime) * WaveHeight 
-                            + Mathf.Cos((x * 0.08f) - (animTime * 0.7f)) * (WaveHeight * 0.5f);
+                            + Mathf.Sin((x * 0.16f) + animTime) * activeWaveHeight 
+                            + Mathf.Cos((x * 0.08f) - (animTime * 0.7f)) * (activeWaveHeight * 0.5f);
 
                         // Main liquid body
                         if (y <= waveY)

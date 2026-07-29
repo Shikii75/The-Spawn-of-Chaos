@@ -20,17 +20,23 @@ namespace SpawnOfChaos.Minigames
         public bool autoOscillateFill = false;
         public float waveSpeed = 3.5f;
 
+        [Header("Player Auto-Link")]
+        public bool autoLinkToPlayer = true;
+
         private RawImage rawImage;
         private ProceduralOrbRenderer orbRenderer;
         private RectTransform rectTransform;
 
         // Visual lerp & hit shake fields
         private float currentVisualFill = 0.75f;
+        private float catchUpVisualFill = 0.75f;
         private Vector2 baseAnchoredPosition;
         private bool hasBasePosition = false;
         private float shakeTimer = 0f;
         private float shakeDuration = 0.35f;
         private float shakeIntensity = 1.0f;
+
+        private Health linkedHealth;
 
         public ProceduralOrbRenderer Renderer => orbRenderer;
 
@@ -58,6 +64,23 @@ namespace SpawnOfChaos.Minigames
             }
         }
 
+        void Start()
+        {
+            if (orbRenderer == null)
+            {
+                InitializeRenderer();
+            }
+        }
+
+        void OnDisable()
+        {
+            if (linkedHealth != null)
+            {
+                linkedHealth.onDamageTaken -= OnPlayerDamageTaken;
+                linkedHealth = null;
+            }
+        }
+
         public void InitializeRenderer()
         {
             rawImage = GetComponent<RawImage>();
@@ -69,9 +92,11 @@ namespace SpawnOfChaos.Minigames
             }
 
             currentVisualFill = fillAmount;
+            catchUpVisualFill = fillAmount;
             orbRenderer = new ProceduralOrbRenderer(textureResolution, textureResolution);
             orbRenderer.CurrentOrbType = orbType;
             orbRenderer.FillAmount = currentVisualFill;
+            orbRenderer.CatchUpFillAmount = catchUpVisualFill;
             orbRenderer.WaveSpeed = waveSpeed;
 
             if (rawImage != null)
@@ -83,7 +108,12 @@ namespace SpawnOfChaos.Minigames
 
         void Update()
         {
-            bool isGameplay = HUDManager.IsGameplayActive();
+            if (orbRenderer == null)
+            {
+                InitializeRenderer();
+            }
+
+            bool isGameplay = !Application.isPlaying || HUDManager.IsGameplayActive();
 
             if (rawImage != null && rawImage.enabled != isGameplay)
             {
@@ -92,23 +122,43 @@ namespace SpawnOfChaos.Minigames
 
             if (!isGameplay || !autoUpdate || orbRenderer == null) return;
 
+            if (autoLinkToPlayer)
+            {
+                AutoLinkStats();
+            }
+
             if (autoOscillateFill)
             {
                 fillAmount = 0.5f + Mathf.Sin(Time.unscaledTime * 1.5f) * 0.35f;
             }
 
-            // Smooth liquid fill drain/level reduction lerp
-            currentVisualFill = Mathf.Lerp(currentVisualFill, fillAmount, Time.unscaledDeltaTime * 6f);
-            if (Mathf.Abs(currentVisualFill - fillAmount) < 0.002f)
+            // Real-time liquid level reduction lerp
+            currentVisualFill = Mathf.Lerp(currentVisualFill, fillAmount, Time.unscaledDeltaTime * 7f);
+            if (Mathf.Abs(currentVisualFill - fillAmount) < 0.001f)
             {
                 currentVisualFill = fillAmount;
             }
 
+            // Trailing damage ghost fill lerp (slowly drains to reveal damage lost)
+            if (fillAmount < catchUpVisualFill)
+            {
+                catchUpVisualFill = Mathf.Lerp(catchUpVisualFill, currentVisualFill, Time.unscaledDeltaTime * 2.5f);
+                if (catchUpVisualFill - currentVisualFill < 0.002f)
+                {
+                    catchUpVisualFill = currentVisualFill;
+                }
+            }
+            else
+            {
+                catchUpVisualFill = fillAmount;
+            }
+
             orbRenderer.CurrentOrbType = orbType;
             orbRenderer.FillAmount = currentVisualFill;
+            orbRenderer.CatchUpFillAmount = catchUpVisualFill;
             orbRenderer.WaveSpeed = waveSpeed;
 
-            // Handle hit shake animation on the UI RectTransform
+            // Handle hit shake animation on the UI RectTransform (Health Orb damage response)
             if (shakeTimer > 0f && rectTransform != null)
             {
                 shakeTimer -= Time.unscaledDeltaTime;
@@ -128,6 +178,61 @@ namespace SpawnOfChaos.Minigames
             orbRenderer.UpdateAndRender(Time.unscaledDeltaTime);
         }
 
+        private void AutoLinkStats()
+        {
+            GameObject p = GameObject.FindGameObjectWithTag("Player");
+            if (p == null) return;
+
+            switch (orbType)
+            {
+                case OrbType.Health:
+                    Health h = p.GetComponent<Health>();
+                    if (h != null)
+                    {
+                        if (linkedHealth != h)
+                        {
+                            if (linkedHealth != null) linkedHealth.onDamageTaken -= OnPlayerDamageTaken;
+                            linkedHealth = h;
+                            linkedHealth.onDamageTaken += OnPlayerDamageTaken;
+                        }
+                        fillAmount = (float)h.CurrentHealth / Mathf.Max(1, h.MaxHealth);
+                    }
+                    break;
+
+                case OrbType.Mana:
+                    MageCombat mc = p.GetComponent<MageCombat>();
+                    if (mc != null)
+                    {
+                        fillAmount = mc.currentMana / Mathf.Max(1f, mc.maxMana);
+                    }
+                    break;
+
+                case OrbType.Currency:
+                    PlayerCurrency pc = p.GetComponent<PlayerCurrency>();
+                    if (pc == null) pc = PlayerCurrency.Instance;
+                    if (pc != null)
+                    {
+                        fillAmount = Mathf.Clamp01(0.10f + (pc.Coins / 100f) * 0.90f);
+                    }
+                    break;
+
+                case OrbType.EP:
+                    if (SpawnOfChaos.Systems.PlayerLevelSystem.Instance != null)
+                    {
+                        fillAmount = SpawnOfChaos.Systems.PlayerLevelSystem.Instance.ExpRatio;
+                    }
+                    break;
+            }
+        }
+
+        private void OnPlayerDamageTaken(int damageTaken)
+        {
+            if (damageTaken > 0 && orbType == OrbType.Health)
+            {
+                TriggerDamageEffect(1.5f, 0.4f);
+            }
+        }
+
         /// <summary>
         /// Call to trigger a violent liquid splash burst outward from the orb surface!
         /// </summary>
@@ -136,6 +241,18 @@ namespace SpawnOfChaos.Minigames
             if (orbRenderer != null)
             {
                 orbRenderer.TriggerSplash(intensity);
+            }
+        }
+
+        /// <summary>
+        /// Triggers full real-time damage feedback on the Health Orb: hit shake, red flash, wave surge, and splash burst!
+        /// </summary>
+        public void TriggerDamageEffect(float intensity = 1.5f, float duration = 0.4f)
+        {
+            TriggerShake(intensity, duration);
+            if (orbRenderer != null)
+            {
+                orbRenderer.TriggerDamageFlash(duration);
             }
         }
 

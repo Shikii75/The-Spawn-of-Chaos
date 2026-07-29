@@ -138,7 +138,7 @@ namespace SpawnOfChaos.Minigames
         {
             if (damageTaken > 0 && healthOrbUI != null)
             {
-                healthOrbUI.TriggerShake(1.5f, 0.4f);
+                healthOrbUI.TriggerDamageEffect(1.5f, 0.4f);
             }
         }
 
@@ -290,49 +290,82 @@ namespace SpawnOfChaos.Minigames
             Canvas canvas = GetComponentInParent<Canvas>();
             if (canvas == null)
             {
+                canvas = GetComponent<Canvas>();
+            }
+            if (canvas == null)
+            {
+                canvas = FindObjectOfType<Canvas>();
+            }
+            if (canvas == null)
+            {
                 canvas = UIFactory.CreateCanvas("HUDOrbCanvas", -10);
                 transform.SetParent(canvas.transform, false);
                 DontDestroyOnLoad(canvas.gameObject);
             }
 
-            // Top-Left Container Panel (Primary HUD Orbs)
-            panelGO = new GameObject("HUDOrbPanel", typeof(RectTransform));
-            panelGO.transform.SetParent(canvas.transform, false);
+            // Bind any existing ProceduralOrbUI components under Canvas
+            ProceduralOrbUI[] existingOrbs = canvas.GetComponentsInChildren<ProceduralOrbUI>(true);
+            foreach (var orb in existingOrbs)
+            {
+                switch (orb.orbType)
+                {
+                    case OrbType.Health: healthOrbUI = orb; break;
+                    case OrbType.Mana: manaOrbUI = orb; break;
+                    case OrbType.Currency: currencyOrbUI = orb; break;
+                    case OrbType.EP: epOrbUI = orb; break;
+                }
+            }
 
-            RectTransform panelRT = panelGO.GetComponent<RectTransform>();
-            UIFactory.SetRectFixed(panelRT, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(155f, -40f), new Vector2(280f, 75f));
+            // Create container panel only if any orbs are missing
+            if (healthOrbUI == null || manaOrbUI == null || currencyOrbUI == null || epOrbUI == null)
+            {
+                panelGO = new GameObject("HUDOrbPanel", typeof(RectTransform));
+                panelGO.transform.SetParent(canvas.transform, false);
 
-            HorizontalLayoutGroup hlg = panelGO.AddComponent<HorizontalLayoutGroup>();
-            hlg.spacing = 10f;
-            hlg.childControlWidth = false;
-            hlg.childControlHeight = false;
-            hlg.childAlignment = TextAnchor.MiddleLeft;
+                RectTransform panelRT = panelGO.GetComponent<RectTransform>();
+                UIFactory.SetRectFixed(panelRT, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(155f, -40f), new Vector2(280f, 75f));
 
-            // Create 4 Orbs
-            healthOrbUI = CreateOrbItem(panelRT, OrbType.Health, "HP");
-            manaOrbUI = CreateOrbItem(panelRT, OrbType.Mana, "MP");
-            currencyOrbUI = CreateOrbItem(panelRT, OrbType.Currency, "GOLD");
-            epOrbUI = CreateOrbItem(panelRT, OrbType.EP, "EXP");
+                HorizontalLayoutGroup hlg = panelGO.AddComponent<HorizontalLayoutGroup>();
+                hlg.spacing = 10f;
+                hlg.childControlWidth = false;
+                hlg.childControlHeight = false;
+                hlg.childAlignment = TextAnchor.MiddleLeft;
 
-            // Level Badge text under EXP Orb
-            levelBadgeText = UIFactory.CreateText(epOrbUI.transform, "LevelBadge", "Lv. 1", 11f, new Color(0.85f, 0.4f, 1f, 1f), TextAlignmentOptions.Center);
-            UIFactory.SetRectFixed(levelBadgeText.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, -10f), new Vector2(60f, 16f));
-            levelBadgeText.fontStyle = FontStyles.Bold;
+                if (healthOrbUI == null) healthOrbUI = CreateOrbItem(panelRT, OrbType.Health, "HP");
+                if (manaOrbUI == null) manaOrbUI = CreateOrbItem(panelRT, OrbType.Mana, "MP");
+                if (currencyOrbUI == null) currencyOrbUI = CreateOrbItem(panelRT, OrbType.Currency, "GOLD");
+                if (epOrbUI == null) epOrbUI = CreateOrbItem(panelRT, OrbType.EP, "EXP");
+            }
+
+            // Ensure Level Badge text under EXP Orb
+            if (epOrbUI != null && levelBadgeText == null)
+            {
+                levelBadgeText = epOrbUI.GetComponentInChildren<TextMeshProUGUI>();
+                if (levelBadgeText == null)
+                {
+                    levelBadgeText = UIFactory.CreateText(epOrbUI.transform, "LevelBadge", "Lv. 1", 11f, new Color(0.85f, 0.4f, 1f, 1f), TextAlignmentOptions.Center);
+                    UIFactory.SetRectFixed(levelBadgeText.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, -10f), new Vector2(60f, 16f));
+                    levelBadgeText.fontStyle = FontStyles.Bold;
+                }
+            }
 
             // Level Up Banner (Center Screen)
-            levelUpBanner = new GameObject("LevelUpBanner", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
-            levelUpBanner.transform.SetParent(canvas.transform, false);
-            RectTransform bannerRT = levelUpBanner.GetComponent<RectTransform>();
-            UIFactory.SetRectFixed(bannerRT, new Vector2(0.5f, 0.65f), new Vector2(0.5f, 0.65f), Vector2.zero, new Vector2(420f, 90f));
+            if (levelUpBanner == null)
+            {
+                levelUpBanner = new GameObject("LevelUpBanner", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
+                levelUpBanner.transform.SetParent(canvas.transform, false);
+                RectTransform bannerRT = levelUpBanner.GetComponent<RectTransform>();
+                UIFactory.SetRectFixed(bannerRT, new Vector2(0.5f, 0.65f), new Vector2(0.5f, 0.65f), Vector2.zero, new Vector2(420f, 90f));
 
-            Image bannerBg = levelUpBanner.GetComponent<Image>();
-            bannerBg.color = new Color(0.05f, 0.02f, 0.12f, 0.92f);
+                Image bannerBg = levelUpBanner.GetComponent<Image>();
+                bannerBg.color = new Color(0.05f, 0.02f, 0.12f, 0.92f);
 
-            levelUpText = UIFactory.CreateText(levelUpBanner.transform, "Text", "LEVEL UP!\nREACHED LEVEL 2", 22f, new Color(1f, 0.82f, 0.2f, 1f), TextAlignmentOptions.Center);
-            UIFactory.SetRect(levelUpText.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-            levelUpText.fontStyle = FontStyles.Bold;
+                levelUpText = UIFactory.CreateText(levelUpBanner.transform, "Text", "LEVEL UP!\nREACHED LEVEL 2", 22f, new Color(1f, 0.82f, 0.2f, 1f), TextAlignmentOptions.Center);
+                UIFactory.SetRect(levelUpText.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+                levelUpText.fontStyle = FontStyles.Bold;
 
-            levelUpBanner.SetActive(false);
+                levelUpBanner.SetActive(false);
+            }
 
             UpdateVisibility();
         }

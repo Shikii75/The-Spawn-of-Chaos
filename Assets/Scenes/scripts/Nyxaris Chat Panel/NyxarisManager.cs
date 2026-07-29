@@ -70,6 +70,10 @@ public class NyxarisManager : MonoBehaviour
     {
         Instance = this;
         AutoLoadExpressionSprites();
+        if (mainInterfacePanel != null)
+        {
+            mainInterfacePanel.SetActive(false);
+        }
     }
 
     void Start()
@@ -341,6 +345,12 @@ public class NyxarisManager : MonoBehaviour
 
     public void ShowInterface()
     {
+        if (HUDManager.IsInMainMenu())
+        {
+            HideInterface();
+            return;
+        }
+
         EnsureDefaultPortrait();
 
         // Show portrait overlay
@@ -392,6 +402,15 @@ public class NyxarisManager : MonoBehaviour
 
     void Update()
     {
+        if (HUDManager.IsInMainMenu())
+        {
+            if ((mainInterfacePanel != null && mainInterfacePanel.activeSelf) || (portraitRoot != null && portraitRoot.activeSelf))
+            {
+                HideInterface();
+            }
+            return;
+        }
+
         if (mainInterfacePanel != null && mainInterfacePanel.activeSelf)
         {
             if (Input.GetKeyDown(KeyCode.Escape))

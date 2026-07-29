@@ -172,6 +172,10 @@ public class MainMenuController : MonoBehaviour
             canvas.transform, "MainPanel", Color.white);
         mainPanel = mainRT.gameObject;
 
+        // Initialize Insane Dark Visuals: Raining Black Chaos Orbs FX (renders over background art)
+        MainMenuRainingBlackOrbsFX blackOrbsFX = mainPanel.AddComponent<MainMenuRainingBlackOrbsFX>();
+        blackOrbsFX.Initialize(canvas, mainRT);
+
         Image mainBgImg = mainPanel.GetComponent<Image>();
         if (backgroundSprite != null)
         {

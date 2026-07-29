@@ -282,6 +282,14 @@ public class DojoWaveManager : MonoBehaviour
             femaleAI.currentState = FemaleStrawhatAI.State.Chasing;
         }
 
+        // FemaleSamuraiWhipAI
+        FemaleSamuraiWhipAI samuraiWhipAI = enemy.GetComponent<FemaleSamuraiWhipAI>();
+        if (samuraiWhipAI != null)
+        {
+            samuraiWhipAI.detectionRange = aggroDetectionOverride;
+            samuraiWhipAI.currentState = FemaleSamuraiWhipAI.State.Chasing;
+        }
+
         // EnemyPatrol2D (older script fallback)
         EnemyPatrol2D patrol = enemy.GetComponent<EnemyPatrol2D>();
         if (patrol != null)
