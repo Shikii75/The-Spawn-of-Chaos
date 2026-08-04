@@ -82,9 +82,16 @@ public class DojoWaveManager : MonoBehaviour
 
     private List<List<SpawnEntry>> waveBlueprints;
 
+    public static DojoWaveManager Instance { get; private set; }
+
     // ══════════════════════════════════════════════════════════════════
     //  LIFECYCLE
     // ══════════════════════════════════════════════════════════════════
+
+    void Awake()
+    {
+        Instance = this;
+    }
 
     void Start()
     {
@@ -99,8 +106,9 @@ public class DojoWaveManager : MonoBehaviour
         // Dynamically load music clips if not assigned in Inspector
         if (ambientMusic == null)
         {
-            ambientMusic = Resources.Load<AudioClip>("Audio/bamboo-incense");
-            if (ambientMusic == null) ambientMusic = Resources.Load<AudioClip>("bamboo-incense");
+            ambientMusic = Resources.Load<AudioClip>("Audio/concrete-syntax");
+            if (ambientMusic == null) ambientMusic = Resources.Load<AudioClip>("concrete-syntax");
+            if (ambientMusic == null) ambientMusic = Resources.Load<AudioClip>("Audio/bamboo-incense");
         }
 
         if (combatMusic == null)
@@ -110,22 +118,22 @@ public class DojoWaveManager : MonoBehaviour
         }
 
         // Play initial ambient BGM upon entering scene
-        if (ambientMusic != null && AudioManager.Instance != null)
+        if (ambientMusic != null && AudioManager.Instance != null && StrawhatLeaderNPC.Instance == null)
         {
             AudioManager.Instance.PlayBGM(ambientMusic, fade: true);
         }
 
-        // ── TEST MODE: auto-start after delay ──
+        // ── TEST MODE: auto-start after delay (bypassed when StrawhatLeaderNPC handles dialogue flow) ──
         StartCoroutine(AutoStartAfterDelay());
 
-        Debug.Log($"[DojoWaveManager] Initialized. Challenge will auto-start in {autoStartDelay}s.");
+        Debug.Log($"[DojoWaveManager] Initialized.");
     }
 
     private IEnumerator AutoStartAfterDelay()
     {
         yield return new WaitForSeconds(autoStartDelay);
 
-        if (!challengeStarted)
+        if (!challengeStarted && StrawhatLeaderNPC.Instance == null)
         {
             StartChallenge();
         }
@@ -288,6 +296,33 @@ public class DojoWaveManager : MonoBehaviour
         {
             samuraiWhipAI.detectionRange = aggroDetectionOverride;
             samuraiWhipAI.currentState = FemaleSamuraiWhipAI.State.Chasing;
+        }
+
+        // NormalMaleSamuraiAI
+        NormalMaleSamuraiAI maleSamuraiAI = enemy.GetComponent<NormalMaleSamuraiAI>();
+        if (maleSamuraiAI != null)
+        {
+            maleSamuraiAI.detectionRange = aggroDetectionOverride;
+            maleSamuraiAI.currentState = NormalMaleSamuraiAI.State.Chasing;
+        }
+
+        // NormalFemaleSamuraiAI
+        NormalFemaleSamuraiAI femaleSamuraiAI = enemy.GetComponent<NormalFemaleSamuraiAI>();
+        if (femaleSamuraiAI != null)
+        {
+            femaleSamuraiAI.detectionRange = aggroDetectionOverride;
+            femaleSamuraiAI.currentState = NormalFemaleSamuraiAI.State.Chasing;
+        }
+
+        // FatKabutoAI
+        FatKabutoAI fatKabutoAI = enemy.GetComponent<FatKabutoAI>();
+        if (fatKabutoAI != null)
+        {
+            fatKabutoAI.detectionRange = aggroDetectionOverride;
+            if (fatKabutoAI.currentState != FatKabutoAI.State.SpawningIn)
+            {
+                fatKabutoAI.currentState = FatKabutoAI.State.Chasing;
+            }
         }
 
         // EnemyPatrol2D (older script fallback)

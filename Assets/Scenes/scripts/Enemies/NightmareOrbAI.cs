@@ -45,14 +45,22 @@ public class NightmareOrbAI : MonoBehaviour, IDamageable
     public int lootOrbCount = 3;
     public LayerMask hitLayers = ~0; // Everything by default
 
+    [Header("Health Restoration Mode")]
+    [Tooltip("If true, this orb acts as a floating Health Orb that heals the player on defeat instead of dealing aggressive rocket damage.")]
+    public bool isHealthOrbOnly = false;
+    public int healthRestoreAmount = 35;
+
     [Header("Visual Effects")]
     public bool createProceduralSpriteIfMissing = true;
+    public float outerRingRotationSpeed = 180f;
 
     private Rigidbody2D rb;
     private CircleCollider2D circleCol;
     private SpriteRenderer spriteRenderer;
     private TrailRenderer trailRenderer;
     private Transform playerTransform;
+    private GameObject outerHaloRing;
+    private SpriteRenderer outerHaloRenderer;
 
     private float hoverTimer;
     private float nextShootTime;
@@ -85,6 +93,15 @@ public class NightmareOrbAI : MonoBehaviour, IDamageable
         {
             SetupProceduralVisuals();
         }
+
+        // Setup Health Orb color overrides if configured as Health Orb
+        if (isHealthOrbOnly)
+        {
+            neonCoreColor = new Color(0.1f, 1.0f, 0.5f, 1.0f);
+            neonOuterColor = new Color(0.0f, 0.9f, 0.6f, 1.0f);
+        }
+
+        SetupOuterHaloRing();
     }
 
     void Start()
@@ -96,6 +113,12 @@ public class NightmareOrbAI : MonoBehaviour, IDamageable
     void Update()
     {
         if (isExploding) return;
+
+        // Continuously rotate outer arcane halo ring
+        if (outerHaloRing != null)
+        {
+            outerHaloRing.transform.Rotate(0f, 0f, outerRingRotationSpeed * Time.deltaTime);
+        }
 
         if (hasBeenHit)
         {
@@ -219,6 +242,8 @@ public class NightmareOrbAI : MonoBehaviour, IDamageable
     {
         if (isExploding) return;
 
+        HitFeedbackManager.TriggerHitFeedback(transform, transform.position, damageTaken, true, EnemyHitType.ShadowWisp);
+
         if (!hasBeenHit)
         {
             // Determine launch direction (away from player/attacker)
@@ -297,33 +322,52 @@ public class NightmareOrbAI : MonoBehaviour, IDamageable
 
         Vector3 explosionPos = transform.position;
 
-        // 1. AoE Damage to all hit targets
-        Collider2D[] hitColliders = Physics2D.OverlapCircleAll(explosionPos, explosionRadius, hitLayers);
-        foreach (Collider2D col in hitColliders)
+        // 1. Health Restoration (if isHealthOrbOnly or near player)
+        GameObject pObj = GameObject.FindGameObjectWithTag("Player");
+        if (pObj != null)
         {
-            if (col.gameObject == gameObject) continue;
-
-            IDamageable damageable = col.GetComponent<IDamageable>() ?? col.GetComponentInParent<IDamageable>();
-            if (damageable != null)
+            Health pHealth = pObj.GetComponent<Health>() ?? pObj.GetComponentInParent<Health>();
+            if (pHealth != null && (isHealthOrbOnly || Vector2.Distance(explosionPos, pObj.transform.position) <= explosionRadius + 3.0f))
             {
-                damageable.TakeDamage(explosionDamage);
+                pHealth.Heal(healthRestoreAmount);
+                if (HUDOrbPanel.Instance != null)
+                {
+                    HUDOrbPanel.Instance.TriggerSplash(OrbType.Health, 1.0f);
+                }
             }
         }
 
-        // 2. HUD Splash / Health feedback if near player
-        if (playerTransform != null && Vector2.Distance(explosionPos, playerTransform.position) <= explosionRadius + 1.0f)
+        // 2. AoE Damage to all hit targets (skip damage if health orb only)
+        if (!isHealthOrbOnly)
         {
-            if (HUDOrbPanel.Instance != null)
+            Collider2D[] hitColliders = Physics2D.OverlapCircleAll(explosionPos, explosionRadius, hitLayers);
+            foreach (Collider2D col in hitColliders)
             {
-                HUDOrbPanel.Instance.TriggerSplash(OrbType.Health, 0.8f);
+                if (col.gameObject == gameObject) continue;
+
+                IDamageable damageable = col.GetComponent<IDamageable>() ?? col.GetComponentInParent<IDamageable>();
+                if (damageable != null)
+                {
+                    damageable.TakeDamage(explosionDamage);
+                }
             }
         }
 
         // 3. Spawn Procedural Explosion FX (Shockwave Ring & Particles)
         CreateExplosionVisualFX(explosionPos);
 
-        // 4. Drop Collectible Loot Orbs as per project standard
-        OrbSpawner.SpawnLootCluster(explosionPos, lootOrbCount);
+        // 4. Drop Collectible Loot Orbs (Spawns Health Orbs if Health Orb Mode)
+        if (isHealthOrbOnly)
+        {
+            for (int i = 0; i < lootOrbCount; i++)
+            {
+                OrbSpawner.SpawnOrb(explosionPos + new Vector3(Random.Range(-0.8f, 0.8f), Random.Range(-0.4f, 0.6f), 0f), OrbType.Health, 15);
+            }
+        }
+        else
+        {
+            OrbSpawner.SpawnLootCluster(explosionPos, lootOrbCount);
+        }
 
         // 5. Destroy mob entity
         Destroy(gameObject);
@@ -383,6 +427,50 @@ public class NightmareOrbAI : MonoBehaviour, IDamageable
         Sprite sprite = Sprite.Create(texture, new Rect(0, 0, 64, 64), new Vector2(0.5f, 0.5f), 32);
         spriteRenderer.sprite = sprite;
         spriteRenderer.sortingOrder = 10;
+    }
+
+    private void SetupOuterHaloRing()
+    {
+        if (outerHaloRing != null) return;
+
+        outerHaloRing = new GameObject("ArcaneHaloRing");
+        outerHaloRing.transform.SetParent(transform);
+        outerHaloRing.transform.localPosition = Vector3.zero;
+        outerHaloRing.transform.localScale = new Vector3(1.4f, 1.4f, 1.4f);
+
+        outerHaloRenderer = outerHaloRing.AddComponent<SpriteRenderer>();
+        
+        Texture2D ringTex = new Texture2D(64, 64);
+        Vector2 center = new Vector2(32, 32);
+
+        for (int y = 0; y < 64; y++)
+        {
+            for (int x = 0; x < 64; x++)
+            {
+                float dist = Vector2.Distance(new Vector2(x, y), center);
+                if (dist >= 20f && dist <= 28f)
+                {
+                    float angle = Mathf.Atan2(y - 32, x - 32);
+                    float dashPattern = Mathf.Sin(angle * 4f); // 4-dash orbiting ring arcs
+                    if (dashPattern > -0.2f)
+                    {
+                        ringTex.SetPixel(x, y, neonOuterColor);
+                    }
+                    else
+                    {
+                        ringTex.SetPixel(x, y, Color.clear);
+                    }
+                }
+                else
+                {
+                    ringTex.SetPixel(x, y, Color.clear);
+                }
+            }
+        }
+        ringTex.Apply();
+
+        outerHaloRenderer.sprite = Sprite.Create(ringTex, new Rect(0, 0, 64, 64), new Vector2(0.5f, 0.5f), 32);
+        outerHaloRenderer.sortingOrder = 9;
     }
 
     private Sprite CreateCircleSprite(int size, Color color)

@@ -21,11 +21,18 @@ public class SpriteJuice : MonoBehaviour
     public Color flashColor = Color.white;
     public float flashDuration = 0.08f;
 
+    [Header("Squash and Stretch Settings")]
+    [Tooltip("Compress enemy sprite on impact, then spring back.")]
+    public bool enableSquashAndStretch = true;
+    public Vector3 squashFactor = new Vector3(1.25f, 0.75f, 1.0f);
+    public float squashDuration = 0.15f;
+
     private SpriteRenderer spriteRenderer;
     private Rigidbody2D rb;
     private Animator anim;
     
     private Vector3 originalLocalPosition;
+    private Vector3 originalLocalScale = Vector3.one;
     private Coroutine juiceCoroutine;
     private MaterialPropertyBlock propBlock;
     private Color baseSpriteColor = Color.white;
@@ -44,13 +51,22 @@ public class SpriteJuice : MonoBehaviour
         if (spriteRenderer != null)
         {
             originalLocalPosition = spriteRenderer.transform.localPosition;
+            originalLocalScale = spriteRenderer.transform.localScale;
             baseSpriteColor = spriteRenderer.color;
             hasBaseSpriteColor = true;
         }
     }
 
     /// <summary>
-    /// Play the hit feedback (Knockback force + Shake + Flash + Hit-Stop)
+    /// Flashes the sprite white/tint on hit.
+    /// </summary>
+    public void FlashWhite()
+    {
+        PlayHitReaction(Vector2.zero, 0f);
+    }
+
+    /// <summary>
+    /// Play the hit feedback (Knockback force + Shake + Flash + Hit-Stop + Squash & Stretch)
     /// </summary>
     public void PlayHitReaction(Vector2 hitDirection, float knockbackForce)
     {
@@ -86,7 +102,7 @@ public class SpriteJuice : MonoBehaviour
         // --- B. Apply Flash ---
         if (enableFlash && spriteRenderer != null)
         {
-            // Check if the material supports our custom flash shader properties
+            // Check if the material supports custom flash shader properties
             if (spriteRenderer.sharedMaterial != null && spriteRenderer.sharedMaterial.HasProperty(FlashAmountId))
             {
                 spriteRenderer.GetPropertyBlock(propBlock);
@@ -101,9 +117,17 @@ public class SpriteJuice : MonoBehaviour
             }
         }
 
-        // --- C. Perform Shake Jitter Loop ---
+        // --- C. Apply Initial Squash Scale ---
+        if (enableSquashAndStretch && spriteRenderer != null)
+        {
+            spriteRenderer.transform.localScale = Vector3.Scale(originalLocalScale, squashFactor);
+        }
+
+        // --- D. Perform Shake & Squash Recovery Loop ---
         float elapsed = 0f;
-        while (elapsed < Mathf.Max(shakeDuration, flashDuration))
+        float maxDuration = Mathf.Max(shakeDuration, Mathf.Max(flashDuration, squashDuration));
+
+        while (elapsed < maxDuration)
         {
             if (enableShake && spriteRenderer != null && elapsed < shakeDuration)
             {
@@ -111,20 +135,29 @@ public class SpriteJuice : MonoBehaviour
                 spriteRenderer.transform.localPosition = originalLocalPosition + new Vector3(offset, 0f, 0f);
             }
 
-            // Restore Flash mid-way if flash duration ends before shake
+            // Restore Flash mid-way if flash duration ends
             if (enableFlash && spriteRenderer != null && elapsed >= flashDuration)
             {
                 ClearFlash();
+            }
+
+            // Spring back Squash & Stretch scale smoothly
+            if (enableSquashAndStretch && spriteRenderer != null && elapsed < squashDuration)
+            {
+                float scaleT = elapsed / squashDuration;
+                Vector3 targetSquash = Vector3.Scale(originalLocalScale, squashFactor);
+                spriteRenderer.transform.localScale = Vector3.Lerp(targetSquash, originalLocalScale, scaleT);
             }
 
             elapsed += Time.unscaledDeltaTime;
             yield return null;
         }
 
-        // --- D. Reset All States ---
+        // --- E. Reset All States ---
         if (spriteRenderer != null)
         {
             spriteRenderer.transform.localPosition = originalLocalPosition;
+            spriteRenderer.transform.localScale = originalLocalScale;
             ClearFlash();
         }
 
@@ -159,6 +192,7 @@ public class SpriteJuice : MonoBehaviour
         if (spriteRenderer != null)
         {
             spriteRenderer.transform.localPosition = originalLocalPosition;
+            spriteRenderer.transform.localScale = originalLocalScale;
             ClearFlash();
         }
     }

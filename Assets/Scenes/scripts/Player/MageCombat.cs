@@ -231,8 +231,12 @@ public class MageCombat : MonoBehaviour
 
             if (target != null && other.gameObject != gameObject)
             {
-                int currentDamage = (comboStep == 2) ? secondHitDamage : meleeDamage;
+                bool isHeavyCombo = (comboStep == 2);
+                int currentDamage = isHeavyCombo ? secondHitDamage : meleeDamage;
                 target.TakeDamage(currentDamage);
+
+                Vector3 contactPoint = other.bounds.ClosestPoint(transform.position);
+                HitFeedbackManager.TriggerHitFeedback(other.transform, contactPoint, currentDamage, isHeavyCombo, isHeavyCombo ? EnemyHitType.HeavyCombo : EnemyHitType.PhysicalMelee);
             }
         }
     }

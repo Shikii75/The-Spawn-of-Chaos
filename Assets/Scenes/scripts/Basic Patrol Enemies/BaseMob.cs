@@ -109,6 +109,8 @@ public class BaseMob : MonoBehaviour, IDamageable
             StartCoroutine(FlashHit());
         }
 
+        HitFeedbackManager.TriggerHitFeedback(transform, transform.position, damage, damage >= 25, EnemyHitType.PhysicalMelee);
+
         if (currentHealth <= 0)
             Die();
     }

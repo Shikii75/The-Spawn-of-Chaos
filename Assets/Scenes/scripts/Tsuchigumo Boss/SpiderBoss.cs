@@ -202,6 +202,7 @@ public class SpiderBoss : MonoBehaviour
     private void OnDamageTaken(int damage)
     {
         animator.SetTrigger("Hurt");
+        HitFeedbackManager.TriggerHitFeedback(transform, transform.position, damage, true, EnemyHitType.SpiderVenom);
     }
 
     private void OnDeath()

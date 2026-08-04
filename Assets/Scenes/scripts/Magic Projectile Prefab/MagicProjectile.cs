@@ -49,6 +49,7 @@ public class MagicProjectile : MonoBehaviour
         if (target != null)
         {
             target.TakeDamage(damage);
+            HitFeedbackManager.TriggerHitFeedback(other.transform, transform.position, damage, true, EnemyHitType.MagicSpell);
             Explode();
             return;
         }

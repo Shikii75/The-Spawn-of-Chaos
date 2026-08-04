@@ -325,7 +325,7 @@ public class FatStrawhatAI : MonoBehaviour, IDamageable
         }
         else
         {
-            move pMove = FindObjectOfType<move>();
+            move pMove = Object.FindFirstObjectByType<move>();
             if (pMove != null) player = pMove.transform;
         }
     }
@@ -444,6 +444,8 @@ public class FatStrawhatAI : MonoBehaviour, IDamageable
             Vector2 hitDir = player != null ? (Vector2)(transform.position - player.position).normalized : Vector2.right;
             spriteJuice.PlayHitReaction(hitDir, knockbackForce);
         }
+
+        HitFeedbackManager.TriggerHitFeedback(transform, transform.position, damage, damage >= 25, EnemyHitType.PhysicalMelee);
 
         if (currentHealth <= 0)
         {

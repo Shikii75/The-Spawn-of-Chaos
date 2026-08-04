@@ -8,7 +8,7 @@ public class move : MonoBehaviour
     
     [Header("Teleport Jump Settings")]
     [Tooltip("If true, jumping teleports the player up a set distance with pixelated dissolve/rebuild FX instead of using standard jump animations.")]
-    public bool useTeleportJump = true;
+    public bool useTeleportJump = false;
     public float teleportJumpDistance = 4.2f;
 
     [Header("Blob Form Settings")]
@@ -39,13 +39,21 @@ public class move : MonoBehaviour
     private Animator anim;
     private PlayerPixelDissolveFX dissolveFX;
     private bool isGrounded;
+    private Vector3 initialAbsScale = Vector3.one;
+    private BoxCollider2D boxCollider;
+    private Vector2 standingColSize;
+    private Vector2 standingColOffset;
+    private bool wasBlobFormLastFrame = false;
 
     public static move Instance { get; private set; }
+
+    public static bool ExternalMovementLock = false;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetStatic()
     {
         Instance = null;
+        ExternalMovementLock = false;
     }
 
     void Awake()
@@ -72,6 +80,54 @@ public class move : MonoBehaviour
         dissolveFX = GetComponent<PlayerPixelDissolveFX>();
         if (dissolveFX == null) dissolveFX = gameObject.AddComponent<PlayerPixelDissolveFX>();
         rb.gravityScale = gravityScale;
+        if (rb != null)
+        {
+            rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+            PhysicsMaterial2D noFrictionMat = new PhysicsMaterial2D("PlayerNoFriction");
+            noFrictionMat.friction = 0f;
+            noFrictionMat.bounciness = 0f;
+            rb.sharedMaterial = noFrictionMat;
+        }
+
+        initialAbsScale = new Vector3(Mathf.Abs(transform.localScale.x), Mathf.Abs(transform.localScale.y), Mathf.Abs(transform.localScale.z));
+        if (initialAbsScale == Vector3.zero) initialAbsScale = Vector3.one;
+
+        boxCollider = GetComponent<BoxCollider2D>();
+        if (boxCollider != null)
+        {
+            standingColSize = boxCollider.size;
+            standingColOffset = boxCollider.offset;
+        }
+
+        EnsureLumiCompanionInitialized();
+    }
+
+    [Header("Orb Companion Toggle")]
+    [Tooltip("If true, initializes Lumi companion orb. Set to false for BasePlayer tutorial skin.")]
+    public bool enableOrbCompanion = true;
+
+    private void EnsureLumiCompanionInitialized()
+    {
+        if (!enableOrbCompanion) return;
+
+        if (OrbInventorySystem.Instance == null)
+        {
+            GameObject invGO = new GameObject("OrbInventorySystem");
+            invGO.AddComponent<OrbInventorySystem>();
+        }
+
+        if (OrbInventoryUI.Instance == null)
+        {
+            GameObject uiGO = new GameObject("OrbInventoryUI");
+            uiGO.AddComponent<OrbInventoryUI>();
+        }
+
+        if (LightOrbCompanion.Instance == null)
+        {
+            GameObject orbGO = new GameObject("Lumi_LightOrbCompanion");
+            orbGO.transform.position = transform.position + new Vector3(-1.2f, 1.4f, 0f);
+            orbGO.AddComponent<LightOrbCompanion>();
+        }
     }
 
     public void UpgradeDash()
@@ -131,6 +187,11 @@ public class move : MonoBehaviour
             dashCooldownTimer -= Time.deltaTime;
         }
 
+        if (LightOrbCompanion.Instance != null && LightOrbCompanion.Instance.IsGrappling)
+        {
+            return;
+        }
+
         if (IsMovementBlocked())
         {
             rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
@@ -170,6 +231,7 @@ public class move : MonoBehaviour
             if (anim != null)
             {
                 anim.SetTrigger("dash");
+                anim.Play("Dash", 0, 0f);
             }
             return;
         }
@@ -183,14 +245,36 @@ public class move : MonoBehaviour
         anim.SetBool("isRunning", horizontalInput != 0 && !isBlobForm);
         anim.SetBool("isBlob", isBlobForm);
 
-        // Flip sprite based on movement direction (preserving your exact inspector scales)
+        // Flip sprite based on movement direction (preserving exact initial inspector scales)
         float facing = lastFacingSign != 0 ? lastFacingSign : 1f;
-        transform.localScale = new Vector3(facing * 1.145f, 1.1842f, 1.1042f);
+        transform.localScale = new Vector3(facing * initialAbsScale.x, initialAbsScale.y, initialAbsScale.z);
+
+        // Adjust collider size dynamically for Blob Form vs Standing Form
+        if (isBlobForm && !wasBlobFormLastFrame)
+        {
+            wasBlobFormLastFrame = true;
+            if (boxCollider != null)
+            {
+                boxCollider.size = new Vector2(standingColSize.x * 1.1f, standingColSize.y * 0.45f);
+                boxCollider.offset = new Vector2(standingColOffset.x, standingColOffset.y - standingColSize.y * 0.25f);
+            }
+        }
+        else if (!isBlobForm && wasBlobFormLastFrame)
+        {
+            wasBlobFormLastFrame = false;
+            if (boxCollider != null)
+            {
+                boxCollider.size = standingColSize;
+                boxCollider.offset = standingColOffset;
+            }
+        }
 
         // 👇 Jump logic (disable jumping while in blob form)
         if (Input.GetButtonDown("Jump") && isGrounded && !isBlobForm)
         {
             groundedGraceTimer = 0f; // Reset grace timer on jump
+            isGrounded = false;
+
             if (useTeleportJump)
             {
                 // Calculate target position in air with ceiling raycast check
@@ -212,13 +296,18 @@ public class move : MonoBehaviour
                     transform.position = targetPos;
                     rb.linearVelocity = new Vector2(rb.linearVelocity.x, 3.5f);
                 }
-                isGrounded = false;
             }
             else
             {
                 // Standard physics jump
                 rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
-                isGrounded = false;
+            }
+
+            if (anim != null)
+            {
+                anim.SetBool("isJumping", true);
+                anim.SetTrigger("jump");
+                anim.Play("Jump", 0, 0f);
             }
         }
 
@@ -285,11 +374,24 @@ public class move : MonoBehaviour
         }
     }
 
+    public void FaceTarget(Vector3 targetPosition)
+    {
+        float dir = targetPosition.x - transform.position.x;
+        if (dir != 0f)
+        {
+            lastFacingSign = Mathf.Sign(dir);
+            float facing = lastFacingSign != 0 ? lastFacingSign : 1f;
+            transform.localScale = new Vector3(facing * initialAbsScale.x, initialAbsScale.y, initialAbsScale.z);
+        }
+    }
+
     private bool IsMovementBlocked()
     {
+        if (ExternalMovementLock) return true;
         if (PauseMenu.Instance != null && PauseMenu.Instance.isPaused) return true;
         if (NPCDialogueUI.Instance != null && NPCDialogueUI.Instance.IsDialogueActive) return true;
         if (ShopUI.Instance != null && ShopUI.Instance.IsShopActive) return true;
+        if (OrbInventoryUI.Instance != null && OrbInventoryUI.Instance.IsInventoryOpen) return true;
         if (NyxarisManager.IsChatActive || NyxarisManager.IsTyping) return true;
 
         // Block movement if any UI text input has active keyboard focus
@@ -311,13 +413,35 @@ public class move : MonoBehaviour
     }
 
     [Header("Ground Check Settings")]
-    public Vector2 feetOffset = new Vector2(0f, -0.8f);
-    public Vector2 feetBoxSize = new Vector2(0.65f, 0.5f);
+    public Vector2 feetOffset = new Vector2(0f, -1.65f);
+    public Vector2 feetBoxSize = new Vector2(0.7f, 0.4f);
     private float groundedGraceTimer = 0f;
 
     private bool CheckIsGrounded()
     {
-        Vector2 checkPos = (Vector2)transform.position + feetOffset;
+        Vector2 checkPos;
+
+        // Find the active solid (non-trigger) physics collider
+        Collider2D mainCol = null;
+        foreach (var col in GetComponents<Collider2D>())
+        {
+            if (col != null && col.enabled && !col.isTrigger)
+            {
+                mainCol = col;
+                break;
+            }
+        }
+
+        if (mainCol != null)
+        {
+            // Position the overlap box directly at the bottom-center edge of the physics collider in world space
+            checkPos = new Vector2(mainCol.bounds.center.x, mainCol.bounds.min.y);
+        }
+        else
+        {
+            checkPos = (Vector2)transform.position + feetOffset;
+        }
+
         Collider2D[] hits = Physics2D.OverlapBoxAll(checkPos, feetBoxSize, 0f);
 
         foreach (var col in hits)
@@ -338,7 +462,24 @@ public class move : MonoBehaviour
     void OnDrawGizmosSelected()
     {
         Gizmos.color = isGrounded ? Color.green : Color.red;
-        Vector2 checkPos = (Vector2)transform.position + feetOffset;
+        Vector2 checkPos;
+        Collider2D mainCol = null;
+        foreach (var col in GetComponents<Collider2D>())
+        {
+            if (col != null && col.enabled && !col.isTrigger)
+            {
+                mainCol = col;
+                break;
+            }
+        }
+        if (mainCol != null)
+        {
+            checkPos = new Vector2(mainCol.bounds.center.x, mainCol.bounds.min.y);
+        }
+        else
+        {
+            checkPos = (Vector2)transform.position + feetOffset;
+        }
         Gizmos.DrawWireCube(checkPos, feetBoxSize);
     }
 

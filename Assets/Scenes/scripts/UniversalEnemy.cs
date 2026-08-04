@@ -218,7 +218,7 @@ public class UniversalEnemy : MonoBehaviour, IDamageable
         }
         else
         {
-            move pMove = FindObjectOfType<move>();
+            move pMove = Object.FindFirstObjectByType<move>();
             if (pMove != null) player = pMove.transform;
         }
     }
@@ -821,21 +821,32 @@ public class UniversalEnemy : MonoBehaviour, IDamageable
             spriteJuice.PlayHitReaction(hitDir, knockbackForce);
         }
 
+        // Trigger central combat hit feedback (Hitstop, Flash, Squash/Stretch, Shake, Particles, SFX, Floating Text, Health Bar)
+        Vector3 hitPoint = player != null ? player.position : transform.position;
+        HitFeedbackManager.TriggerHitFeedback(transform, hitPoint, damageAmount, damageAmount >= 25, EnemyHitType.PhysicalMelee);
+
         if (currentHealth <= 0)
         {
             Die();
         }
         else
         {
-            StartCoroutine(HitStunRoutine());
+            StartCoroutine(HitStunRoutine(hitStunDuration));
         }
     }
 
-    private IEnumerator HitStunRoutine()
+    public void TriggerHitStun(float customDuration)
+    {
+        if (currentState == EnemyState.Dead) return;
+        StopAllCoroutines();
+        StartCoroutine(HitStunRoutine(customDuration));
+    }
+
+    private IEnumerator HitStunRoutine(float duration)
     {
         currentState = EnemyState.HitStun;
         StopMoving();
-        yield return new WaitForSeconds(hitStunDuration);
+        yield return new WaitForSeconds(duration);
         currentState = EnemyState.Chasing;
     }
 

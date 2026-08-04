@@ -92,6 +92,8 @@ public class Spiderling : MonoBehaviour, IDamageable
         if (isDead) return;
 
         health -= damageTaken;
+        HitFeedbackManager.TriggerHitFeedback(transform, transform.position, damageTaken, damageTaken >= 25, EnemyHitType.SpiderVenom);
+
         if (health <= 0)
         {
             Die();

@@ -95,6 +95,18 @@ public class SpeechBubbleDialogue : MonoBehaviour
     private Coroutine _typeRoutine;
     private Transform _playerTf;
 
+    // Events for external controllers (e.g. StrawhatLeaderNPC)
+    public event System.Action OnDialogueStart;
+    public event System.Action<int> OnPageChanged;
+    public event System.Action OnDialogueComplete;
+
+    public bool IsOpen => _isOpen;
+
+    public void OpenDialogueExternally()
+    {
+        OpenDialogue();
+    }
+
     // ═══════════════════════════════════════════════════════════════════
     //  UNITY LIFECYCLE
     // ═══════════════════════════════════════════════════════════════════
@@ -125,12 +137,22 @@ public class SpeechBubbleDialogue : MonoBehaviour
         PulseAdvanceButton();
     }
 
+    [Header("── Combat / Cutscene Lock ─────────────────────────────────────")]
+    [Tooltip("If true, interaction prompt and key inputs are completely disabled (e.g. during active combat).")]
+    public bool interactionDisabled = false;
+
     // ═══════════════════════════════════════════════════════════════════
     //  PROXIMITY CHECK
     // ═══════════════════════════════════════════════════════════════════
 
     private void UpdateProximity()
     {
+        if (interactionDisabled || (DojoWaveManager.Instance != null && DojoWaveManager.Instance.IsChallengeStarted))
+        {
+            SetPromptActive(false);
+            return;
+        }
+
         if (_playerTf == null) return;
 
         float dist = Vector2.Distance(transform.position, _playerTf.position);
@@ -152,6 +174,7 @@ public class SpeechBubbleDialogue : MonoBehaviour
 
     private void HandleInput()
     {
+        if (interactionDisabled || (DojoWaveManager.Instance != null && DojoWaveManager.Instance.IsChallengeStarted)) return;
         if (NyxarisManager.IsTyping || NyxarisManager.IsChatActive) return;
 
         // Open
@@ -191,13 +214,19 @@ public class SpeechBubbleDialogue : MonoBehaviour
         SetPromptActive(false);
         SetBubbleActive(true);
         TypeLine(dialogueLines[_lineIndex]);
+
+        OnDialogueStart?.Invoke();
+        OnPageChanged?.Invoke(_lineIndex);
     }
 
     private void AdvanceLine()
     {
         _lineIndex++;
         if (_lineIndex < dialogueLines.Length)
+        {
             TypeLine(dialogueLines[_lineIndex]);
+            OnPageChanged?.Invoke(_lineIndex);
+        }
         else
             CloseDialogue();
     }
@@ -209,6 +238,8 @@ public class SpeechBubbleDialogue : MonoBehaviour
         _typing = false;
         SetBubbleActive(false);
         if (_playerNear) SetPromptActive(true);
+
+        OnDialogueComplete?.Invoke();
     }
 
     private void TypeLine(string line)
@@ -333,14 +364,14 @@ public class SpeechBubbleDialogue : MonoBehaviour
             nrt.anchorMin        = new Vector2(0f, 1f);
             nrt.anchorMax        = new Vector2(1f, 1f);
             nrt.pivot            = new Vector2(0f, 1f);
-            nrt.sizeDelta        = new Vector2(0f, 38f);
+            nrt.sizeDelta        = new Vector2(0f, 46f);
             nrt.anchoredPosition = new Vector2(28f, -10f);
 
             var nlTxt = nameLGo.AddComponent<TextMeshProUGUI>();
             ApplyTMPDefaults(nlTxt);
             nlTxt.text      = characterName;
             nlTxt.color     = nameColor;
-            nlTxt.fontSize  = 22f;
+            nlTxt.fontSize  = 28f;
             nlTxt.fontStyle = FontStyles.Bold;
             nlTxt.enableWordWrapping = false;
 

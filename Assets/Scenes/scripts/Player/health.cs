@@ -43,6 +43,15 @@ public class Health : MonoBehaviour, IDamageable
             return;
         }
 
+        // Check if Lumi's Orb Shield is active (holding 'H')
+        if (CompareTag("Player") && LightOrbCompanion.Instance != null && LightOrbCompanion.Instance.isShieldActive)
+        {
+            float reduction = LightOrbCompanion.Instance.shieldDamageReduction;
+            damage = Mathf.RoundToInt(damage * (1f - reduction));
+            Debug.Log($"Lumi's Shield mitigated damage! Reduced to {damage}.");
+            if (damage <= 0) return;
+        }
+
         currentHealth -= damage;
         currentHealth = Mathf.Max(currentHealth, 0);
         Debug.Log($"{name} took {damage} damage. Health now {currentHealth}/{maxHealth}.");
@@ -57,6 +66,11 @@ public class Health : MonoBehaviour, IDamageable
         if (enemy != null)
         {
             enemy.TriggerKnockback();
+        }
+
+        if (!CompareTag("Player"))
+        {
+            HitFeedbackManager.TriggerHitFeedback(transform, transform.position, damage, damage >= 25, EnemyHitType.PhysicalMelee);
         }
 
         onDamageTaken?.Invoke(damage);

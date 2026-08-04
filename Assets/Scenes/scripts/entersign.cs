@@ -82,11 +82,41 @@ public class entersign : MonoBehaviour
                 }
                 else
                 {
-                    Debug.Log($"Interacting! Setting target spawn point to '{targetSpawnPointName}' and loading scene: {targetSceneName}");
+                    Debug.Log($"Interacting! Setting target spawn point to '{targetSpawnPointName}' for target scene: {targetSceneName}");
                     PlayerSpawnPointManager.targetSpawnPointName = targetSpawnPointName;
-                    SceneManager.LoadScene(targetSceneName);
+
+                    // If target scene is current active scene, teleport player directly without reloading scene
+                    if (targetSceneName == SceneManager.GetActiveScene().name)
+                    {
+                        TeleportPlayerSameScene(targetSpawnPointName);
+                    }
+                    else
+                    {
+                        SceneManager.LoadScene(targetSceneName);
+                    }
                 }
             }
+        }
+    }
+
+    private void TeleportPlayerSameScene(string spawnName)
+    {
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        GameObject spawnPoint = !string.IsNullOrEmpty(spawnName) ? GameObject.Find(spawnName) : null;
+
+        if (player != null && spawnPoint != null)
+        {
+            player.transform.position = spawnPoint.transform.position;
+            Rigidbody2D rb = player.GetComponent<Rigidbody2D>();
+            if (rb != null) rb.linearVelocity = Vector2.zero;
+            Debug.Log($"[entersign] Teleported '{player.name}' to '{spawnPoint.name}' at position {spawnPoint.transform.position}");
+        }
+
+        // Trigger Dojo 2 Wave Manager challenge if inside Dojo 2
+        Dojo2WaveManager dojo2Manager = Object.FindFirstObjectByType<Dojo2WaveManager>();
+        if (dojo2Manager != null && !dojo2Manager.IsChallengeStarted)
+        {
+            dojo2Manager.StartChallenge();
         }
     }
 

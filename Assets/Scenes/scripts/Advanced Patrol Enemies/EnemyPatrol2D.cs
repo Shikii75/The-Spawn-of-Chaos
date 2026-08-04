@@ -653,11 +653,12 @@ public class EnemyPatrol2D : MonoBehaviour, IDamageable
             {
                 Debug.LogWarning($"Animator trigger '{knockbackTriggerName}' not found on {name}");
             }
+        }
 
-            if (!isKnockedBack)
-            {
-                StartCoroutine(KnockbackRoutine());
-            }
+        HitFeedbackManager.TriggerHitFeedback(transform, transform.position, damage, damage >= 25, EnemyHitType.PhysicalMelee);
+        if (!isKnockedBack)
+        {
+            StartCoroutine(KnockbackRoutine());
         }
 
         if (currentHealth <= 0)

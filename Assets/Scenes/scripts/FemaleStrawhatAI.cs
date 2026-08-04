@@ -621,7 +621,7 @@ public class FemaleStrawhatAI : MonoBehaviour, IDamageable
         }
         else
         {
-            move pMove = FindObjectOfType<move>();
+            move pMove = Object.FindFirstObjectByType<move>();
             if (pMove != null) player = pMove.transform;
         }
     }
@@ -778,6 +778,8 @@ public class FemaleStrawhatAI : MonoBehaviour, IDamageable
         {
             spriteJuice.PlayHitReaction(hitDir, knockbackForce);
         }
+
+        HitFeedbackManager.TriggerHitFeedback(transform, transform.position, damageAmount, damageAmount >= 25, EnemyHitType.PhysicalMelee);
 
         if (currentHealth <= 0)
         {

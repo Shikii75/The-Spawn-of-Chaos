@@ -281,13 +281,12 @@ public class PlayerSceneSpawner : MonoBehaviour
         Camera cam = Camera.main;
         if (cam == null)
         {
-            Debug.LogWarning("[PlayerSceneSpawner] Camera.main is NULL! Cannot bind camera follow.");
-            return;
+            cam = Object.FindFirstObjectByType<Camera>();
         }
 
-        if (player == null)
+        if (cam == null)
         {
-            Debug.LogWarning("[PlayerSceneSpawner] Player is null in SetupCameraFollow!");
+            Debug.LogWarning("[PlayerSceneSpawner] No Camera found in scene! Cannot bind camera follow.");
             return;
         }
 
@@ -296,8 +295,13 @@ public class PlayerSceneSpawner : MonoBehaviour
         {
             follow = cam.GetComponentInChildren<CameraFollow>(true);
         }
+        if (follow == null)
+        {
+            follow = cam.gameObject.AddComponent<CameraFollow>();
+            Debug.Log($"[PlayerSceneSpawner] Added CameraFollow component to camera '{cam.name}'.");
+        }
 
-        if (follow != null)
+        if (player != null)
         {
             follow.player = player.transform;
             follow.SnapToTarget();
@@ -305,7 +309,7 @@ public class PlayerSceneSpawner : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("[PlayerSceneSpawner] CameraFollow component NOT FOUND on Main Camera!");
+            follow.FindPlayer();
         }
     }
 
