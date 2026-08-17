@@ -48,8 +48,8 @@ public class EnemyPatrolAI : MonoBehaviour, IDamageable
     void Start()
     {
         // Force/clamp damage values to bypass Inspector serialization overrides
-        attackDamage = 1; // 0.5 units of health (1 HP)
-        dashDamage = 2;   // 1 unit of health (2 HP)
+        attackDamage = 10; // 10% damage (10 hits to defeat player)
+        dashDamage = 12;   // 12% damage
 
         // Auto-assign player as target if targets array is empty
         if (targets == null || targets.Length == 0 || (targets.Length == 1 && targets[0] == null))
@@ -80,7 +80,8 @@ public class EnemyPatrolAI : MonoBehaviour, IDamageable
         }
 
         float distance = Vector2.Distance(transform.position, target.position);
-        if (distance <= attackRange)
+        float effectiveRange = GetEffectiveAttackRange(target);
+        if (distance <= effectiveRange)
         {
             Attack(target);
             return;
@@ -234,6 +235,19 @@ public class EnemyPatrolAI : MonoBehaviour, IDamageable
         if (col != null)
             col.enabled = false;
         Destroy(gameObject, 2f);
+    }
+
+    private float GetEffectiveAttackRange(Transform target)
+    {
+        if (target == null) return attackRange;
+        Collider2D enemyCol = GetComponent<Collider2D>();
+        Collider2D targetCol = target.GetComponent<Collider2D>();
+
+        float enemyWidth = (enemyCol != null) ? enemyCol.bounds.extents.x : 0.3f;
+        float targetWidth = (targetCol != null) ? targetCol.bounds.extents.x : 0.35f;
+        float touchDistance = enemyWidth + targetWidth;
+
+        return Mathf.Max(attackRange, touchDistance + 0.15f);
     }
 }
 

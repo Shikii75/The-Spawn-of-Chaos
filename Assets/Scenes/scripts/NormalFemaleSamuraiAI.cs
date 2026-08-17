@@ -46,7 +46,7 @@ public class NormalFemaleSamuraiAI : MonoBehaviour, IDamageable
     [Header("Health & Damage")]
     public int maxHealth = 60;
     [SerializeField] private int currentHealth;
-    public int baseDamage = 15;
+    public int baseDamage = 16; // 16% damage (Dojo clan standard)
     public float knockbackForce = 3.5f;
     public float hitStunDuration = 0.25f;
 

@@ -16,6 +16,8 @@ public static class UIFactory
     public static readonly Color AccentDim         = new Color(146f/255f, 104f/255f, 255f/255f, 0.6f);
     public static readonly Color TextWhite         = Color.white;
     public static readonly Color TextMuted         = new Color(180f/255f, 180f/255f, 200f/255f, 1f);
+    public static readonly Color TextGold          = new Color(255f/255f, 215f/255f, 64f/255f, 1f);
+    public static readonly Color TextCyan          = new Color(56f/255f, 189f/255f, 248f/255f, 1f);
     public static readonly Color Danger            = new Color(220f/255f, 53f/255f, 69f/255f, 1f);
     public static readonly Color Success           = new Color(61f/255f, 255f/255f, 154f/255f, 1f);
 

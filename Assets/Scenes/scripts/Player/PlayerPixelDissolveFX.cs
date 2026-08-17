@@ -125,11 +125,7 @@ public class PlayerPixelDissolveFX : MonoBehaviour
 
     private void TriggerMicroCameraShake(float duration, float intensity)
     {
-        Camera mainCam = Camera.main;
-        if (mainCam != null)
-        {
-            mainCam.gameObject.AddComponent<MicroCameraShakeAnim>().Initialize(duration, intensity);
-        }
+        CameraShakeManager.Shake(duration, intensity);
     }
 
     private void SpawnGlowingLensFlare(Vector3 pos, Color color, float targetScale)
@@ -261,23 +257,24 @@ public class PlayerPixelDissolveFX : MonoBehaviour
         float signX = Mathf.Sign(transform.localScale.x);
         if (signX == 0) signX = 1f;
 
-        float absX = 1.145f;
-        float absY = 1.1842f;
-        float absZ = 1.1042f;
+        Vector3 baseScale = (originalScale != Vector3.zero) ? originalScale : Vector3.one;
+        float absX = Mathf.Abs(baseScale.x);
+        float absY = Mathf.Abs(baseScale.y);
+        float absZ = Mathf.Abs(baseScale.z);
 
         // Phase 1: Dynamic vertical stretch upon air arrival
-        Vector3 stretch = new Vector3(signX * absX * 0.68f, absY * 1.42f, absZ);
+        Vector3 stretch = new Vector3(signX * absX * 0.8f, absY * 1.25f, absZ);
         transform.localScale = stretch;
-
-        yield return new WaitForSeconds(0.035f);
-
-        // Phase 2: Horizontal squish rebound
-        Vector3 squish = new Vector3(signX * absX * 1.28f, absY * 0.78f, absZ);
-        transform.localScale = squish;
 
         yield return new WaitForSeconds(0.04f);
 
-        // Phase 3: Settle back smoothly
+        // Phase 2: Horizontal squish rebound
+        Vector3 squish = new Vector3(signX * absX * 1.15f, absY * 0.88f, absZ);
+        transform.localScale = squish;
+
+        yield return new WaitForSeconds(0.05f);
+
+        // Phase 3: Settle back smoothly to exact original scale
         transform.localScale = new Vector3(signX * absX, absY, absZ);
     }
 

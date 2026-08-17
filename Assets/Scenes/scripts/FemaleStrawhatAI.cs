@@ -61,7 +61,7 @@ public class FemaleStrawhatAI : MonoBehaviour, IDamageable
     [Header("Health & Damage")]
     public int maxHealth = 50;
     [SerializeField] private int currentHealth;
-    public int baseDamage = 3;
+    public int baseDamage = 16; // 16% damage (Dojo clan standard)
     public float knockbackForce = 2.5f;
     public float hitStunDuration = 0.2f;
     public float deathLaunchForce = 4f;

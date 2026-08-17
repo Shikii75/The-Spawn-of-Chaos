@@ -55,7 +55,7 @@ public class UniversalEnemy : MonoBehaviour, IDamageable
 
     [Header("Damage & Health Config")]
     public int maxHealth = 30;
-    public int baseDamage = 4;
+    public int baseDamage = 16; // 16% damage (Dojo clan standard)
     [Tooltip("Cooldown between contact damage hits for simple touch-damage mobs.")]
     public float contactDamageCooldown = 1f;
     [Tooltip("How much force is applied to push the enemy back when hit.")]

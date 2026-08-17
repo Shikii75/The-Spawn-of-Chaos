@@ -1,0 +1,364 @@
+/* =============================================================================
+   THE SPAWN OF CHAOS - HIGH-AESTHETIC MAIN MENU STYLESHEET (USS)
+   Deep Grey Void Canvas + 120-Frame Logo Animation + Procedural Cyber-Gothic Buttons
+   ============================================================================= */
+
+/* ── Fullscreen Root Container ── */
+.menu-root {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #222429;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+/* Completely Solid Deep Grey Background Layer */
+.menu-background-layer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #222429;
+    opacity: 1.0;
+}
+
+/* ── Atmospheric Purple Spirit Orbs / Fireflies Overlay Layer ── */
+.orbs-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.purple-spirit-orb {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    box-shadow: 0 0 10px rgba(192, 132, 252, 0.7);
+}
+
+/* ── Corner Framing Brackets ── */
+.corner-bracket {
+    position: absolute;
+    width: 36px;
+    height: 36px;
+    border-color: rgba(180, 185, 200, 0.4);
+}
+
+.corner--tl {
+    left: 36px;
+    top: 32px;
+    border-left-width: 2px;
+    border-top-width: 2px;
+}
+
+.corner--tr {
+    right: 36px;
+    top: 32px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+}
+
+.corner--bl {
+    left: 36px;
+    bottom: 32px;
+    border-left-width: 2px;
+    border-bottom-width: 2px;
+}
+
+.corner--br {
+    right: 36px;
+    bottom: 32px;
+    border-right-width: 2px;
+    border-bottom-width: 2px;
+}
+
+/* ── Main Layout (Center Column: Logo above + Buttons below) ── */
+.main-layout-container {
+    width: 100%;
+    height: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 40px 30px 40px;
+    overflow: hidden;
+}
+
+/* ── Centerpiece Logo Artwork Area ── */
+.title-logo-container {
+    flex-grow: 1;
+    flex-shrink: 1;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
+    overflow: visible;
+}
+
+.title-logo-image {
+    width: 820px;
+    height: 480px;
+    max-width: 90%;
+    max-height: 68%;
+    background-image: url('project://database/Assets/Scenes/animations/frames/keep-54947fd1/frame_001.png');
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+/* ── Horizontal Navigation Row (Positioned higher) ── */
+.nav-section {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: -6px;
+    margin-bottom: 24px;
+}
+
+/* ── Procedural Cyber-Gothic Glassmorphic Buttons ── */
+.cyber-button {
+    width: 220px;
+    height: 56px;
+    margin-left: 14px;
+    margin-right: 14px;
+    padding: 0;
+    background-color: rgba(18, 19, 26, 0.94);
+    border-color: rgba(168, 85, 247, 0.45);
+    border-width: 1.5px;
+    border-radius: 10px;
+    justify-content: space-between;
+    align-items: stretch;
+    overflow: hidden;
+    transition-property: all;
+    transition-duration: 0.22s;
+    transition-timing-function: ease-out;
+}
+
+.btn-top-accent {
+    height: 2px;
+    width: 100%;
+    background-color: rgba(168, 85, 247, 0.35);
+    transition-property: background-color;
+    transition-duration: 0.22s;
+}
+
+.btn-bottom-accent {
+    height: 2px;
+    width: 100%;
+    background-color: transparent;
+    transition-property: background-color;
+    transition-duration: 0.22s;
+}
+
+.btn-content-row {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 1;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.btn-label {
+    font-size: 15px;
+    -unity-font-style: bold;
+    color: #e2e8f0;
+    letter-spacing: 5px;
+    margin-left: 8px;
+    margin-right: 8px;
+    transition-property: color;
+    transition-duration: 0.22s;
+}
+
+.btn-rune {
+    font-size: 11px;
+    color: #c084fc;
+    opacity: 0.65;
+    transition-property: opacity, translate, color;
+    transition-duration: 0.22s;
+}
+
+/* Hover States */
+.cyber-button:hover {
+    scale: 1.05 1.05;
+    translate: 0px -5px;
+    background-color: rgba(38, 20, 68, 0.98);
+    border-color: #f43f5e;
+    border-width: 1.5px;
+    box-shadow: 0 0 24px rgba(244, 63, 94, 0.55);
+}
+
+.cyber-button:hover .btn-top-accent {
+    background-color: #f43f5e;
+}
+
+.cyber-button:hover .btn-bottom-accent {
+    background-color: rgba(244, 63, 94, 0.4);
+}
+
+.cyber-button:hover .btn-label {
+    color: #ffffff;
+    text-shadow: 0 0 12px rgba(255, 255, 255, 0.9);
+}
+
+.cyber-button:hover .btn-rune {
+    color: #fda4af;
+    opacity: 1.0;
+}
+
+.cyber-button:hover .btn-rune--left {
+    translate: -3px 0px;
+}
+
+.cyber-button:hover .btn-rune--right {
+    translate: 3px 0px;
+}
+
+/* Active Press States */
+.cyber-button:active {
+    scale: 0.97 0.97;
+    translate: 0px -2px;
+    background-color: rgba(225, 29, 72, 0.4);
+    border-color: #fda4af;
+}
+
+/* ── Modals (Settings & Options) ── */
+.modal-overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(4, 2, 10, 0.92);
+    justify-content: center;
+    align-items: center;
+    transition-property: opacity;
+    transition-duration: 0.25s;
+}
+
+.modal-card {
+    width: 580px;
+    max-height: 85%;
+    background-color: rgba(22, 20, 30, 0.98);
+    border-color: #a855f7;
+    border-width: 1.5px;
+    border-radius: 14px;
+    padding: 30px;
+    box-shadow: 0 0 35px rgba(168, 85, 247, 0.4);
+}
+
+.modal-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom-width: 1px;
+    border-bottom-color: rgba(168, 85, 247, 0.3);
+    padding-bottom: 12px;
+    margin-bottom: 22px;
+}
+
+.modal-title {
+    font-size: 22px;
+    -unity-font-style: bold;
+    color: #ffffff;
+    letter-spacing: 3px;
+}
+
+.modal-close-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 17px;
+    background-color: rgba(225, 29, 72, 0.2);
+    border-color: rgba(244, 63, 94, 0.6);
+    border-width: 1px;
+    color: #fda4af;
+    font-size: 16px;
+    -unity-font-style: bold;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close-btn:hover {
+    background-color: rgba(225, 29, 72, 0.7);
+    color: #ffffff;
+}
+
+.setting-row {
+    margin-bottom: 18px;
+}
+
+.setting-label {
+    font-size: 13px;
+    color: #c4b5fd;
+    -unity-font-style: bold;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+}
+
+.unity-slider .unity-base-slider__tracker {
+    height: 6px;
+    background-color: rgba(46, 16, 101, 0.9);
+    border-radius: 3px;
+    border-width: 0;
+}
+
+.unity-slider .unity-base-slider__dragger {
+    width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    background-color: #c084fc;
+    border-color: #ffffff;
+    border-width: 1px;
+    margin-top: -6px;
+}
+
+.unity-slider .unity-base-slider__dragger:hover {
+    background-color: #f43f5e;
+    scale: 1.2 1.2;
+}
+
+.setting-toggle {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #e2e8f0;
+}
+
+.setting-toggle .unity-toggle__checkmark {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background-color: rgba(46, 16, 101, 0.9);
+    border-color: #a855f7;
+    border-width: 1.5px;
+}
+
+.setting-toggle:checked .unity-toggle__checkmark {
+    background-color: #f43f5e;
+    border-color: #fda4af;
+}
+
+/* Visibility classes */
+.panel--hidden {
+    display: none;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.panel--visible {
+    display: flex;
+    opacity: 1;
+    pointer-events: all;
+}

@@ -50,8 +50,8 @@ public class FatKabutoAI : MonoBehaviour, IDamageable
     [Header("Health & Damage")]
     public int maxHealth = 120;
     [SerializeField] private int currentHealth;
-    public int bashDamage = 22;
-    public int chargeImpactDamage = 18;
+    public int bashDamage = 20; // 20% damage (Heavy Dojo brute)
+    public int chargeImpactDamage = 20; // 20% damage
     public float knockbackForce = 6f;
     public float hitStunDuration = 0.15f; // Heavy poise reduces hitstun duration
 

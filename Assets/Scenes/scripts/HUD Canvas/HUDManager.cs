@@ -111,42 +111,31 @@ public class HUDManager : MonoBehaviour
 
         // ──────────────────── TOP-RIGHT: Coins & Potions ────────────────
 
-        float coinsWidth = 160f * hudScale;
-        float coinsHeight = 30f * hudScale;
-        float rightMargin = 10f * Mathf.Min(hudScale, 2f);
-        float topMarginRight = 5f * Mathf.Min(hudScale, 2f);
-        
-        float coinsX = -(rightMargin + coinsWidth / 2f);
-        float coinsY = -(topMarginRight + coinsHeight / 2f);
-
-        // Coins text — top-right, scaled size and font
+        // Coins text — top-right
         coinsText = UIFactory.CreateText(
             canvas.transform, "CoinsText", "Coins: 0",
-            20f * hudScale, UIFactory.TextWhite, TextAlignmentOptions.TopRight
+            24f, UIFactory.TextGold, TextAlignmentOptions.TopRight
         );
-        UIFactory.SetRectFixed(coinsText.rectTransform,
-            new Vector2(1f, 1f), new Vector2(1f, 1f),
-            new Vector2(coinsX, coinsY), new Vector2(coinsWidth, coinsHeight)
-        );
+        coinsText.rectTransform.pivot = new Vector2(1f, 1f);
+        coinsText.rectTransform.anchorMin = new Vector2(1f, 1f);
+        coinsText.rectTransform.anchorMax = new Vector2(1f, 1f);
+        coinsText.rectTransform.anchoredPosition = new Vector2(-50f, -40f);
+        coinsText.rectTransform.sizeDelta = new Vector2(220f, 36f);
         coinsText.enableWordWrapping = false;
+        coinsText.fontStyle = FontStyles.Bold;
 
-        float potionsWidth = 160f * hudScale;
-        float potionsHeight = 26f * hudScale;
-        float gapRight = 2f * Mathf.Min(hudScale, 2f);
-        
-        float potionsX = coinsX;
-        float potionsY = coinsY - (coinsHeight / 2f) - gapRight - (potionsHeight / 2f);
-
-        // Potions text — below coins, scaled size and font, muted color
+        // Potions text — below coins
         potionsText = UIFactory.CreateText(
             canvas.transform, "PotionsText", "Potions: 0 [H]",
-            18f * hudScale, UIFactory.TextMuted, TextAlignmentOptions.TopRight
+            20f, UIFactory.TextMuted, TextAlignmentOptions.TopRight
         );
-        UIFactory.SetRectFixed(potionsText.rectTransform,
-            new Vector2(1f, 1f), new Vector2(1f, 1f),
-            new Vector2(potionsX, potionsY), new Vector2(potionsWidth, potionsHeight)
-        );
+        potionsText.rectTransform.pivot = new Vector2(1f, 1f);
+        potionsText.rectTransform.anchorMin = new Vector2(1f, 1f);
+        potionsText.rectTransform.anchorMax = new Vector2(1f, 1f);
+        potionsText.rectTransform.anchoredPosition = new Vector2(-50f, -80f);
+        potionsText.rectTransform.sizeDelta = new Vector2(220f, 32f);
         potionsText.enableWordWrapping = false;
+        potionsText.fontStyle = FontStyles.Bold;
     }
 
     // ══════════════════════════════════════════════════════════════════
@@ -208,17 +197,17 @@ public class HUDManager : MonoBehaviour
 
     public static bool IsInMainMenu()
     {
-        MainMenuController menu = FindObjectOfType<MainMenuController>(true);
+        MainMenuUIToolkitController menu = FindFirstObjectByType<MainMenuUIToolkitController>();
         if (menu != null)
         {
-            if (!MainMenuController.isPlaying || menu.gameObject.activeInHierarchy)
+            if (!MainMenuUIToolkitController.isPlaying || menu.gameObject.activeInHierarchy)
             {
                 return true;
             }
         }
 
         string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
-        if (!MainMenuController.isPlaying && (sceneName.Equals("SampleScene", System.StringComparison.OrdinalIgnoreCase) || sceneName.Equals("MainMenu", System.StringComparison.OrdinalIgnoreCase)))
+        if (!MainMenuUIToolkitController.isPlaying && (sceneName.Equals("SampleScene", System.StringComparison.OrdinalIgnoreCase) || sceneName.Equals("MainMenu", System.StringComparison.OrdinalIgnoreCase)))
         {
             return true;
         }
@@ -444,7 +433,7 @@ public class HUDManager : MonoBehaviour
 
             if (healthText != null)
             {
-                healthText.text = (playerHealth.CurrentHealth * 0.5f) + " / " + (playerHealth.MaxHealth * 0.5f);
+                healthText.text = $"{playerHealth.CurrentHealth}%";
             }
         }
     }

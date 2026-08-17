@@ -22,7 +22,7 @@ public class Health : MonoBehaviour, IDamageable
     {
         if (CompareTag("Player"))
         {
-            maxHealth = 14; // Force player max health to 14 (7 units) to override Unity inspector value
+            maxHealth = 100; // Standard 100% health scale
             playerSpriteRenderer = GetComponentInChildren<SpriteRenderer>();
             if (playerSpriteRenderer != null)
             {
@@ -31,6 +31,15 @@ public class Health : MonoBehaviour, IDamageable
             }
         }
         currentHealth = maxHealth;
+    }
+
+    /// <summary>
+    /// Inflicts damage calculated as a percentage of maximum health (e.g. 25f for 25%).
+    /// </summary>
+    public void TakeDamagePercent(float percent)
+    {
+        int damageAmount = Mathf.Max(1, Mathf.RoundToInt(maxHealth * (percent / 100f)));
+        TakeDamage(damageAmount);
     }
 
     public void TakeDamage(int damage)
@@ -96,11 +105,25 @@ public class Health : MonoBehaviour, IDamageable
         flashCoroutine = null;
     }
 
+    private void OnEnable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
     private void OnDisable()
     {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
         if (playerSpriteRenderer != null && hasOriginalPlayerColor)
         {
             playerSpriteRenderer.color = originalPlayerColor;
+        }
+    }
+
+    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        if (CompareTag("Player") && (currentHealth <= 0 || PlayerSpawnPointManager.isRespawning))
+        {
+            Resurrect();
         }
     }
 

@@ -1,0 +1,104 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="MainMenu.uss" />
+    
+    <!-- Fullscreen Root Container -->
+    <ui:VisualElement name="menu-root" class="menu-root">
+        
+        <!-- Deep Grey Background Layer -->
+        <ui:VisualElement name="bg-layer" class="menu-background-layer" />
+
+        <!-- Framing Corner Brackets -->
+        <ui:VisualElement class="corner-bracket corner--tl" />
+        <ui:VisualElement class="corner-bracket corner--tr" />
+        <ui:VisualElement class="corner-bracket corner--bl" />
+        <ui:VisualElement class="corner-bracket corner--br" />
+
+        <!-- Atmospheric Purple Spirit Orbs / Fireflies Overlay Layer (Top to Bottom) -->
+        <ui:VisualElement name="orbs-container" class="orbs-container" />
+
+        <!-- Main Screen Layout (Centerpiece Logo + Horizontal Button Row) -->
+        <ui:VisualElement name="main-layout" class="main-layout-container">
+            
+            <!-- Centerpiece Logo Artwork with Frame Animation -->
+            <ui:VisualElement name="title-container" class="title-logo-container">
+                <ui:VisualElement name="title-logo" class="title-logo-image" />
+            </ui:VisualElement>
+
+            <!-- Horizontal Navigation Row with Procedural Glassmorphic Buttons -->
+            <ui:VisualElement name="nav-section" class="nav-section">
+                
+                <!-- Play Button -->
+                <ui:Button name="btn-play" class="cyber-button cyber-button--play">
+                    <ui:VisualElement class="btn-top-accent" />
+                    <ui:VisualElement class="btn-content-row">
+                        <ui:Label text="✦" class="btn-rune btn-rune--left" />
+                        <ui:Label text="PLAY" class="btn-label" />
+                        <ui:Label text="✦" class="btn-rune btn-rune--right" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="btn-bottom-accent" />
+                </ui:Button>
+
+                <!-- Options Button -->
+                <ui:Button name="btn-settings" class="cyber-button cyber-button--options">
+                    <ui:VisualElement class="btn-top-accent" />
+                    <ui:VisualElement class="btn-content-row">
+                        <ui:Label text="⚙" class="btn-rune btn-rune--left" />
+                        <ui:Label text="OPTIONS" class="btn-label" />
+                        <ui:Label text="⚙" class="btn-rune btn-rune--right" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="btn-bottom-accent" />
+                </ui:Button>
+
+                <!-- Quit Button -->
+                <ui:Button name="btn-quit" class="cyber-button cyber-button--quit">
+                    <ui:VisualElement class="btn-top-accent" />
+                    <ui:VisualElement class="btn-content-row">
+                        <ui:Label text="✕" class="btn-rune btn-rune--left" />
+                        <ui:Label text="QUIT" class="btn-label" />
+                        <ui:Label text="✕" class="btn-rune btn-rune--right" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="btn-bottom-accent" />
+                </ui:Button>
+
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+
+        <!-- Settings Modal Dialog -->
+        <ui:VisualElement name="modal-settings" class="modal-overlay panel--hidden">
+            <ui:VisualElement class="modal-card">
+                <ui:VisualElement class="modal-header">
+                    <ui:Label text="REALM CONFIGURATION" class="modal-title" />
+                    <ui:Button name="btn-close-settings" text="✕" class="modal-close-btn" />
+                </ui:VisualElement>
+                
+                <ui:VisualElement class="modal-body">
+                    <!-- Master Volume -->
+                    <ui:VisualElement class="setting-row">
+                        <ui:Label text="MASTER AUDIO VOLUME" class="setting-label" />
+                        <ui:Slider name="slider-master" low-value="0" high-value="1" value="1" />
+                    </ui:VisualElement>
+                    
+                    <!-- Music Volume -->
+                    <ui:VisualElement class="setting-row">
+                        <ui:Label text="MUSIC VOLUME" class="setting-label" />
+                        <ui:Slider name="slider-music" low-value="0" high-value="1" value="0.8" />
+                    </ui:VisualElement>
+
+                    <!-- SFX Volume -->
+                    <ui:VisualElement class="setting-row">
+                        <ui:Label text="SFX VOLUME" class="setting-label" />
+                        <ui:Slider name="slider-sfx" low-value="0" high-value="1" value="0.9" />
+                    </ui:VisualElement>
+
+                    <!-- Fullscreen Toggle -->
+                    <ui:Toggle name="toggle-fullscreen" label="FULLSCREEN DISPLAY" value="true" class="setting-toggle" />
+                    
+                    <!-- Screen Shake Toggle -->
+                    <ui:Toggle name="toggle-screenshake" label="CAMERA SHAKE" value="true" class="setting-toggle" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

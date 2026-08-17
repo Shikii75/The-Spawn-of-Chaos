@@ -23,7 +23,11 @@ namespace SpawnOfChaos.Minigames
         private ProceduralOrbUI currencyOrbUI;
         private ProceduralOrbUI epOrbUI;
 
-        private TextMeshProUGUI levelBadgeText;
+        private TextMeshProUGUI healthValueText;
+        private TextMeshProUGUI manaValueText;
+        private TextMeshProUGUI currencyValueText;
+        private TextMeshProUGUI epValueText;
+
         private GameObject levelUpBanner;
         private TextMeshProUGUI levelUpText;
 
@@ -167,35 +171,36 @@ namespace SpawnOfChaos.Minigames
                 FindPlayer();
             }
 
-            // Real-time Health Orb Fill level sync
-            if (playerHealth != null && healthOrbUI != null)
+            // Real-time Health Orb Fill & Value sync
+            if (playerHealth != null)
             {
-                healthOrbUI.fillAmount = (float)playerHealth.CurrentHealth / Mathf.Max(1, playerHealth.MaxHealth);
+                float hpRatio = (float)playerHealth.CurrentHealth / Mathf.Max(1, playerHealth.MaxHealth);
+                if (healthOrbUI != null) healthOrbUI.fillAmount = hpRatio;
+                if (healthValueText != null) healthValueText.text = $"{playerHealth.CurrentHealth}%";
             }
 
-            // Real-time Mana Orb Fill level sync
-            if (playerCombat != null && manaOrbUI != null)
+            // Real-time Mana Orb Fill & Value sync
+            if (playerCombat != null)
             {
-                manaOrbUI.fillAmount = playerCombat.currentMana / Mathf.Max(1f, playerCombat.maxMana);
+                float mpRatio = playerCombat.currentMana / Mathf.Max(1f, playerCombat.maxMana);
+                if (manaOrbUI != null) manaOrbUI.fillAmount = mpRatio;
+                if (manaValueText != null) manaValueText.text = $"{Mathf.RoundToInt(mpRatio * 100f)}%";
             }
 
-            // Real-time Currency Orb Fill level sync (baseline 0.10f fill at 0 coins up to 1.0f as coins increase)
+            // Real-time Currency Orb Fill & Value sync
+            int coins = playerCurrency != null ? playerCurrency.Coins : 0;
             if (currencyOrbUI != null)
             {
-                int coins = playerCurrency != null ? playerCurrency.Coins : 0;
-                float fill = Mathf.Clamp01(0.10f + (coins / 100f) * 0.90f);
+                float fill = Mathf.Clamp01(0.12f + (coins / 100f) * 0.88f);
                 currencyOrbUI.fillAmount = fill;
             }
+            if (currencyValueText != null) currencyValueText.text = $"{coins}";
 
-            // Real-time EP (EXP) Orb Fill level sync
-            if (PlayerLevelSystem.Instance != null && epOrbUI != null)
+            // Real-time EP (EXP) Orb Fill & Value sync
+            if (PlayerLevelSystem.Instance != null)
             {
-                epOrbUI.fillAmount = PlayerLevelSystem.Instance.ExpRatio;
-
-                if (levelBadgeText != null)
-                {
-                    levelBadgeText.text = $"Lv. {PlayerLevelSystem.Instance.CurrentLevel}";
-                }
+                if (epOrbUI != null) epOrbUI.fillAmount = PlayerLevelSystem.Instance.ExpRatio;
+                if (epValueText != null) epValueText.text = $"Lv. {PlayerLevelSystem.Instance.CurrentLevel}";
             }
         }
 
@@ -236,13 +241,8 @@ namespace SpawnOfChaos.Minigames
 
         private void OnPlayerLevelUp(int newLevel)
         {
-            // Splash EP Orb violently
-            if (epOrbUI != null)
-            {
-                epOrbUI.TriggerSplash(2.5f);
-            }
+            if (epOrbUI != null) epOrbUI.TriggerSplash(2.5f);
 
-            // Show Level Up Banner
             if (levelUpBanner != null)
             {
                 if (levelUpText != null)
@@ -263,7 +263,6 @@ namespace SpawnOfChaos.Minigames
             cg.alpha = 0f;
             float t = 0f;
 
-            // Fade in
             while (t < 0.4f)
             {
                 t += Time.unscaledDeltaTime;
@@ -273,7 +272,6 @@ namespace SpawnOfChaos.Minigames
 
             yield return new WaitForSecondsRealtime(1.8f);
 
-            // Fade out
             t = 0f;
             while (t < 0.5f)
             {
@@ -288,14 +286,8 @@ namespace SpawnOfChaos.Minigames
         private void BuildHUDWidget()
         {
             Canvas canvas = GetComponentInParent<Canvas>();
-            if (canvas == null)
-            {
-                canvas = GetComponent<Canvas>();
-            }
-            if (canvas == null)
-            {
-                canvas = FindObjectOfType<Canvas>();
-            }
+            if (canvas == null) canvas = GetComponent<Canvas>();
+            if (canvas == null) canvas = FindObjectOfType<Canvas>();
             if (canvas == null)
             {
                 canvas = UIFactory.CreateCanvas("HUDOrbCanvas", -10);
@@ -303,51 +295,30 @@ namespace SpawnOfChaos.Minigames
                 DontDestroyOnLoad(canvas.gameObject);
             }
 
-            // Bind any existing ProceduralOrbUI components under Canvas
-            ProceduralOrbUI[] existingOrbs = canvas.GetComponentsInChildren<ProceduralOrbUI>(true);
-            foreach (var orb in existingOrbs)
-            {
-                switch (orb.orbType)
-                {
-                    case OrbType.Health: healthOrbUI = orb; break;
-                    case OrbType.Mana: manaOrbUI = orb; break;
-                    case OrbType.Currency: currencyOrbUI = orb; break;
-                    case OrbType.EP: epOrbUI = orb; break;
-                }
-            }
+            // Create fresh container panel with top-left pivot
+            if (panelGO != null) Destroy(panelGO);
 
-            // Create container panel only if any orbs are missing
-            if (healthOrbUI == null || manaOrbUI == null || currencyOrbUI == null || epOrbUI == null)
-            {
-                panelGO = new GameObject("HUDOrbPanel", typeof(RectTransform));
-                panelGO.transform.SetParent(canvas.transform, false);
+            panelGO = new GameObject("HUDOrbPanel", typeof(RectTransform));
+            panelGO.transform.SetParent(canvas.transform, false);
 
-                RectTransform panelRT = panelGO.GetComponent<RectTransform>();
-                UIFactory.SetRectFixed(panelRT, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(155f, -40f), new Vector2(280f, 75f));
+            RectTransform panelRT = panelGO.GetComponent<RectTransform>();
+            panelRT.pivot = new Vector2(0f, 1f);
+            panelRT.anchorMin = new Vector2(0f, 1f);
+            panelRT.anchorMax = new Vector2(0f, 1f);
+            panelRT.anchoredPosition = new Vector2(50f, -50f);
+            panelRT.sizeDelta = new Vector2(520f, 160f);
 
-                HorizontalLayoutGroup hlg = panelGO.AddComponent<HorizontalLayoutGroup>();
-                hlg.spacing = 10f;
-                hlg.childControlWidth = false;
-                hlg.childControlHeight = false;
-                hlg.childAlignment = TextAnchor.MiddleLeft;
+            HorizontalLayoutGroup hlg = panelGO.AddComponent<HorizontalLayoutGroup>();
+            hlg.padding = new RectOffset(10, 10, 10, 10);
+            hlg.spacing = 26f;
+            hlg.childControlWidth = false;
+            hlg.childControlHeight = false;
+            hlg.childAlignment = TextAnchor.MiddleCenter;
 
-                if (healthOrbUI == null) healthOrbUI = CreateOrbItem(panelRT, OrbType.Health, "HP");
-                if (manaOrbUI == null) manaOrbUI = CreateOrbItem(panelRT, OrbType.Mana, "MP");
-                if (currencyOrbUI == null) currencyOrbUI = CreateOrbItem(panelRT, OrbType.Currency, "GOLD");
-                if (epOrbUI == null) epOrbUI = CreateOrbItem(panelRT, OrbType.EP, "EXP");
-            }
-
-            // Ensure Level Badge text under EXP Orb
-            if (epOrbUI != null && levelBadgeText == null)
-            {
-                levelBadgeText = epOrbUI.GetComponentInChildren<TextMeshProUGUI>();
-                if (levelBadgeText == null)
-                {
-                    levelBadgeText = UIFactory.CreateText(epOrbUI.transform, "LevelBadge", "Lv. 1", 11f, new Color(0.85f, 0.4f, 1f, 1f), TextAlignmentOptions.Center);
-                    UIFactory.SetRectFixed(levelBadgeText.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, -10f), new Vector2(60f, 16f));
-                    levelBadgeText.fontStyle = FontStyles.Bold;
-                }
-            }
+            healthOrbUI = CreateOrbItem(panelRT, OrbType.Health, "HEALTH", new Color(1f, 0.35f, 0.45f, 1f), out healthValueText);
+            manaOrbUI = CreateOrbItem(panelRT, OrbType.Mana, "MANA", new Color(0.35f, 0.85f, 1f, 1f), out manaValueText);
+            currencyOrbUI = CreateOrbItem(panelRT, OrbType.Currency, "COINS", new Color(1f, 0.85f, 0.25f, 1f), out currencyValueText);
+            epOrbUI = CreateOrbItem(panelRT, OrbType.EP, "EXP", new Color(0.85f, 0.5f, 1f, 1f), out epValueText);
 
             // Level Up Banner (Center Screen)
             if (levelUpBanner == null)
@@ -355,7 +326,7 @@ namespace SpawnOfChaos.Minigames
                 levelUpBanner = new GameObject("LevelUpBanner", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
                 levelUpBanner.transform.SetParent(canvas.transform, false);
                 RectTransform bannerRT = levelUpBanner.GetComponent<RectTransform>();
-                UIFactory.SetRectFixed(bannerRT, new Vector2(0.5f, 0.65f), new Vector2(0.5f, 0.65f), Vector2.zero, new Vector2(420f, 90f));
+                UIFactory.SetRectFixed(bannerRT, new Vector2(0.5f, 0.65f), new Vector2(0.5f, 0.65f), Vector2.zero, new Vector2(440f, 95f));
 
                 Image bannerBg = levelUpBanner.GetComponent<Image>();
                 bannerBg.color = new Color(0.05f, 0.02f, 0.12f, 0.92f);
@@ -370,22 +341,43 @@ namespace SpawnOfChaos.Minigames
             UpdateVisibility();
         }
 
-        private ProceduralOrbUI CreateOrbItem(Transform parent, OrbType type, string label)
+        private ProceduralOrbUI CreateOrbItem(Transform parent, OrbType type, string label, Color tagColor, out TextMeshProUGUI valueTextRef)
         {
-            GameObject orbGO = new GameObject($"OrbItem_{type}", typeof(RectTransform), typeof(RawImage), typeof(ProceduralOrbUI));
+            GameObject orbGO = new GameObject($"OrbItem_{type}", typeof(RectTransform), typeof(RawImage), typeof(ProceduralOrbUI), typeof(LayoutElement));
             orbGO.transform.SetParent(parent, false);
 
             RectTransform rt = orbGO.GetComponent<RectTransform>();
-            rt.sizeDelta = new Vector2(60f, 60f);
+            rt.sizeDelta = new Vector2(90f, 90f);
+
+            LayoutElement le = orbGO.GetComponent<LayoutElement>();
+            le.preferredWidth = 90f;
+            le.preferredHeight = 90f;
+            le.minWidth = 90f;
+            le.minHeight = 90f;
 
             ProceduralOrbUI orbUI = orbGO.GetComponent<ProceduralOrbUI>();
             orbUI.orbType = type;
-            orbUI.textureResolution = 64;
+            orbUI.textureResolution = 128;
             orbUI.autoUpdate = true;
             orbUI.fillAmount = 0.8f;
 
-            TextMeshProUGUI tagText = UIFactory.CreateText(orbGO.transform, "Tag", label, 9f, Color.white, TextAlignmentOptions.Center);
-            UIFactory.SetRectFixed(tagText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, 8f), new Vector2(50f, 14f));
+            // Tag Header above orb
+            TextMeshProUGUI tagText = UIFactory.CreateText(orbGO.transform, "Tag", label, 12f, tagColor, TextAlignmentOptions.Center);
+            tagText.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            tagText.rectTransform.anchorMin = new Vector2(0.5f, 1f);
+            tagText.rectTransform.anchorMax = new Vector2(0.5f, 1f);
+            tagText.rectTransform.anchoredPosition = new Vector2(0f, 16f);
+            tagText.rectTransform.sizeDelta = new Vector2(90f, 20f);
+            tagText.fontStyle = FontStyles.Bold;
+
+            // Readout Value underneath orb
+            valueTextRef = UIFactory.CreateText(orbGO.transform, "Value", "100%", 18f, Color.white, TextAlignmentOptions.Center);
+            valueTextRef.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            valueTextRef.rectTransform.anchorMin = new Vector2(0.5f, 0f);
+            valueTextRef.rectTransform.anchorMax = new Vector2(0.5f, 0f);
+            valueTextRef.rectTransform.anchoredPosition = new Vector2(0f, -22f);
+            valueTextRef.rectTransform.sizeDelta = new Vector2(90f, 26f);
+            valueTextRef.fontStyle = FontStyles.Bold;
 
             return orbUI;
         }

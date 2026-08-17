@@ -256,6 +256,32 @@ public static class AIEditorBridge
                 case "buildlevel":
                     return BuildLevelRemainder();
 
+                case "create_cuttable_plant":
+                case "cuttable_plant":
+                    return CreateCuttablePlant(cmd);
+
+                case "create_hit_object":
+                case "hit_object":
+                    return CreateHitReactiveObject(cmd);
+
+                case "spawn_animation_test_bench":
+                case "animation_test_bench":
+                    AIAnimationStudio.SpawnFullAnimationTestBench();
+                    return new CommandResponse { status = "success", message = "Animation Test Bench spawned in active scene." };
+
+                case "setup_pink_bridge_cluster":
+                case "pink_bridge":
+                    return SetupPinkBridgeCluster(cmd);
+
+                case "create_purple_water":
+                case "purple_water":
+                    return CreatePurpleWater(cmd);
+
+                case "build_tutorial_level":
+                case "tutorial_level":
+                    TutorialLevelBuilder.BuildCompleteTutorialLevel();
+                    return new CommandResponse { status = "success", message = "Complete Tutorial Level structures built in active scene." };
+
                 default:
                     return new CommandResponse { status = "error", message = $"Unknown action: '{cmd.action}'" };
             }
@@ -925,5 +951,84 @@ public static class AIEditorBridge
 
         Undo.RegisterCreatedObjectUndo(go, "LevelBuilder: " + name);
     }
+
+    private static CommandResponse CreateCuttablePlant(EditorCommand cmd)
+    {
+        GameObject go = GameObject.Find(cmd.targetName);
+        if (go == null)
+        {
+            go = new GameObject(string.IsNullOrEmpty(cmd.targetName) ? "Cuttable_Plant" : cmd.targetName);
+            SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
+            sr.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
+            sr.color = new Color(0.4f, 0.8f, 0.4f, 1f);
+            BoxCollider2D col = go.AddComponent<BoxCollider2D>();
+            col.isTrigger = true;
+        }
+
+        CuttablePlant plant = go.GetComponent<CuttablePlant>() ?? go.AddComponent<CuttablePlant>();
+        if (System.Enum.TryParse(cmd.propertyValue, out CuttablePlant.PlantType type))
+        {
+            plant.plantType = type;
+            plant.ApplyPresetColors();
+        }
+
+        EditorUtility.SetDirty(go);
+        return new CommandResponse { status = "success", message = $"CuttablePlant created/configured on '{go.name}'." };
+    }
+
+    private static CommandResponse CreateHitReactiveObject(EditorCommand cmd)
+    {
+        GameObject go = GameObject.Find(cmd.targetName);
+        if (go == null)
+        {
+            go = new GameObject(string.IsNullOrEmpty(cmd.targetName) ? "HitReactive_Prop" : cmd.targetName);
+            SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
+            sr.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
+            sr.color = new Color(0.7f, 0.5f, 0.3f, 1f);
+            go.AddComponent<BoxCollider2D>();
+        }
+
+        HitReactiveObject hitObj = go.GetComponent<HitReactiveObject>() ?? go.AddComponent<HitReactiveObject>();
+        if (System.Enum.TryParse(cmd.propertyValue, out HitReactiveObject.ObjectType type))
+        {
+            hitObj.objectType = type;
+            hitObj.ApplyPresetDefaults();
+        }
+
+        EditorUtility.SetDirty(go);
+        return new CommandResponse { status = "success", message = $"HitReactiveObject created/configured on '{go.name}'." };
+    }
+
+    private static CommandResponse SetupPinkBridgeCluster(EditorCommand cmd)
+    {
+        GameObject go = GameObject.Find(cmd.targetName);
+        if (go == null)
+        {
+            return new CommandResponse { status = "error", message = $"Target GameObject '{cmd.targetName}' not found in active scene." };
+        }
+
+        DynamicPinkBridgeCluster cluster = go.GetComponent<DynamicPinkBridgeCluster>() ?? go.AddComponent<DynamicPinkBridgeCluster>();
+        cluster.InitializeChildPlatforms();
+
+        EditorUtility.SetDirty(go);
+        return new CommandResponse { status = "success", message = $"DynamicPinkBridgeCluster configured on '{go.name}'." };
+    }
+
+    private static CommandResponse CreatePurpleWater(EditorCommand cmd)
+    {
+        string name = string.IsNullOrEmpty(cmd.targetName) ? "PurpleWater2D" : cmd.targetName;
+        GameObject go = GameObject.Find(name);
+        if (go == null)
+        {
+            go = new GameObject(name);
+        }
+
+        SpawnOfChaos.Props.PurpleWater2D water = go.GetComponent<SpawnOfChaos.Props.PurpleWater2D>() ?? go.AddComponent<SpawnOfChaos.Props.PurpleWater2D>();
+        water.GenerateMeshAndNodes();
+
+        EditorUtility.SetDirty(go);
+        return new CommandResponse { status = "success", message = $"PurpleWater2D created/configured on '{go.name}'." };
+    }
 }
+
 

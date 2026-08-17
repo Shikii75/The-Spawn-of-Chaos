@@ -78,6 +78,11 @@ public class BreakableObject : MonoBehaviour, IDamageable
                 Instantiate(lootPrefabs[index], transform.position + Vector3.up * 0.5f, Quaternion.identity);
             }
         }
+        else
+        {
+            // Drop collectible loot orbs via OrbSpawner standard system
+            SpawnOfChaos.Systems.OrbSpawner.SpawnLootCluster(transform.position + Vector3.up * 0.5f, Random.Range(2, 4));
+        }
 
         // Change appearance or destroy
         if (brokenSprite != null && sr != null)

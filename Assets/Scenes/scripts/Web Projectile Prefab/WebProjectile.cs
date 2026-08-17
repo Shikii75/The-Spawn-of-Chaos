@@ -73,7 +73,8 @@ public class WebProjectile : MonoBehaviour
         }
 
         // Hit solid terrain
-        if (other.CompareTag("Ground") || other.gameObject.layer == LayerMask.NameToLayer("Ground"))
+        int groundLayer = LayerMask.NameToLayer("Ground");
+        if (other.CompareTag("Ground") || (groundLayer != -1 && other.gameObject.layer == groundLayer) || other.name.Contains("Platform") || other.name.Contains("Ground"))
         {
             Destroy(gameObject);
         }

@@ -304,6 +304,7 @@ public class PlayerSceneSpawner : MonoBehaviour
         if (player != null)
         {
             follow.player = player.transform;
+            follow.offset = new Vector3(0f, 0.5f, -10f); // Center character in viewport
             follow.SnapToTarget();
             Debug.Log($"[PlayerSceneSpawner] Camera bound to player. Camera pos={cam.transform.position}, Player pos={player.transform.position}");
         }

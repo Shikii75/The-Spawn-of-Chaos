@@ -96,8 +96,8 @@ public class EnemyPatrol2D : MonoBehaviour, IDamageable
     private void Start()
     {
         // Force/clamp damage values to bypass Inspector serialization overrides
-        attackDamage = 1; // 0.5 units of health (1 HP)
-        dashDamage = 2;   // 1 unit of health (2 HP)
+        attackDamage = 10; // 10% damage (10 hits to defeat player)
+        dashDamage = 12;   // 12% damage
 
         // Clamp dash duration to a safe, reasonable platformer range
         if (dashDuration > 0.6f)

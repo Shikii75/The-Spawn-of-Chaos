@@ -3,7 +3,7 @@ using UnityEngine;
 
 /// <summary>
 /// CameraShakeManager - Manages micro camera shakes for combat hits and spell impacts.
-/// Plays nicely with CameraFollow by applying temporary camera offsets.
+/// Provides non-accumulating shake offsets to prevent camera drift or infinite position bugs.
 /// </summary>
 public class CameraShakeManager : MonoBehaviour
 {
@@ -37,6 +37,7 @@ public class CameraShakeManager : MonoBehaviour
         }
     }
 
+    public Vector3 CurrentShakeOffset { get; private set; } = Vector3.zero;
     private Coroutine shakeCoroutine;
 
     void Awake()
@@ -60,6 +61,8 @@ public class CameraShakeManager : MonoBehaviour
 
     public void TriggerShake(float duration, float magnitude)
     {
+        if (duration <= 0f || magnitude <= 0f) return;
+
         if (shakeCoroutine != null)
         {
             StopCoroutine(shakeCoroutine);
@@ -73,17 +76,20 @@ public class CameraShakeManager : MonoBehaviour
 
         while (elapsed < duration)
         {
-            // Calculate random offset
             float offsetX = Random.Range(-1f, 1f) * magnitude;
             float offsetY = Random.Range(-1f, 1f) * magnitude;
+            CurrentShakeOffset = new Vector3(offsetX, offsetY, 0f);
 
-            // Apply camera shake translation (preserving Z position)
-            transform.position = new Vector3(transform.position.x + offsetX, transform.position.y + offsetY, transform.position.z);
-
-            elapsed += Time.unscaledDeltaTime; // Unscaled time so hitstop doesn't freeze camera shake!
+            elapsed += Time.unscaledDeltaTime; // Unscaled time so hitstop doesn't freeze camera shake
             yield return null;
         }
 
+        CurrentShakeOffset = Vector3.zero;
         shakeCoroutine = null;
+    }
+
+    private void OnDisable()
+    {
+        CurrentShakeOffset = Vector3.zero;
     }
 }

@@ -16,14 +16,41 @@ public class LevelMusicPlayer : MonoBehaviour
 
     void Start()
     {
+        EnsureTrackAssigned();
+
         // Only play the gameplay music if we are actively playing the game (not on the title screen)
-        if (MainMenuController.isPlaying)
+        if (MainMenuUIToolkitController.isPlaying)
         {
-            if (levelMusic != null && AudioManager.Instance != null)
+            StartLevelMusic();
+        }
+    }
+
+    public void StartLevelMusic()
+    {
+        EnsureTrackAssigned();
+
+        if (levelMusic != null && AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayBGM(levelMusic, fadeOnStart);
+            Debug.Log("[LevelMusicPlayer] Started level music: " + levelMusic.name);
+        }
+    }
+
+    private void EnsureTrackAssigned()
+    {
+        if (levelMusic == null)
+        {
+            levelMusic = Resources.Load<AudioClip>("Audio/bamboo-incense");
+            if (levelMusic == null)
             {
-                AudioManager.Instance.PlayBGM(levelMusic, fadeOnStart);
-                Debug.Log("LevelMusicPlayer: Started level music: " + levelMusic.name);
+                levelMusic = Resources.Load<AudioClip>("Audio/temple-thunder");
             }
+#if UNITY_EDITOR
+            if (levelMusic == null)
+            {
+                levelMusic = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/bamboo-incense.mp3");
+            }
+#endif
         }
     }
 }

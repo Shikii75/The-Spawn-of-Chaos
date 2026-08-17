@@ -1,31 +1,36 @@
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody2D))]
 public class SpiderPatrol : MonoBehaviour
 {
     public float speed = 2f;
     public Transform leftPoint;
     public Transform rightPoint;
+    public float flipCooldownDuration = 0.35f;
 
+    private Rigidbody2D rb;
     private bool movingRight = true;
+    private float nextFlipTime;
 
-    void Update()
+    void Awake()
     {
-        if (leftPoint == null || rightPoint == null)
+        rb = GetComponent<Rigidbody2D>();
+    }
+
+    void FixedUpdate()
+    {
+        if (leftPoint == null || rightPoint == null || rb == null)
             return;
 
         Transform target = movingRight ? rightPoint : leftPoint;
-        
-        // Move towards target's X coordinate while preserving current Y coordinate
-        Vector2 targetXPosition = new Vector2(target.position.x, transform.position.y);
-        transform.position = Vector2.MoveTowards(
-            transform.position,
-            targetXPosition,
-            speed * Time.deltaTime
-        );
+        float dir = movingRight ? 1f : -1f;
+
+        rb.linearVelocity = new Vector2(dir * speed, rb.linearVelocity.y);
 
         float horizontalDistance = Mathf.Abs(transform.position.x - target.position.x);
-        if (horizontalDistance < 0.3f)
+        if (horizontalDistance < 0.3f && Time.time >= nextFlipTime)
         {
+            nextFlipTime = Time.time + flipCooldownDuration;
             movingRight = !movingRight;
             Flip();
         }
@@ -34,7 +39,7 @@ public class SpiderPatrol : MonoBehaviour
     void Flip()
     {
         Vector3 scale = transform.localScale;
-        scale.x *= -1;
+        scale.x = Mathf.Abs(scale.x) * (movingRight ? 1f : -1f);
         transform.localScale = scale;
     }
 }

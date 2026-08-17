@@ -547,7 +547,7 @@ public class PauseMenu : MonoBehaviour
     public void QuitToMenu(string menuSceneName)
     {
         Time.timeScale = 1f;
-        MainMenuController.isPlaying = false;
+        MainMenuUIToolkitController.isPlaying = false;
 
         if (Application.CanStreamedLevelBeLoaded(menuSceneName))
         {

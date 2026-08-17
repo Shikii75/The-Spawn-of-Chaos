@@ -11,7 +11,8 @@ public class CameraFollow : MonoBehaviour
     public Transform player;
 
     [Header("Follow Settings")]
-    public Vector3 offset = new Vector3(0f, 2f, -10f);
+    [Tooltip("Camera offset relative to player. Y=0.5f places player in the vertical center of screen.")]
+    public Vector3 offset = new Vector3(0f, 0.5f, -10f);
     public float smoothSpeed = 6f;
 
     void Start()
@@ -30,7 +31,8 @@ public class CameraFollow : MonoBehaviour
             if (player == null) return;
         }
 
-        Vector3 targetPosition = player.position + offset;
+        Vector3 shake = (CameraShakeManager.Instance != null) ? CameraShakeManager.Instance.CurrentShakeOffset : Vector3.zero;
+        Vector3 targetPosition = player.position + offset + shake;
         // Exponential decay for framerate-independent smooth tracking
         float t = 1f - Mathf.Exp(-smoothSpeed * Time.deltaTime);
         transform.position = Vector3.Lerp(transform.position, targetPosition, t);

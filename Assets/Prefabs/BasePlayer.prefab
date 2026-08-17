@@ -216,6 +216,9 @@ MonoBehaviour:
   dashDuration: 0.2
   dashCooldown: 0.8
   invulnerableDuringDash: 1
+  runSpeedMultiplier: 1.6
+  doubleTapThreshold: 0.25
+  jumpLockoutDuration: 0.25
   enableOrbCompanion: 0
   feetOffset: {x: 0, y: -1.65}
   feetBoxSize: {x: 0.7, y: 0.4}

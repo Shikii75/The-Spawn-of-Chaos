@@ -58,7 +58,7 @@ public class AudioManager : MonoBehaviour
     void Start()
     {
         // Silence any other AudioSources in the scene if we are on the main menu
-        if (!MainMenuController.isPlaying)
+        if (!MainMenuUIToolkitController.isPlaying)
         {
             AudioSource[] allSources = FindObjectsByType<AudioSource>(FindObjectsSortMode.None);
             foreach (var source in allSources)
@@ -111,7 +111,9 @@ public class AudioManager : MonoBehaviour
     /// </summary>
     public void PlayBGM(AudioClip clip, bool fade = true)
     {
-        if (musicSource.clip == clip) return; // Already playing this clip
+        if (musicSource == null) InitializeAudioSources();
+
+        if (musicSource.clip == clip && musicSource.isPlaying) return; // Already playing this clip
 
         if (fade && musicSource.isPlaying)
         {

@@ -47,11 +47,13 @@ public class BasePlayerBuilder
         AnimationClip attackClip = CreateClipFromFolder(FindSubfolder(baseFramesPath, "baseplayerpunches"), animSaveDir + "/basePlayerAttack.anim", 16f, false);
         AnimationClip shadowAttackClip = CreateClipFromFolder(FindSubfolder(baseFramesPath, "baseplayershadowattack"), animSaveDir + "/basePlayerShadowAttack.anim", 14f, false);
         AnimationClip blobClip = CreateClipFromFolder(blobFramesPath, animSaveDir + "/basePlayerBlob.anim", 12f, true);
+        AnimationClip dashClip = CreateClipFromFolder("Assets/Scenes/animations/frames/dashmage-827d61b5", animSaveDir + "/basePlayerDash.anim", 14f, false);
 
         // 2. Create AnimatorController
         string controllerPath = animSaveDir + "/BasePlayerController.controller";
         AnimatorController controller = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
 
+        controller.AddParameter("isWalking", AnimatorControllerParameterType.Bool);
         controller.AddParameter("isRunning", AnimatorControllerParameterType.Bool);
         controller.AddParameter("isJumping", AnimatorControllerParameterType.Bool);
         controller.AddParameter("isBlob", AnimatorControllerParameterType.Bool);
@@ -60,6 +62,7 @@ public class BasePlayerBuilder
         controller.AddParameter("Attack2", AnimatorControllerParameterType.Trigger);
         controller.AddParameter("Cast", AnimatorControllerParameterType.Trigger);
         controller.AddParameter("Dash", AnimatorControllerParameterType.Trigger);
+        controller.AddParameter("dash", AnimatorControllerParameterType.Trigger);
 
         var rootStateMachine = controller.layers[0].stateMachine;
 
@@ -67,12 +70,26 @@ public class BasePlayerBuilder
         var idleState = rootStateMachine.AddState("Idle"); idleState.motion = idleClip;
         rootStateMachine.defaultState = idleState;
 
-        var runState = rootStateMachine.AddState("Run"); runState.motion = runClip;
         var walkState = rootStateMachine.AddState("Walk"); walkState.motion = walkClip;
+        var runState = rootStateMachine.AddState("Run"); runState.motion = runClip;
         var jumpState = rootStateMachine.AddState("Jump"); jumpState.motion = jumpClip;
         var blobState = rootStateMachine.AddState("Blob"); blobState.motion = blobClip;
         var attackState = rootStateMachine.AddState("Attack"); attackState.motion = attackClip;
         var shadowState = rootStateMachine.AddState("ShadowAttack"); shadowState.motion = shadowAttackClip;
+        var dashState = rootStateMachine.AddState("Dash"); dashState.motion = dashClip;
+
+        // Transitions: Idle <-> Walk
+        var idleToWalk = idleState.AddTransition(walkState);
+        idleToWalk.AddCondition(AnimatorConditionMode.If, 0, "isWalking");
+        idleToWalk.AddCondition(AnimatorConditionMode.IfNot, 0, "isRunning");
+        idleToWalk.hasExitTime = false;
+        idleToWalk.duration = 0.05f;
+
+        var walkToIdle = walkState.AddTransition(idleState);
+        walkToIdle.AddCondition(AnimatorConditionMode.IfNot, 0, "isWalking");
+        walkToIdle.AddCondition(AnimatorConditionMode.IfNot, 0, "isRunning");
+        walkToIdle.hasExitTime = false;
+        walkToIdle.duration = 0.05f;
 
         // Transitions: Idle <-> Run
         var idleToRun = idleState.AddTransition(runState);
@@ -82,24 +99,48 @@ public class BasePlayerBuilder
 
         var runToIdle = runState.AddTransition(idleState);
         runToIdle.AddCondition(AnimatorConditionMode.IfNot, 0, "isRunning");
+        runToIdle.AddCondition(AnimatorConditionMode.IfNot, 0, "isWalking");
         runToIdle.hasExitTime = false;
         runToIdle.duration = 0.05f;
+
+        // Transitions: Walk <-> Run
+        var walkToRun = walkState.AddTransition(runState);
+        walkToRun.AddCondition(AnimatorConditionMode.If, 0, "isRunning");
+        walkToRun.hasExitTime = false;
+        walkToRun.duration = 0.05f;
+
+        var runToWalk = runState.AddTransition(walkState);
+        runToWalk.AddCondition(AnimatorConditionMode.IfNot, 0, "isRunning");
+        runToWalk.AddCondition(AnimatorConditionMode.If, 0, "isWalking");
+        runToWalk.hasExitTime = false;
+        runToWalk.duration = 0.05f;
 
         // AnyState -> Jump
         var anyToJumpBool = rootStateMachine.AddAnyStateTransition(jumpState);
         anyToJumpBool.AddCondition(AnimatorConditionMode.If, 0, "isJumping");
         anyToJumpBool.hasExitTime = false;
+        anyToJumpBool.canTransitionToSelf = false;
         anyToJumpBool.duration = 0.02f;
 
         var anyToJumpTrig = rootStateMachine.AddAnyStateTransition(jumpState);
         anyToJumpTrig.AddCondition(AnimatorConditionMode.If, 0, "jump");
         anyToJumpTrig.hasExitTime = false;
+        anyToJumpTrig.canTransitionToSelf = false;
         anyToJumpTrig.duration = 0.02f;
 
         var jumpToIdle = jumpState.AddTransition(idleState);
         jumpToIdle.AddCondition(AnimatorConditionMode.IfNot, 0, "isJumping");
+        jumpToIdle.AddCondition(AnimatorConditionMode.IfNot, 0, "isWalking");
+        jumpToIdle.AddCondition(AnimatorConditionMode.IfNot, 0, "isRunning");
         jumpToIdle.hasExitTime = false;
         jumpToIdle.duration = 0.05f;
+
+        var jumpToWalk = jumpState.AddTransition(walkState);
+        jumpToWalk.AddCondition(AnimatorConditionMode.If, 0, "isWalking");
+        jumpToWalk.AddCondition(AnimatorConditionMode.IfNot, 0, "isRunning");
+        jumpToWalk.AddCondition(AnimatorConditionMode.IfNot, 0, "isJumping");
+        jumpToWalk.hasExitTime = false;
+        jumpToWalk.duration = 0.05f;
 
         var jumpToRun = jumpState.AddTransition(runState);
         jumpToRun.AddCondition(AnimatorConditionMode.If, 0, "isRunning");
@@ -107,21 +148,77 @@ public class BasePlayerBuilder
         jumpToRun.hasExitTime = false;
         jumpToRun.duration = 0.05f;
 
+        // AnyState -> Dash
+        var anyToDash = rootStateMachine.AddAnyStateTransition(dashState);
+        anyToDash.AddCondition(AnimatorConditionMode.If, 0, "Dash");
+        anyToDash.hasExitTime = false;
+        anyToDash.canTransitionToSelf = false;
+        anyToDash.duration = 0.02f;
+
+        var anyToDashLower = rootStateMachine.AddAnyStateTransition(dashState);
+        anyToDashLower.AddCondition(AnimatorConditionMode.If, 0, "dash");
+        anyToDashLower.hasExitTime = false;
+        anyToDashLower.canTransitionToSelf = false;
+        anyToDashLower.duration = 0.02f;
+
+        var dashToIdle = dashState.AddTransition(idleState);
+        dashToIdle.hasExitTime = true;
+        dashToIdle.exitTime = 0.8f;
+        dashToIdle.duration = 0.05f;
+        dashToIdle.AddCondition(AnimatorConditionMode.IfNot, 0, "isWalking");
+        dashToIdle.AddCondition(AnimatorConditionMode.IfNot, 0, "isRunning");
+        dashToIdle.AddCondition(AnimatorConditionMode.IfNot, 0, "isJumping");
+
+        var dashToWalk = dashState.AddTransition(walkState);
+        dashToWalk.hasExitTime = true;
+        dashToWalk.exitTime = 0.8f;
+        dashToWalk.duration = 0.05f;
+        dashToWalk.AddCondition(AnimatorConditionMode.If, 0, "isWalking");
+        dashToWalk.AddCondition(AnimatorConditionMode.IfNot, 0, "isRunning");
+
+        var dashToRun = dashState.AddTransition(runState);
+        dashToRun.hasExitTime = true;
+        dashToRun.exitTime = 0.8f;
+        dashToRun.duration = 0.05f;
+        dashToRun.AddCondition(AnimatorConditionMode.If, 0, "isRunning");
+
+        var dashToJump = dashState.AddTransition(jumpState);
+        dashToJump.hasExitTime = false;
+        dashToJump.duration = 0.02f;
+        dashToJump.AddCondition(AnimatorConditionMode.If, 0, "isJumping");
+
         // AnyState -> Blob
         var anyToBlob = rootStateMachine.AddAnyStateTransition(blobState);
         anyToBlob.AddCondition(AnimatorConditionMode.If, 0, "isBlob");
         anyToBlob.hasExitTime = false;
+        anyToBlob.canTransitionToSelf = false;
         anyToBlob.duration = 0.05f;
 
         var blobToIdle = blobState.AddTransition(idleState);
         blobToIdle.AddCondition(AnimatorConditionMode.IfNot, 0, "isBlob");
+        blobToIdle.AddCondition(AnimatorConditionMode.IfNot, 0, "isWalking");
+        blobToIdle.AddCondition(AnimatorConditionMode.IfNot, 0, "isRunning");
         blobToIdle.hasExitTime = false;
         blobToIdle.duration = 0.05f;
+
+        var blobToWalk = blobState.AddTransition(walkState);
+        blobToWalk.AddCondition(AnimatorConditionMode.IfNot, 0, "isBlob");
+        blobToWalk.AddCondition(AnimatorConditionMode.If, 0, "isWalking");
+        blobToWalk.AddCondition(AnimatorConditionMode.IfNot, 0, "isRunning");
+        blobToWalk.hasExitTime = false;
+        blobToWalk.duration = 0.05f;
+
+        var blobToRun = blobState.AddTransition(runState);
+        blobToRun.AddCondition(AnimatorConditionMode.IfNot, 0, "isBlob");
+        blobToRun.AddCondition(AnimatorConditionMode.If, 0, "isRunning");
+        blobToRun.hasExitTime = false;
+        blobToRun.duration = 0.05f;
 
         // AnyState -> Attack
         var anyToAttack = rootStateMachine.AddAnyStateTransition(attackState);
         anyToAttack.AddCondition(AnimatorConditionMode.If, 0, "Attack");
         anyToAttack.hasExitTime = false;
+        anyToAttack.canTransitionToSelf = false;
         anyToAttack.duration = 0.02f;
 
         var attackToIdle = attackState.AddTransition(idleState);
@@ -133,6 +230,7 @@ public class BasePlayerBuilder
         var anyToShadow = rootStateMachine.AddAnyStateTransition(shadowState);
         anyToShadow.AddCondition(AnimatorConditionMode.If, 0, "Cast");
         anyToShadow.hasExitTime = false;
+        anyToShadow.canTransitionToSelf = false;
         anyToShadow.duration = 0.02f;
 
         var shadowToIdle = shadowState.AddTransition(idleState);
@@ -169,8 +267,8 @@ public class BasePlayerBuilder
 
         move moveScript = basePlayerGO.AddComponent<move>();
         moveScript.moveSpeed = 7f;
-        moveScript.jumpForce = 11f;
-        moveScript.gravityScale = 1f;
+        moveScript.jumpForce = 15.5f;
+        moveScript.gravityScale = 2.8f;
         moveScript.useTeleportJump = false;
         moveScript.enableOrbCompanion = false;
 

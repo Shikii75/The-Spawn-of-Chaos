@@ -4,7 +4,10 @@ public class NyxarisTest : MonoBehaviour
 {
     void Start()
     {
-        FindObjectOfType<NyxarisManager>();
-            FindObjectOfType<NyxarisManager>().SendInputMessage();
+        NyxarisManager manager = FindFirstObjectByType<NyxarisManager>();
+        if (manager != null)
+        {
+            manager.SendInputMessage();
+        }
     }
 }

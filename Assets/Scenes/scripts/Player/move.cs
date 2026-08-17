@@ -3,8 +3,10 @@ using UnityEngine;
 public class move : MonoBehaviour
 {
     public float moveSpeed = 6f;
-    public float jumpForce = 12f;
-    public float gravityScale = 1f;
+    public float jumpForce = 15.5f;
+    public float gravityScale = 2.8f;
+    public float fallGravityMultiplier = 1.6f;
+    public float lowJumpMultiplier = 2.0f;
     
     [Header("Teleport Jump Settings")]
     [Tooltip("If true, jumping teleports the player up a set distance with pixelated dissolve/rebuild FX instead of using standard jump animations.")]
@@ -24,8 +26,9 @@ public class move : MonoBehaviour
     private bool isDashing = false;
     private float dashTimeLeft;
     private float dashCooldownTimer;
-    private float lastFacingSign = 1f;
+    public float lastFacingSign = 1f;
 
+    public float LastFacingSign => lastFacingSign;
     public bool IsInvulnerable => isDashing && invulnerableDuringDash;
     public bool IsDashing => isDashing;
 
@@ -34,6 +37,23 @@ public class move : MonoBehaviour
     private float debuffTimer = 0f;
 
     private System.Collections.Generic.HashSet<Collider2D> ignoredEnemyColliders = new System.Collections.Generic.HashSet<Collider2D>();
+
+    [Header("Run & Double Tap Settings")]
+    [Tooltip("Movement speed multiplier when running (triggered by double-tapping horizontal directional input).")]
+    public float runSpeedMultiplier = 1.6f;
+    [Tooltip("Time window in seconds to register a double tap for running.")]
+    public float doubleTapThreshold = 0.25f;
+
+    [Header("Jump Lockout Settings")]
+    [Tooltip("Duration in seconds after launching a jump where ground checks are temporarily locked out so the jump animation plays full multi-frame flight.")]
+    public float jumpLockoutDuration = 0.25f;
+    private float jumpLockoutTimer = 0f;
+
+    private float lastLeftTapTime = -10f;
+    private float lastRightTapTime = -10f;
+    private bool isDoubleTapRunning = false;
+    private int lastTapDirection = 0; // -1 for left, 1 for right
+    private float prevHorizontalInput = 0f;
 
     private Rigidbody2D rb;
     private Animator anim;
@@ -157,6 +177,12 @@ public class move : MonoBehaviour
             }
         }
 
+        float horizontalInput = Input.GetAxisRaw("Horizontal");
+        if (horizontalInput != 0)
+        {
+            lastFacingSign = Mathf.Sign(horizontalInput);
+        }
+
         // Handle active dash
         if (isDashing)
         {
@@ -166,6 +192,34 @@ public class move : MonoBehaviour
                 isDashing = false;
                 rb.gravityScale = gravityScale; // Restore gravity
                 rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+
+                if (anim != null)
+                {
+                    var stateInfo = anim.GetCurrentAnimatorStateInfo(0);
+                    if (stateInfo.IsName("Dash") || stateInfo.IsName("dash"))
+                    {
+                        if (!isGrounded)
+                        {
+                            if (anim.HasState(0, Animator.StringToHash("jump"))) anim.Play("jump");
+                            else if (anim.HasState(0, Animator.StringToHash("Jump"))) anim.Play("Jump");
+                        }
+                        else if (isDoubleTapRunning && horizontalInput != 0)
+                        {
+                            if (anim.HasState(0, Animator.StringToHash("Run"))) anim.Play("Run");
+                            else if (anim.HasState(0, Animator.StringToHash("run"))) anim.Play("run");
+                        }
+                        else if (horizontalInput != 0)
+                        {
+                            if (anim.HasState(0, Animator.StringToHash("walk"))) anim.Play("walk");
+                            else if (anim.HasState(0, Animator.StringToHash("Walk"))) anim.Play("Walk");
+                        }
+                        else
+                        {
+                            if (anim.HasState(0, Animator.StringToHash("idle"))) anim.Play("idle");
+                            else if (anim.HasState(0, Animator.StringToHash("Idle"))) anim.Play("Idle");
+                        }
+                    }
+                }
             }
             else
             {
@@ -176,11 +230,25 @@ public class move : MonoBehaviour
 
         // 👇 Evaluate grounding with grace buffer at top of Update
         groundedGraceTimer -= Time.deltaTime;
-        if (CheckIsGrounded())
+        if (jumpLockoutTimer > 0f)
         {
-            groundedGraceTimer = 0.15f; // Grace buffer prevents 1-frame flickering
+            jumpLockoutTimer -= Time.deltaTime;
+            isGrounded = false;
+            groundedGraceTimer = 0f;
         }
-        isGrounded = (groundedGraceTimer > 0f);
+        else
+        {
+            bool wasAirborne = !isGrounded;
+            if (CheckIsGrounded())
+            {
+                groundedGraceTimer = 0.15f; // Grace buffer prevents 1-frame flickering
+                if (wasAirborne && PlayerCombatJuice.Instance != null)
+                {
+                    PlayerCombatJuice.Instance.TriggerLandSquash();
+                }
+            }
+            isGrounded = (groundedGraceTimer > 0f);
+        }
 
         if (dashCooldownTimer > 0f)
         {
@@ -194,9 +262,11 @@ public class move : MonoBehaviour
 
         if (IsMovementBlocked())
         {
+            isDoubleTapRunning = false;
             rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
             if (anim != null)
             {
+                anim.SetBool("isWalking", false);
                 anim.SetBool("isRunning", false);
                 anim.SetBool("isBlob", false);
                 anim.SetBool("isJumping", !isGrounded);
@@ -204,11 +274,41 @@ public class move : MonoBehaviour
             return;
         }
 
-        float horizontalInput = Input.GetAxisRaw("Horizontal");
-        if (horizontalInput != 0)
+        // Handle double-tap detection for running (holding Left or Right / A or D)
+        bool leftKeyDown = Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A) || (horizontalInput < -0.1f && prevHorizontalInput >= -0.1f);
+        bool rightKeyDown = Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D) || (horizontalInput > 0.1f && prevHorizontalInput <= 0.1f);
+
+        if (leftKeyDown)
         {
-            lastFacingSign = Mathf.Sign(horizontalInput);
+            if (Time.time - lastLeftTapTime <= doubleTapThreshold && lastTapDirection == -1)
+            {
+                isDoubleTapRunning = true;
+            }
+            lastLeftTapTime = Time.time;
+            lastTapDirection = -1;
         }
+
+        if (rightKeyDown)
+        {
+            if (Time.time - lastRightTapTime <= doubleTapThreshold && lastTapDirection == 1)
+            {
+                isDoubleTapRunning = true;
+            }
+            lastRightTapTime = Time.time;
+            lastTapDirection = 1;
+        }
+
+        prevHorizontalInput = horizontalInput;
+
+        // Reset double-tap running state when horizontal input is released or direction changes
+        if (horizontalInput == 0f || (isDoubleTapRunning && lastTapDirection != 0 && Mathf.Sign(horizontalInput) != lastTapDirection))
+        {
+            isDoubleTapRunning = false;
+        }
+
+        bool isMoving = horizontalInput != 0;
+        bool isRunning = isMoving && isDoubleTapRunning && !isBlobForm;
+        bool isWalking = isMoving && !isDoubleTapRunning && !isBlobForm;
 
         // 👇 Check if pressing M AND moving left or right
         if (Input.GetKey(KeyCode.M) && horizontalInput != 0)
@@ -228,6 +328,10 @@ public class move : MonoBehaviour
             dashCooldownTimer = dashCooldown;
             rb.gravityScale = 0f; // Disable gravity during dash
             rb.linearVelocity = new Vector2(lastFacingSign * dashSpeed, 0f);
+            if (PlayerCombatJuice.Instance != null)
+            {
+                PlayerCombatJuice.Instance.TriggerDashStretch();
+            }
             if (anim != null)
             {
                 anim.SetTrigger("dash");
@@ -236,18 +340,43 @@ public class move : MonoBehaviour
             return;
         }
 
-        // Apply movement speed (faster if in blob form, affected by slow debuff)
-        float currentSpeed = isBlobForm ? (moveSpeed * blobSpeedMultiplier) : moveSpeed;
+        // Apply movement speed (faster if running or in blob form, affected by slow debuff)
+        float currentSpeed = moveSpeed;
+        if (isBlobForm)
+        {
+            currentSpeed *= blobSpeedMultiplier;
+        }
+        else if (isRunning)
+        {
+            currentSpeed *= runSpeedMultiplier;
+        }
         currentSpeed *= speedDebuffMultiplier;
         rb.linearVelocity = new Vector2(horizontalInput * currentSpeed, rb.linearVelocity.y);
 
-        // 👇 Update Animator states
-        anim.SetBool("isRunning", horizontalInput != 0 && !isBlobForm);
-        anim.SetBool("isBlob", isBlobForm);
+        // 👇 Update Animator states — but SUPPRESS during active attack animations
+        //    so walk/run/idle bools don't fight with the attack state machine transitions.
+        bool combatActive = MageCombat.Instance != null && MageCombat.Instance.IsAttacking;
+        if (anim != null && !combatActive)
+        {
+            bool hasWalkParam = HasAnimatorParameter(anim, "isWalking");
+            anim.SetBool("isWalking", isWalking);
+            if (hasWalkParam)
+            {
+                anim.SetBool("isRunning", isRunning);
+            }
+            else
+            {
+                anim.SetBool("isRunning", isMoving && !isBlobForm);
+            }
+            anim.SetBool("isBlob", isBlobForm);
+        }
 
         // Flip sprite based on movement direction (preserving exact initial inspector scales)
-        float facing = lastFacingSign != 0 ? lastFacingSign : 1f;
-        transform.localScale = new Vector3(facing * initialAbsScale.x, initialAbsScale.y, initialAbsScale.z);
+        float facing = (lastFacingSign < 0f) ? -1f : 1f;
+        float scaleX = Mathf.Max(0.1f, initialAbsScale.x);
+        float scaleY = Mathf.Max(0.1f, initialAbsScale.y);
+        float scaleZ = Mathf.Max(0.1f, initialAbsScale.z);
+        transform.localScale = new Vector3(facing * scaleX, scaleY, scaleZ);
 
         // Adjust collider size dynamically for Blob Form vs Standing Form
         if (isBlobForm && !wasBlobFormLastFrame)
@@ -270,8 +399,9 @@ public class move : MonoBehaviour
         }
 
         // 👇 Jump logic (disable jumping while in blob form)
-        if (Input.GetButtonDown("Jump") && isGrounded && !isBlobForm)
+        if ((Input.GetButtonDown("Jump") || Input.GetKeyDown(KeyCode.Space)) && isGrounded && !isBlobForm)
         {
+            jumpLockoutTimer = jumpLockoutDuration; // Lockout ground checks for initial launch phase so full animation plays
             groundedGraceTimer = 0f; // Reset grace timer on jump
             isGrounded = false;
 
@@ -289,6 +419,16 @@ public class move : MonoBehaviour
                 {
                     dissolveFX.PlayDissolveTeleport(startPos, targetPos, () => {
                         rb.linearVelocity = new Vector2(rb.linearVelocity.x, 3.5f); // Natural air float momentum
+                        if (anim != null)
+                        {
+                            anim.SetBool("isJumping", true);
+                            if (anim.HasState(0, Animator.StringToHash("jump")))
+                                anim.Play("jump", 0, 0f);
+                            else if (anim.HasState(0, Animator.StringToHash("Jump")))
+                                anim.Play("Jump", 0, 0f);
+                            else if (anim.HasState(0, Animator.StringToHash("air")))
+                                anim.Play("air", 0, 0f);
+                        }
                     });
                 }
                 else
@@ -303,26 +443,69 @@ public class move : MonoBehaviour
                 rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
             }
 
+            if (PlayerCombatJuice.Instance != null)
+            {
+                PlayerCombatJuice.Instance.TriggerJumpStretch();
+            }
+
             if (anim != null)
             {
                 anim.SetBool("isJumping", true);
                 anim.SetTrigger("jump");
-                anim.Play("Jump", 0, 0f);
+                anim.SetTrigger("Jump");
+                if (anim.HasState(0, Animator.StringToHash("jump")))
+                    anim.Play("jump", 0, 0f);
+                else if (anim.HasState(0, Animator.StringToHash("Jump")))
+                    anim.Play("Jump", 0, 0f);
+                else if (anim.HasState(0, Animator.StringToHash("air")))
+                    anim.Play("air", 0, 0f);
             }
         }
 
-        anim.SetBool("isJumping", !isGrounded);
+        if (!combatActive && anim != null)
+        {
+            anim.SetBool("isJumping", !isGrounded);
+        }
+
+        // Dynamic Gravity Modifiers for Snappy 2D Jump Physics
+        if (!isDashing && rb != null)
+        {
+            if (rb.linearVelocity.y < 0f)
+            {
+                rb.gravityScale = gravityScale * fallGravityMultiplier;
+            }
+            else if (rb.linearVelocity.y > 0f && !Input.GetButton("Jump"))
+            {
+                rb.gravityScale = gravityScale * lowJumpMultiplier;
+            }
+            else
+            {
+                rb.gravityScale = gravityScale;
+            }
+        }
 
         // Safeguard: Instantly force exit from jump state when grounded
-        if (isGrounded && anim != null)
+        // BUT skip during active attacks so we don't rip the player out of attack animations
+        if (isGrounded && jumpLockoutTimer <= 0f && anim != null && !combatActive)
         {
             var stateInfo = anim.GetCurrentAnimatorStateInfo(0);
             if (stateInfo.IsName("jump") || stateInfo.IsName("Jump"))
             {
-                if (horizontalInput != 0 && !isBlobForm)
-                    anim.Play("walk");
+                if (isRunning)
+                {
+                    if (anim.HasState(0, Animator.StringToHash("Run"))) anim.Play("Run");
+                    else if (anim.HasState(0, Animator.StringToHash("run"))) anim.Play("run");
+                }
+                else if (isWalking)
+                {
+                    if (anim.HasState(0, Animator.StringToHash("walk"))) anim.Play("walk");
+                    else if (anim.HasState(0, Animator.StringToHash("Walk"))) anim.Play("Walk");
+                }
                 else
-                    anim.Play("idle");
+                {
+                    if (anim.HasState(0, Animator.StringToHash("idle"))) anim.Play("idle");
+                    else if (anim.HasState(0, Animator.StringToHash("Idle"))) anim.Play("Idle");
+                }
             }
         }
 
@@ -374,6 +557,23 @@ public class move : MonoBehaviour
         }
     }
 
+    public void ResetPlayerScaleToNormal()
+    {
+        if (initialAbsScale == Vector3.zero || initialAbsScale.x <= 0.01f)
+        {
+            initialAbsScale = new Vector3(
+                Mathf.Max(0.1f, Mathf.Abs(transform.localScale.x)),
+                Mathf.Max(0.1f, Mathf.Abs(transform.localScale.y)),
+                Mathf.Max(0.1f, Mathf.Abs(transform.localScale.z))
+            );
+        }
+        float facing = (lastFacingSign < 0f) ? -1f : 1f;
+        float absX = Mathf.Max(0.1f, initialAbsScale.x);
+        float absY = Mathf.Max(0.1f, initialAbsScale.y);
+        float absZ = Mathf.Max(0.1f, initialAbsScale.z);
+        transform.localScale = new Vector3(facing * absX, absY, absZ);
+    }
+
     public void FaceTarget(Vector3 targetPosition)
     {
         float dir = targetPosition.x - transform.position.x;
@@ -407,9 +607,63 @@ public class move : MonoBehaviour
         return false;
     }
 
+    [Header("Step-Over & Ground Seam Smoothing")]
+    [Tooltip("Maximum height of uneven box collider bumps or ground seams the player can automatically step over without stopping.")]
+    public float maxStepHeight = 0.35f;
+    [Tooltip("Forward distance to scan for small ground seams.")]
+    public float stepScanDistance = 0.45f;
+    [Tooltip("Smooth lift speed when stepping over a low seam.")]
+    public float stepSmoothSpeed = 14f;
+
     void FixedUpdate()
     {
-        // Constant gravity is managed natively by Rigidbody2D, no manual velocity addition needed.
+        HandleStepSmoothing();
+    }
+
+    private void HandleStepSmoothing()
+    {
+        if (!isGrounded || isDashing) return;
+        float hInput = Input.GetAxisRaw("Horizontal");
+        if (Mathf.Abs(hInput) < 0.1f) return;
+
+        float dir = Mathf.Sign(hInput);
+        Collider2D mainCol = null;
+        foreach (var col in GetComponents<Collider2D>())
+        {
+            if (col != null && col.enabled && !col.isTrigger)
+            {
+                mainCol = col;
+                break;
+            }
+        }
+        if (mainCol == null) return;
+
+        float bottomY = mainCol.bounds.min.y;
+        float centerX = mainCol.bounds.center.x;
+        float halfWidth = mainCol.bounds.extents.x;
+
+        Vector2 footRayOrigin = new Vector2(centerX + dir * (halfWidth + 0.02f), bottomY + 0.05f);
+        Vector2 waistRayOrigin = new Vector2(centerX + dir * (halfWidth + 0.02f), bottomY + maxStepHeight + 0.05f);
+
+        int layerMask = ~LayerMask.GetMask("Player", "Ignore Raycast");
+
+        RaycastHit2D footHit = Physics2D.Raycast(footRayOrigin, Vector2.right * dir, stepScanDistance, layerMask);
+        RaycastHit2D waistHit = Physics2D.Raycast(waistRayOrigin, Vector2.right * dir, stepScanDistance + 0.1f, layerMask);
+
+        // If foot hits a solid box/obstacle, but waist does NOT hit anything, it's a step/seam!
+        if (footHit.collider != null && !footHit.collider.isTrigger && !footHit.collider.CompareTag("enemy") && footHit.collider.gameObject != gameObject)
+        {
+            if (waistHit.collider == null || waistHit.collider.isTrigger)
+            {
+                // Smooth step-up assist
+                float stepTargetY = footHit.point.y + 0.08f;
+                if (stepTargetY > bottomY)
+                {
+                    float liftAmount = Mathf.Min(stepTargetY - bottomY, maxStepHeight);
+                    rb.position = Vector2.MoveTowards(rb.position, new Vector2(rb.position.x, rb.position.y + liftAmount), stepSmoothSpeed * Time.fixedDeltaTime);
+                }
+            }
+        }
     }
 
     [Header("Ground Check Settings")]
@@ -483,8 +737,14 @@ public class move : MonoBehaviour
         Gizmos.DrawWireCube(checkPos, feetBoxSize);
     }
 
+    public bool CheckIsGroundedPublic()
+    {
+        return CheckIsGrounded();
+    }
+
     void OnCollisionEnter2D(Collision2D collision)
     {
+        if (jumpLockoutTimer > 0f) return;
         if (collision.gameObject.CompareTag("Ground"))
         {
             isGrounded = true;
@@ -493,6 +753,7 @@ public class move : MonoBehaviour
 
     void OnCollisionStay2D(Collision2D collision)
     {
+        if (jumpLockoutTimer > 0f) return;
         if (collision.gameObject.CompareTag("Ground"))
         {
             isGrounded = true;
@@ -505,5 +766,15 @@ public class move : MonoBehaviour
         {
             isGrounded = CheckIsGrounded();
         }
+    }
+
+    private bool HasAnimatorParameter(Animator animator, string paramName)
+    {
+        if (animator == null || animator.runtimeAnimatorController == null) return false;
+        foreach (AnimatorControllerParameter param in animator.parameters)
+        {
+            if (param.name == paramName) return true;
+        }
+        return false;
     }
 }

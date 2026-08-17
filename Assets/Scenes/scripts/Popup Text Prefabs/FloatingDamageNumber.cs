@@ -30,6 +30,48 @@ public class FloatingDamageNumber : MonoBehaviour
         return pop;
     }
 
+    public static FloatingDamageNumber SpawnText(Vector3 worldPos, string message, Color color)
+    {
+        GameObject popObj = new GameObject("TextPopup");
+        popObj.transform.position = worldPos + new Vector3(0f, 0.5f, -1f);
+
+        FloatingDamageNumber pop = popObj.AddComponent<FloatingDamageNumber>();
+        pop.InitializeText(message, color);
+        return pop;
+    }
+
+    private void InitializeText(string message, Color color)
+    {
+        textMesh = gameObject.AddComponent<TextMesh>();
+        textMesh.text = message;
+        textMesh.characterSize = 0.12f;
+        textMesh.fontSize = 24;
+        textMesh.fontStyle = FontStyle.Bold;
+        textMesh.alignment = TextAlignment.Center;
+        textMesh.anchor = TextAnchor.MiddleCenter;
+        textMesh.color = color;
+
+        Font defaultFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        if (defaultFont == null) defaultFont = Font.CreateDynamicFontFromOSFont("Arial", 24);
+        if (defaultFont != null)
+        {
+            textMesh.font = defaultFont;
+            MeshRenderer mr = GetComponent<MeshRenderer>();
+            if (mr != null)
+            {
+                mr.material = defaultFont.material;
+                mr.sortingOrder = 50;
+            }
+        }
+
+        initialScale = Vector3.one;
+        transform.localScale = initialScale * 0.4f;
+        velocity = new Vector3(0f, 1.8f, 0f);
+        lifetime = 2.5f;
+
+        StartCoroutine(AnimateRoutine());
+    }
+
     private void Initialize(int damageAmount, bool isHeavyHit, Color? customColor)
     {
         textMesh = gameObject.AddComponent<TextMesh>();

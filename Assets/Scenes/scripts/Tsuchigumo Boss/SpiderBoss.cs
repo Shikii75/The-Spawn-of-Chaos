@@ -63,6 +63,7 @@ public class SpiderBoss : MonoBehaviour
 
     private void UpdatePhase()
     {
+        if (health == null || health.MaxHealth <= 0) return;
         float ratio = (float)health.CurrentHealth / health.MaxHealth;
         int phase = 1;
         if (ratio <= stageThreeHealthThreshold)

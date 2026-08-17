@@ -7,7 +7,7 @@ public class Spiderling : MonoBehaviour, IDamageable
     public float speed = 3.5f;
     
     [Header("Combat Settings")]
-    public int damage = 1;
+    public int damage = 10;
     public float attackRange = 0.8f;
     public float attackCooldown = 1.0f;
     public int health = 10;
@@ -26,16 +26,25 @@ public class Spiderling : MonoBehaviour, IDamageable
     {
         if (isDead) return;
 
-        if (playerTransform == null && PlayerCurrency.Instance != null)
+        if (playerTransform == null)
         {
-            playerTransform = PlayerCurrency.Instance.transform;
+            if (PlayerCurrency.Instance != null)
+            {
+                playerTransform = PlayerCurrency.Instance.transform;
+            }
+            else
+            {
+                GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+                if (playerObj != null) playerTransform = playerObj.transform;
+            }
         }
 
         if (playerTransform != null)
         {
             float distance = Vector2.Distance(transform.position, playerTransform.position);
+            float effectiveRange = GetEffectiveAttackRange();
 
-            if (distance <= attackRange)
+            if (distance <= effectiveRange)
             {
                 rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
                 if (Time.time >= nextAttackTime)
@@ -48,6 +57,19 @@ public class Spiderling : MonoBehaviour, IDamageable
                 ChasePlayer();
             }
         }
+    }
+
+    private float GetEffectiveAttackRange()
+    {
+        if (playerTransform == null) return attackRange;
+        Collider2D enemyCol = GetComponent<Collider2D>();
+        Collider2D playerCol = playerTransform.GetComponent<Collider2D>();
+
+        float enemyWidth = (enemyCol != null) ? enemyCol.bounds.extents.x : 0.25f;
+        float playerWidth = (playerCol != null) ? playerCol.bounds.extents.x : 0.35f;
+        float touchDistance = enemyWidth + playerWidth;
+
+        return Mathf.Max(attackRange, touchDistance + 0.15f);
     }
 
     private void ChasePlayer()

@@ -3,9 +3,15 @@ using UnityEngine;
 
 /// <summary>
 /// MageCombat - Player Melee & Magic Combat Engine.
-/// Features fluid 2-hit melee combo mechanics with double-tap and combo input buffering.
-/// If the player double-taps 'J' or taps 'J' before Attack 1 finishes, it seamlessly queues
-/// and executes the second hit ('secondhit') animation and combo damage!
+/// Guarantees that attack animations play completely at their native Animation Window frame rates
+/// without mid-clip interruptions by using animator.Play() for instant state transitions
+/// (no cross-fade blending which corrupts sprite animation timing).
+///
+/// Features:
+/// 1. Spamming 'J' twice queues the second hit ('followupAttack') to execute seamlessly
+///    ONLY AFTER the first attack animation completes.
+/// 2. Pressing 'J' towards the end or right after the first attack completes seamlessly chains into the follow-up hit.
+/// 3. Exposes IsAttacking so movement scripts can suppress walk/run/idle animation overrides during attacks.
 /// </summary>
 public class MageCombat : MonoBehaviour
 {
@@ -16,8 +22,7 @@ public class MageCombat : MonoBehaviour
     public int secondHitDamage = 28;
     public Collider2D meleeAttackCollider;
     public float meleeAttackDuration = 0.25f;
-    public float meleeCooldown = 0.35f;
-    public float comboWindowDuration = 0.6f; // Window during which a 2nd 'J' press executes second hit
+    public float comboWindowDuration = 1.85f; // Window after Attack 1 during which 2nd hit can be chained
 
     [Header("Ranged Settings")]
     public GameObject projectilePrefab;
@@ -32,14 +37,32 @@ public class MageCombat : MonoBehaviour
     public float projectileManaCost = 25f;
 
     private Animator animator;
-    private float nextMeleeTime;
     private float nextRangedTime;
 
-    // Combo & Double-Tap Buffer state
-    private int comboStep = 0; // 0 = Idle, 1 = Attack 1, 2 = Second Hit
+    // Combo & Queue State
+    private int comboStep = 0; // 0 = Idle, 1 = Attack 1 (playing/completed), 2 = Second Hit (playing)
     private float comboTimer = 0f;
     private bool secondHitQueued = false;
-    private float lastJPressTime = -10f;
+    private float attack1StartTime = -10f;
+    private float secondHitStartTime = -10f;
+
+    // Cached clip durations (resolved once at startup to avoid per-frame lookups)
+    private float attack1ClipDuration = 0.866f;
+    private float followupClipDuration = 1.716f;
+
+    // Attack state hash cache
+    private int hashAttack;
+    private int hashFollowupAttack;
+    private int hashSecondHit;
+
+    /// <summary>
+    /// True while any melee attack animation is actively playing.
+    /// Used by move.cs to suppress walk/run/idle animation overrides.
+    /// </summary>
+    public bool IsAttacking
+    {
+        get { return comboStep > 0 && (IsAttack1Playing() || IsSecondHitPlaying()); }
+    }
 
     void Awake()
     {
@@ -51,9 +74,39 @@ public class MageCombat : MonoBehaviour
         animator = GetComponent<Animator>();
         currentMana = maxMana;
 
+        if (GetComponent<PlayerCombatJuice>() == null)
+        {
+            gameObject.AddComponent<PlayerCombatJuice>();
+        }
+
         if (meleeAttackCollider != null)
         {
             meleeAttackCollider.enabled = false;
+        }
+
+        // Pre-cache state name hashes for efficient comparison
+        hashAttack = Animator.StringToHash("Attack");
+        hashFollowupAttack = Animator.StringToHash("followupAttack");
+        hashSecondHit = Animator.StringToHash("secondhit");
+    }
+
+    void Start()
+    {
+        // Resolve actual clip durations from the animator controller at startup
+        // so we don't rely on potentially stale GetCurrentAnimatorClipInfo during transitions
+        if (animator != null && animator.runtimeAnimatorController != null)
+        {
+            foreach (var clip in animator.runtimeAnimatorController.animationClips)
+            {
+                if (clip.name == "Attack")
+                {
+                    attack1ClipDuration = clip.length;
+                }
+                else if (clip.name == "followupAttack")
+                {
+                    followupClipDuration = clip.length;
+                }
+            }
         }
     }
 
@@ -68,47 +121,57 @@ public class MageCombat : MonoBehaviour
         if (ShopUI.Instance != null && ShopUI.Instance.IsShopActive) return;
         if (NPCDialogueUI.Instance != null && NPCDialogueUI.Instance.IsDialogueActive) return;
 
-        // Update Combo Window Timer
+        bool isAttack1Active = IsAttack1Playing();
+        bool isSecondHitActive = IsSecondHitPlaying();
+
+        // 1. Process queued second hit as soon as Attack 1 finishes playing!
+        if (comboStep == 1 && secondHitQueued && !isAttack1Active)
+        {
+            PerformSecondHit();
+            return;
+        }
+
+        // 2. Manage combo window expiration
         if (comboStep > 0)
         {
             comboTimer -= Time.deltaTime;
-            if (comboTimer <= 0f)
+            if (!isAttack1Active && !isSecondHitActive && comboTimer <= 0f)
             {
                 ResetCombo();
             }
         }
 
-        // Melee Attack Input (J Key)
+        // 3. Melee Attack Input (J Key)
         if (Input.GetKeyDown(KeyCode.J))
         {
-            float timeSinceLastPress = Time.time - lastJPressTime;
-            lastJPressTime = Time.time;
-
-            if (comboStep == 0 && Time.time >= nextMeleeTime)
+            if (comboStep == 0 && !isAttack1Active && !isSecondHitActive)
             {
                 // First Attack
                 PerformAttack1();
             }
             else if (comboStep == 1)
             {
-                // Double-tap or tap 'J' before first attack finishes -> Trigger/Queue Second Hit!
-                secondHitQueued = true;
-                PerformSecondHit();
+                if (isAttack1Active)
+                {
+                    // Attack 1 is still playing -> Queue the second hit!
+                    // Do NOT interrupt Attack 1; wait for it to complete.
+                    secondHitQueued = true;
+                    comboTimer = comboWindowDuration;
+                }
+                else
+                {
+                    // Attack 1 already finished -> Execute second hit immediately!
+                    PerformSecondHit();
+                }
             }
-            else if (comboStep == 2 && Time.time >= nextMeleeTime)
+            else if (comboStep == 2 && !isSecondHitActive)
             {
-                // Reset to Attack 1 after combo completes
+                // After combo finishes, allow starting Attack 1 again
                 PerformAttack1();
             }
         }
 
-        // Check queued second hit execution if transition window reached
-        if (secondHitQueued && comboStep == 1 && comboTimer > 0f)
-        {
-            PerformSecondHit();
-        }
-
-        // Ranged Attack (K key, if unlocked)
+        // 4. Ranged Attack (K key, if unlocked)
         if (Input.GetKeyDown(KeyCode.K) && isProjectileUnlocked && Time.time >= nextRangedTime)
         {
             if (currentMana >= projectileManaCost)
@@ -122,20 +185,86 @@ public class MageCombat : MonoBehaviour
         }
     }
 
+    private bool IsAttack1Playing()
+    {
+        if (animator == null) return false;
+        float elapsed = Time.time - attack1StartTime;
+
+        // Primary check: has enough real time passed for the clip to have finished?
+        if (elapsed < attack1ClipDuration) return true;
+
+        // Secondary check: is the animator still in the Attack state?
+        // (catches edge cases where the clip plays slightly longer due to frame timing)
+        AnimatorStateInfo state = animator.GetCurrentAnimatorStateInfo(0);
+        if (state.shortNameHash == hashAttack && state.normalizedTime < 1.0f)
+            return true;
+
+        return false;
+    }
+
+    private bool IsSecondHitPlaying()
+    {
+        if (animator == null) return false;
+        float elapsed = Time.time - secondHitStartTime;
+
+        // Primary check: has enough real time passed for the clip to have finished?
+        if (elapsed < followupClipDuration) return true;
+
+        // Secondary check: is the animator still in the followup/secondhit state?
+        AnimatorStateInfo state = animator.GetCurrentAnimatorStateInfo(0);
+        if ((state.shortNameHash == hashFollowupAttack || state.shortNameHash == hashSecondHit) && state.normalizedTime < 1.0f)
+            return true;
+
+        return false;
+    }
+
+    /// <summary>
+    /// Resets ALL attack-related triggers to prevent queued trigger buildup
+    /// that causes duplicate/glitchy transitions.
+    /// </summary>
+    private void ResetAllAttackTriggers()
+    {
+        if (animator == null) return;
+        foreach (var p in animator.parameters)
+        {
+            if (p.type == AnimatorControllerParameterType.Trigger)
+            {
+                string n = p.name;
+                if (n == "Attack" || n == "attack" ||
+                    n == "Attack2" || n == "attack2" ||
+                    n == "followattack" || n == "FollowAttack")
+                {
+                    animator.ResetTrigger(p.name);
+                }
+            }
+        }
+    }
+
     private void PerformAttack1()
     {
         comboStep = 1;
         secondHitQueued = false;
         comboTimer = comboWindowDuration;
-        nextMeleeTime = Time.time + 0.2f;
+        attack1StartTime = Time.time;
+
+        if (move.Instance != null)
+        {
+            move.Instance.ResetPlayerScaleToNormal();
+        }
 
         if (animator != null)
         {
-            animator.ResetTrigger("Attack2");
-            animator.SetTrigger("Attack");
+            // 1. Clear ALL attack triggers to prevent queued trigger buildup
+            ResetAllAttackTriggers();
+
+            // 2. Force-play the Attack state at frame 0 with NO cross-fade blending.
+            //    This is the key fix: animator.Play() with normalizedTime=0 starts the
+            //    animation clip cleanly at the exact sample rate set in the Animation Window,
+            //    bypassing the transition system's cross-fade which corrupts sprite playback speed.
+            animator.Play("Attack", 0, 0f);
         }
 
-        EnableMeleeCollider(meleeDamage, meleeAttackDuration);
+        EnableMeleeCollider(meleeDamage);
     }
 
     private void PerformSecondHit()
@@ -143,16 +272,26 @@ public class MageCombat : MonoBehaviour
         comboStep = 2;
         secondHitQueued = false;
         comboTimer = comboWindowDuration;
-        nextMeleeTime = Time.time + meleeCooldown;
+        secondHitStartTime = Time.time;
+
+        if (move.Instance != null)
+        {
+            move.Instance.ResetPlayerScaleToNormal();
+        }
 
         if (animator != null)
         {
-            animator.ResetTrigger("Attack");
-            animator.SetTrigger("Attack2");
-            animator.Play("secondhit", 0, 0f); // Force instant playback of secondhit
+            // 1. Clear ALL attack triggers to prevent queued trigger buildup
+            ResetAllAttackTriggers();
+
+            // 2. Force-play the followupAttack state at frame 0 with NO cross-fade blending.
+            //    Use "followupAttack" (the state that holds the follow-up clip) directly.
+            //    This bypasses the transition system entirely — no 0.1s or 0.25s blended
+            //    cross-fades that cause the sprite animation to play at wrong speeds.
+            animator.Play("followupAttack", 0, 0f);
         }
 
-        EnableMeleeCollider(secondHitDamage, meleeAttackDuration + 0.1f);
+        EnableMeleeCollider(secondHitDamage);
     }
 
     private void ResetCombo()
@@ -160,15 +299,21 @@ public class MageCombat : MonoBehaviour
         comboStep = 0;
         secondHitQueued = false;
         comboTimer = 0f;
+
+        // Clean up any lingering triggers when combo window expires
+        ResetAllAttackTriggers();
     }
 
-    private void EnableMeleeCollider(int damage, float duration)
+    private void EnableMeleeCollider(int damage)
     {
         if (meleeAttackCollider != null)
         {
             meleeAttackCollider.enabled = true;
             CancelInvoke(nameof(StopMeleeAttack));
-            Invoke(nameof(StopMeleeAttack), duration);
+
+            // Use the pre-cached clip duration for accurate collider timing
+            float clipLength = (comboStep == 2) ? followupClipDuration : attack1ClipDuration;
+            Invoke(nameof(StopMeleeAttack), clipLength);
         }
     }
 
@@ -187,7 +332,17 @@ public class MageCombat : MonoBehaviour
 
         if (animator != null)
         {
-            animator.SetTrigger("Cast");
+            // Force-play cast animation cleanly, no cross-fade
+            ResetAllAttackTriggers();
+            if (animator.HasState(0, Animator.StringToHash("Cast")))
+                animator.Play("Cast", 0, 0f);
+            else if (animator.HasState(0, Animator.StringToHash("cast")))
+                animator.Play("cast", 0, 0f);
+        }
+
+        if (PlayerCombatJuice.Instance != null)
+        {
+            PlayerCombatJuice.Instance.TriggerSquashAndStretch(new Vector3(0.85f, 1.25f, 1.0f), 0.12f);
         }
 
         SpawnProjectile();
@@ -236,7 +391,15 @@ public class MageCombat : MonoBehaviour
                 target.TakeDamage(currentDamage);
 
                 Vector3 contactPoint = other.bounds.ClosestPoint(transform.position);
+
+                // 1. Core Game Feel Hit Feedback
                 HitFeedbackManager.TriggerHitFeedback(other.transform, contactPoint, currentDamage, isHeavyCombo, isHeavyCombo ? EnemyHitType.HeavyCombo : EnemyHitType.PhysicalMelee);
+
+                // 2. High Impact Collision Particles & Player Juice
+                if (PlayerCombatJuice.Instance != null)
+                {
+                    PlayerCombatJuice.Instance.SpawnHitCollisionParticles(contactPoint, isHeavyCombo);
+                }
             }
         }
     }
