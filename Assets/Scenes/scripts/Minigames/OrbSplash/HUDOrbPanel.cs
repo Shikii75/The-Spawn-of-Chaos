@@ -206,6 +206,8 @@ namespace SpawnOfChaos.Minigames
 
         public void UpdateVisibility()
         {
+            if (this == null || gameObject == null) return;
+
             bool shouldShowHUD = HUDManager.IsGameplayActive();
 
             if (panelGO != null && panelGO.activeSelf != shouldShowHUD)

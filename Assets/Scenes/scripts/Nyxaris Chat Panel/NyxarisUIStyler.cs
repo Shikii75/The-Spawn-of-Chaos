@@ -39,27 +39,31 @@ public class NyxarisUIStyler : MonoBehaviour
     public TMP_Text loadingText;
     [Tooltip("Optional mode dropdown (idle/combat/story)")]
     public TMP_Dropdown modeDropdown;
+    [Tooltip("Quick-launch minigame button container")]
+    public GameObject minigameShortcutButton;
+    [Tooltip("Text inside quick-launch minigame button")]
+    public TMP_Text minigameShortcutText;
 
     // ───────────────────────────────────────────────────────────
     //  Layout — matches nyxaris.html proportions at 1920×1080
     // ───────────────────────────────────────────────────────────
     [Header("Panel Configuration")]
     [Tooltip("Height of the bottom dialogue bar")]
-    public float panelHeight = 220f;
+    public float panelHeight = 240f;
 
-    [Header("Portrait (right-side, red box area)")]
-    public float portraitWidth = 480f;
-    public float portraitHeight = 500f;
+    [Header("Portrait (right-side area above panel)")]
+    public float portraitWidth = 460f;
+    public float portraitHeight = 520f;
     [Tooltip("Horizontal offset from right edge (negative = inward)")]
-    public float portraitOffsetX = -80f;
-    [Tooltip("Vertical offset above panel (28 = sitting just above cyan line)")]
-    public float portraitOffsetY = 28f;
+    public float portraitOffsetX = -40f;
+    [Tooltip("Vertical offset above panel")]
+    public float portraitOffsetY = 0f;
 
     [Header("Dialogue Text Padding")]
     public float dialogueLeftPad = 24f;
-    public float dialogueRightPad = -500f;
-    public float dialogueTopPad = -70f;
-    public float dialogueBottomPad = 90f;
+    public float dialogueRightPad = -480f;
+    public float dialogueTopPad = -50f;
+    public float dialogueBottomPad = 80f;
 
     // ───────────────────────────────────────────────────────────
     //  Colors — exact hex values from nyxaris.html CSS
@@ -106,18 +110,38 @@ public class NyxarisUIStyler : MonoBehaviour
         ApplyStyling();
     }
 
+    private void SanitizeLayoutValues()
+    {
+        panelHeight = 210f;
+        portraitWidth = 1200f; // 2x larger
+        portraitHeight = 900f;  // 2x larger
+        portraitOffsetX = -40f; // Right edge offset
+        portraitOffsetY = 15f + panelHeight; // Base touches top of panel (Y = 15 + 210 = 225)
+        dialogueLeftPad = 32f;
+        dialogueRightPad = -32f;
+        dialogueTopPad = -38f;
+        dialogueBottomPad = 68f;
+    }
+
     // ═══════════════════════════════════════════════════════════
     //  MASTER APPLY
     // ═══════════════════════════════════════════════════════════
     [ContextMenu("Apply Game Dev OS Chat UI")]
     public void ApplyStyling()
     {
+        SanitizeLayoutValues();
         AutoResolveReferences();
         GenerateDynamicSprites();
 
         if (canvasGroup == null) canvasGroup = GetComponent<CanvasGroup>();
 
-        // Canvas scaler — 1920×1080 reference
+        // Hide obsolete letterbox cutscene bars
+        Transform img0 = transform.Find("Image");
+        if (img0 != null && img0 != dialoguePanelImage?.transform) img0.gameObject.SetActive(false);
+        Transform img1 = transform.Find("Image (1)");
+        if (img1 != null && img1 != dialoguePanelImage?.transform) img1.gameObject.SetActive(false);
+
+        // Canvas scaler — 1920×1080 reference with Match Height (1.0) so UI never overflows vertically
         Canvas nearestCanvas = GetComponentInParent<Canvas>();
         Canvas rootCanvas = nearestCanvas != null ? nearestCanvas.rootCanvas : null;
         if (rootCanvas != null)
@@ -127,7 +151,17 @@ public class NyxarisUIStyler : MonoBehaviour
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920f, 1080f);
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0.5f;
+            scaler.matchWidthOrHeight = 1.0f;
+        }
+
+        // MainInterface RectTransform fill
+        RectTransform mainRt = transform as RectTransform;
+        if (mainRt != null)
+        {
+            mainRt.anchorMin = Vector2.zero;
+            mainRt.anchorMax = Vector2.one;
+            mainRt.offsetMin = Vector2.zero;
+            mainRt.offsetMax = Vector2.zero;
         }
 
         // UIspace — full-screen with subtle dark overlay (matches body bg #0f0f1a)
@@ -148,7 +182,7 @@ public class NyxarisUIStyler : MonoBehaviour
         }
 
         StyleLowerPanel();
-        // Portrait is now managed by NyxarisManager as a standalone overlay on the root Canvas
+        StylePortrait();
         StyleTextElements();
         StyleInputField();
         StyleSendButton();
@@ -158,7 +192,7 @@ public class NyxarisUIStyler : MonoBehaviour
     }
 
     // ═══════════════════════════════════════════════════════════
-    //  DIALOGUE BAR — bottom of screen, full-width, #1a1a2e
+    //  DIALOGUE BOX — Fits camera horizontally across bottom
     // ═══════════════════════════════════════════════════════════
     private void StyleLowerPanel()
     {
@@ -168,12 +202,13 @@ public class NyxarisUIStyler : MonoBehaviour
         dialoguePanelImage.type = Image.Type.Sliced;
         dialoguePanelImage.color = panelBgColor;
 
+        // Fits camera horizontally across screen bottom (from 1.5% to 98.5% width)
         RectTransform rt = dialoguePanelImage.rectTransform;
-        rt.anchorMin = new Vector2(0f, 0f);
-        rt.anchorMax = new Vector2(1f, 0f);
+        rt.anchorMin = new Vector2(0.015f, 0f);
+        rt.anchorMax = new Vector2(0.985f, 0f);
         rt.pivot = new Vector2(0.5f, 0f);
         rt.sizeDelta = new Vector2(0f, panelHeight);
-        rt.anchoredPosition = Vector2.zero;
+        rt.anchoredPosition = new Vector2(0f, 15f);
 
         // Hide any old border
         Transform oldLine = dialoguePanelImage.transform.Find("TopBorderLine");
@@ -201,7 +236,7 @@ public class NyxarisUIStyler : MonoBehaviour
     }
 
     // ═══════════════════════════════════════════════════════════
-    //  PORTRAIT — right side, red box area
+    //  PORTRAIT — Tall, 2x large character resting on top of bar
     // ═══════════════════════════════════════════════════════════
     private void StylePortrait()
     {
@@ -240,14 +275,13 @@ public class NyxarisUIStyler : MonoBehaviour
             portraitImage.transform.SetAsLastSibling();
         }
 
-        // Anchor to bottom-right of UIspace, resting right on top of the cyan bar line
-        // Pivot (1, 0) means (right, bottom) of the image
+        // Anchor to bottom-right of screen, resting right on top of the cyan bar line
         RectTransform portRt = portraitImage.rectTransform;
         portRt.anchorMin = new Vector2(1f, 0f);
         portRt.anchorMax = new Vector2(1f, 0f);
         portRt.pivot = new Vector2(1f, 0f);
         portRt.sizeDelta = new Vector2(portraitWidth, portraitHeight);
-        portRt.anchoredPosition = new Vector2(portraitOffsetX, panelHeight + portraitOffsetY);
+        portRt.anchoredPosition = new Vector2(portraitOffsetX, portraitOffsetY);
 
         // Display properties
         portraitImage.color = Color.white;
@@ -288,7 +322,7 @@ public class NyxarisUIStyler : MonoBehaviour
         if (dialogueText != null)
         {
             dialogueText.color = textNormalColor;
-            dialogueText.fontSize = 24f;
+            dialogueText.fontSize = 22f;
             dialogueText.lineSpacing = 3f;
 
             // Hide speech bubble background/outline if present
@@ -309,16 +343,21 @@ public class NyxarisUIStyler : MonoBehaviour
         // ── Name text: "Nyxaris" — bold, cyan, top-left of panel ──
         if (nameText != null)
         {
+            if (dialoguePanelImage != null && nameText.transform.parent != dialoguePanelImage.transform)
+            {
+                nameText.transform.SetParent(dialoguePanelImage.transform, false);
+            }
+
             nameText.color = accentCyan;
-            nameText.fontSize = 28f;
+            nameText.fontSize = 26f;
             nameText.fontStyle = FontStyles.Bold;
 
             RectTransform nr = nameText.rectTransform;
             nr.anchorMin = new Vector2(0f, 1f);
             nr.anchorMax = new Vector2(0f, 1f);
             nr.pivot = new Vector2(0f, 1f);
-            nr.anchoredPosition = new Vector2(20f, -12f);
-            nr.sizeDelta = new Vector2(250f, 36f);
+            nr.anchoredPosition = new Vector2(24f, -10f);
+            nr.sizeDelta = new Vector2(200f, 32f);
         }
 
         // ── Phase text: magenta, small, to the right of name ──
@@ -353,13 +392,13 @@ public class NyxarisUIStyler : MonoBehaviour
         inputFieldImage.type = Image.Type.Sliced;
         inputFieldImage.color = inputBgColor;
 
-        // Position: bottom row of the panel, takes ~65% width, leaving room for button
+        // Position: bottom row of the panel, takes 88% width, leaving room for send button
         RectTransform ir = inputFieldImage.rectTransform;
         ir.anchorMin = new Vector2(0f, 0f);
-        ir.anchorMax = new Vector2(0.65f, 0f);
+        ir.anchorMax = new Vector2(0.88f, 0f);
         ir.pivot = new Vector2(0f, 0f);
-        ir.sizeDelta = new Vector2(0f, 48f);
-        ir.anchoredPosition = new Vector2(20f, 16f);
+        ir.sizeDelta = new Vector2(-20f, 46f);
+        ir.anchoredPosition = new Vector2(32f, 14f);
 
         // Hide any glow border
         Transform glowBorder = inputFieldImage.transform.Find("InputGlowBorder");
@@ -368,6 +407,20 @@ public class NyxarisUIStyler : MonoBehaviour
         TMP_InputField inputField = inputFieldImage.GetComponent<TMP_InputField>();
         if (inputField != null)
         {
+            // Expand text viewport / Text Area so the whole box is clickable and typeable
+            Transform textArea = inputFieldImage.transform.Find("Text Area");
+            if (textArea != null)
+            {
+                RectTransform taRt = textArea as RectTransform;
+                if (taRt != null)
+                {
+                    taRt.anchorMin = Vector2.zero;
+                    taRt.anchorMax = Vector2.one;
+                    taRt.offsetMin = new Vector2(14f, 4f);
+                    taRt.offsetMax = new Vector2(-14f, -4f);
+                }
+            }
+
             if (inputField.placeholder != null)
             {
                 var ph = inputField.placeholder as TMP_Text;
@@ -376,12 +429,14 @@ public class NyxarisUIStyler : MonoBehaviour
                     ph.color = new Color(0.5f, 0.5f, 0.5f, 0.7f);
                     ph.fontSize = 20f;
                     ph.text = "Talk to Nyxaris…";
+                    ph.alignment = TextAlignmentOptions.MidlineLeft;
                 }
             }
             if (inputField.textComponent != null)
             {
                 inputField.textComponent.color = inputTextColor;
                 inputField.textComponent.fontSize = 20f;
+                inputField.textComponent.alignment = TextAlignmentOptions.MidlineLeft;
             }
         }
     }
@@ -399,11 +454,11 @@ public class NyxarisUIStyler : MonoBehaviour
 
         // Position: right of the input field, same row
         RectTransform br = sendButtonImage.rectTransform;
-        br.anchorMin = new Vector2(0.65f, 0f);
-        br.anchorMax = new Vector2(0.65f, 0f);
+        br.anchorMin = new Vector2(0.88f, 0f);
+        br.anchorMax = new Vector2(1f, 0f);
         br.pivot = new Vector2(0f, 0f);
-        br.sizeDelta = new Vector2(130f, 48f);
-        br.anchoredPosition = new Vector2(12f, 16f);
+        br.sizeDelta = new Vector2(-44f, 46f);
+        br.anchoredPosition = new Vector2(12f, 14f);
 
         if (sendButtonText != null)
         {
@@ -536,6 +591,112 @@ public class NyxarisUIStyler : MonoBehaviour
     {
         if (modeDropdown == null || modeDropdown.options.Count == 0) return "idle";
         return modeDropdown.options[modeDropdown.value].text;
+    }
+
+    /// <summary>Display interactive glowing button to launch recommended minigame directly.</summary>
+    public void ShowMinigameShortcut(string minigameName)
+    {
+        if (string.IsNullOrEmpty(minigameName))
+        {
+            HideMinigameShortcut();
+            return;
+        }
+
+        if (minigameShortcutButton == null)
+        {
+            CreateMinigameShortcutObject();
+        }
+
+        if (minigameShortcutButton != null)
+        {
+            minigameShortcutButton.SetActive(true);
+            if (minigameShortcutText != null)
+            {
+                minigameShortcutText.text = $"⚡ PLAY {minigameName.ToUpper()}";
+            }
+
+            Button btn = minigameShortcutButton.GetComponent<Button>();
+            if (btn != null)
+            {
+                btn.onClick.RemoveAllListeners();
+                btn.onClick.AddListener(() => LaunchRecommendedMinigame(minigameName));
+            }
+        }
+    }
+
+    public void HideMinigameShortcut()
+    {
+        if (minigameShortcutButton != null)
+        {
+            minigameShortcutButton.SetActive(false);
+        }
+    }
+
+    private void LaunchRecommendedMinigame(string name)
+    {
+        if (NyxarisManager.Instance != null)
+        {
+            NyxarisManager.Instance.HideInterface();
+        }
+
+        string clean = name.ToLower();
+        if (clean.Contains("surge"))
+        {
+            SpawnOfChaos.Minigames.VoidSurgeArcadeUI.ShowMinigame();
+        }
+        else if (clean.Contains("orb") || clean.Contains("splash"))
+        {
+            SpawnOfChaos.Minigames.OrbSplashArcadeUI.ShowMinigame();
+        }
+        else if (clean.Contains("runner") || clean.Contains("shadow"))
+        {
+            SpawnOfChaos.Minigames.ShadowRunnerArcadeUI.ShowMinigame();
+        }
+        else if (clean.Contains("sky") || clean.Contains("bound"))
+        {
+            SpawnOfChaos.Minigames.SkyboundArcadeUI.ShowMinigame();
+        }
+        else
+        {
+            SpawnOfChaos.Minigames.MinigameHubUI.OpenHub();
+        }
+    }
+
+    private void CreateMinigameShortcutObject()
+    {
+        if (dialoguePanelImage == null) return;
+
+        GameObject go = new GameObject("MinigameShortcutBtn", typeof(Image), typeof(Button));
+        go.transform.SetParent(dialoguePanelImage.transform, false);
+
+        Image img = go.GetComponent<Image>();
+        img.sprite = _roundedBoxSprite;
+        img.type = Image.Type.Sliced;
+        img.color = new Color(0.85f, 0.15f, 0.95f, 1f); // Glowing Neon Magenta
+
+        RectTransform rt = go.GetComponent<RectTransform>();
+        rt.anchorMin = new Vector2(0f, 1f);
+        rt.anchorMax = new Vector2(0f, 1f);
+        rt.pivot = new Vector2(0f, 1f);
+        rt.anchoredPosition = new Vector2(580f, -12f);
+        rt.sizeDelta = new Vector2(210f, 34f);
+
+        GameObject txtGo = new GameObject("Label", typeof(TMP_Text));
+        txtGo.transform.SetParent(go.transform, false);
+        TMP_Text tmp = txtGo.GetComponent<TMP_Text>();
+        tmp.color = Color.white;
+        tmp.fontSize = 15f;
+        tmp.fontStyle = FontStyles.Bold;
+        tmp.alignment = TextAlignmentOptions.Center;
+        
+        RectTransform trt = tmp.rectTransform;
+        trt.anchorMin = Vector2.zero;
+        trt.anchorMax = Vector2.one;
+        trt.offsetMin = Vector2.zero;
+        trt.offsetMax = Vector2.zero;
+
+        minigameShortcutButton = go;
+        minigameShortcutText = tmp;
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -715,21 +876,12 @@ public class NyxarisUIStyler : MonoBehaviour
 
     private void AutoResolveReferences()
     {
-        Transform uiSpace = null;
-        if (transform.name == "UIspace")
-            uiSpace = transform;
-        else if (transform.name == "MainInterface" || GetComponent<Canvas>() != null)
-            uiSpace = transform.Find("UIspace");
-
+        Transform uiSpace = transform.name == "UIspace" ? transform : transform.Find("UIspace");
         if (uiSpace == null)
         {
             Canvas c = GetComponentInParent<Canvas>();
-            if (c != null)
-            {
-                uiSpace = c.transform.Find("UIspace") ?? c.transform;
-            }
+            if (c != null) uiSpace = c.transform.Find("UIspace") ?? c.transform;
         }
-
         if (uiSpace == null) uiSpace = transform;
 
         Transform lp = uiSpace.Find("LowerPanel");
@@ -737,63 +889,45 @@ public class NyxarisUIStyler : MonoBehaviour
         {
             if (dialoguePanelImage == null) dialoguePanelImage = lp.GetComponent<Image>();
 
-            foreach (var txt in lp.GetComponentsInChildren<TMP_Text>(true))
-            {
-                if (txt.transform.parent != null && txt.transform.parent.name.Contains("Button"))
-                    continue;
+            Transform dtTr = lp.Find("DialogueText");
+            if (dtTr != null) dialogueText = dtTr.GetComponent<TMP_Text>();
 
-                string n = txt.gameObject.name.ToLower();
-                if ((n.Contains("dialogue") || n.Contains("body") || n == "text") && dialogueText == null)
-                    dialogueText = txt;
-                else if ((n.Contains("name") || n.Contains("title") || n.Contains("character") || n.Contains("tmp") || n == "text (tmp)") && nameText == null)
-                    nameText = txt;
-                else if ((n.Contains("phase") || n.Contains("state") || n.Contains("evolution")) && phaseText == null)
-                    phaseText = txt;
-                else if ((n.Contains("sprite") || n.Contains("key")) && spriteKeyText == null)
-                    spriteKeyText = txt;
-                else if ((n.Contains("loading") || n.Contains("conjuring")) && loadingText == null)
-                    loadingText = txt;
+            Transform ntTr = lp.Find("Text (TMP)") ?? lp.Find("NameText") ?? uiSpace.Find("Text (TMP)");
+            if (ntTr != null) nameText = ntTr.GetComponent<TMP_Text>();
+
+            Transform phTr = lp.Find("PhaseText");
+            if (phTr != null) phaseText = phTr.GetComponent<TMP_Text>();
+
+            Transform skTr = lp.Find("SpriteKeyText");
+            if (skTr != null) spriteKeyText = skTr.GetComponent<TMP_Text>();
+
+            Transform ldTr = lp.Find("LoadingText");
+            if (ldTr != null) loadingText = ldTr.GetComponent<TMP_Text>();
+
+            Transform inpTr = lp.Find("MessageInput") ?? lp.Find("InputField");
+            if (inpTr != null) inputFieldImage = inpTr.GetComponent<Image>();
+
+            Transform btnTr = lp.Find("SendButton") ?? lp.Find("Send");
+            if (btnTr != null)
+            {
+                sendButtonImage = btnTr.GetComponent<Image>();
+                sendButtonText = btnTr.GetComponentInChildren<TMP_Text>();
             }
 
-            if (inputFieldImage == null)
-            {
-                Transform t = lp.Find("MessageInput") ?? lp.Find("InputField");
-                if (t != null) inputFieldImage = t.GetComponent<Image>();
-            }
-            if (sendButtonImage == null)
-            {
-                Transform t = lp.Find("SendButton") ?? lp.Find("Send");
-                if (t != null) sendButtonImage = t.GetComponent<Image>();
-            }
-            if (sendButtonImage != null && sendButtonText == null)
-                sendButtonText = sendButtonImage.GetComponentInChildren<TMP_Text>();
-
-            // Try to find mode dropdown
-            if (modeDropdown == null)
-            {
-                Transform t = lp.Find("ModeDropdown") ?? lp.Find("Mode");
-                if (t != null) modeDropdown = t.GetComponent<TMP_Dropdown>();
-            }
+            Transform mdTr = lp.Find("ModeDropdown") ?? lp.Find("Mode");
+            if (mdTr != null) modeDropdown = mdTr.GetComponent<TMP_Dropdown>();
         }
 
-        // Search for existing Portrait object
-        if (portraitImage == null)
-        {
-            Transform port = uiSpace.Find("Portrait");
-            if (port == null && lp != null) port = lp.Find("Portrait");
-            if (port != null) portraitImage = port.GetComponent<Image>();
-        }
+        Transform portTr = uiSpace.Find("Portrait") ?? (lp != null ? lp.Find("Portrait") : null);
+        if (portTr != null) portraitImage = portTr.GetComponent<Image>();
 
-        // GUARANTEED CREATION: If portraitImage is STILL null/missing, create it automatically!
         if (portraitImage == null)
         {
             GameObject portGO = new GameObject("Portrait", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
             portGO.transform.SetParent(uiSpace, false);
             portraitImage = portGO.GetComponent<Image>();
-            Debug.Log("[NyxarisUIStyler] Created missing Portrait GameObject under UIspace.");
         }
 
-        // Keep NyxarisManager synced with the exact same Image reference
         if (NyxarisManager.Instance != null && portraitImage != null)
         {
             NyxarisManager.Instance.portrait = portraitImage;

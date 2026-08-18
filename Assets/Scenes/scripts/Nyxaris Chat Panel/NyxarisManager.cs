@@ -20,8 +20,9 @@ public class NyxarisManager : MonoBehaviour
     public TMP_Text dialogueText;
     public TMP_InputField messageInput;
     public Image portrait;
+    public NyxarisFrameAnimator frameAnimator;
 
-    [Header("Direct Expression Sprites (Game Dev OS)")]
+    [Header("Direct Expression Sprites (Game Dev OS Fallback)")]
     public Sprite neutralSprite;
     public Sprite explainingSprite;
     public Sprite cuteSprite;
@@ -41,13 +42,33 @@ public class NyxarisManager : MonoBehaviour
     [Range(0f, 1f)]
     public float currentTrust = 0.5f;
 
-    private Coroutine resetEmotionCoroutine;
-    private GameObject portraitRoot; // standalone portrait container on root canvas
+    [Header("API Server Config")]
+    public string apiHost = "http://127.0.0.1:5000/nyxaris";
+    public string apiHostFallback = "http://127.0.0.1:5001/nyxaris";
 
     [System.Serializable]
-    public class NyxarisRequest { public string message; public string mode; public float trust; public string level; }
+    public class NyxarisRequest 
+    { 
+        public string message; 
+        public string mode; 
+        public float trust; 
+        public string level;
+        public float player_hp;
+        public float player_max_hp;
+        public float player_mana;
+        public float player_max_mana;
+    }
+
     [System.Serializable]
-    public class NyxarisResponse { public string response; public string emotion; public string sprite_key; }
+    public class NyxarisResponse 
+    { 
+        public string response; 
+        public string emotion; 
+        public string animation; 
+        public string sprite_key; 
+        public string suggested_minigame; 
+        public float new_trust; 
+    }
 
     public static bool IsChatActive => Instance != null && Instance.mainInterfacePanel != null && Instance.mainInterfacePanel.activeSelf;
 
@@ -66,10 +87,14 @@ public class NyxarisManager : MonoBehaviour
         }
     }
 
+    private Coroutine currentTypewriterCoroutine;
+
     void Awake()
     {
         Instance = this;
         AutoLoadExpressionSprites();
+        EnsureCanvasScaling();
+
         if (mainInterfacePanel != null)
         {
             mainInterfacePanel.SetActive(false);
@@ -79,7 +104,8 @@ public class NyxarisManager : MonoBehaviour
     void Start()
     {
         AutoLoadExpressionSprites();
-        CreateStandalonePortrait();
+        EnsureCanvasScaling();
+        SetupPortraitAndAnimator();
 
         NyxarisUIStyler styler = GetStyler();
         if (styler != null)
@@ -95,226 +121,70 @@ public class NyxarisManager : MonoBehaviour
         HideInterface();
     }
 
-    // ═══════════════════════════════════════════════════════════
-    //  STANDALONE PORTRAIT — lives on the root Canvas directly
-    //  Nothing can clip, mask, or hide this.
-    // ═══════════════════════════════════════════════════════════
-    private void CreateStandalonePortrait()
+    private void EnsureCanvasScaling()
     {
-        // Find the root canvas in the scene
         Canvas rootCanvas = null;
-
-        // First check if MainInterface has a canvas
         if (mainInterfacePanel != null)
         {
-            Canvas panelCanvas = mainInterfacePanel.GetComponentInParent<Canvas>();
-            if (panelCanvas != null) rootCanvas = panelCanvas.rootCanvas;
+            Canvas c = mainInterfacePanel.GetComponentInParent<Canvas>();
+            if (c != null) rootCanvas = c.rootCanvas;
         }
-
-        // Fallback: find any canvas
         if (rootCanvas == null)
         {
-            Canvas[] allCanvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
-            foreach (Canvas c in allCanvases)
-            {
-                if (c.isRootCanvas && c.renderMode == RenderMode.ScreenSpaceOverlay)
-                {
-                    rootCanvas = c;
-                    break;
-                }
-            }
-            if (rootCanvas == null && allCanvases.Length > 0)
-                rootCanvas = allCanvases[0].rootCanvas;
+            Canvas[] all = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+            if (all != null && all.Length > 0) rootCanvas = all[0].rootCanvas;
         }
 
-        if (rootCanvas == null)
+        if (rootCanvas != null)
         {
-            Debug.LogError("[NyxarisManager] No Canvas found in scene! Cannot create portrait.");
-            return;
+            CanvasScaler scaler = rootCanvas.GetComponent<CanvasScaler>();
+            if (scaler == null) scaler = rootCanvas.gameObject.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            scaler.matchWidthOrHeight = 1.0f;
         }
+    }
 
-        // Create (or find) the standalone portrait container
-        Transform existing = rootCanvas.transform.Find("NyxarisPortraitOverlay");
-        if (existing != null)
+    private void SetupPortraitAndAnimator()
+    {
+        // Cleanup any stray untextured overlay
+        GameObject stray = GameObject.Find("NyxarisPortraitOverlay");
+        if (stray != null)
         {
-            portraitRoot = existing.gameObject;
-            portrait = portraitRoot.GetComponentInChildren<Image>();
-        }
-        else
-        {
-            // Create the container
-            portraitRoot = new GameObject("NyxarisPortraitOverlay");
-            portraitRoot.transform.SetParent(rootCanvas.transform, false);
-
-            // Create the portrait image
-            GameObject imgGO = new GameObject("PortraitImage");
-            imgGO.transform.SetParent(portraitRoot.transform, false);
-
-            portrait = imgGO.AddComponent<Image>();
-            portrait.raycastTarget = false; // don't block clicks
+            Destroy(stray);
         }
 
-        // Layer IN FRONT of the dark background tint, but BEHIND the dialogue chat panel
-        if (mainInterfacePanel != null)
-        {
-            Transform panelParent = mainInterfacePanel.transform.parent;
-            if (panelParent != null)
-            {
-                portraitRoot.transform.SetParent(panelParent, false);
-                int panelIndex = mainInterfacePanel.transform.GetSiblingIndex();
-                // Place right before mainInterfacePanel so it renders in front of dark tint but behind panel
-                portraitRoot.transform.SetSiblingIndex(Mathf.Max(1, panelIndex));
-            }
-        }
-        else
-        {
-            portraitRoot.transform.SetAsFirstSibling();
-        }
-
-        // Position the portrait: right side, bottom of PNG touching the 220px blue top line of dialogue panel
-        RectTransform containerRt = portraitRoot.GetComponent<RectTransform>();
-        if (containerRt == null) containerRt = portraitRoot.AddComponent<RectTransform>();
-        containerRt.anchorMin = Vector2.zero;
-        containerRt.anchorMax = Vector2.one;
-        containerRt.offsetMin = Vector2.zero;
-        containerRt.offsetMax = Vector2.zero;
-
-        RectTransform portRt = portrait.rectTransform;
-        portRt.anchorMin = new Vector2(1f, 0f);
-        portRt.anchorMax = new Vector2(1f, 0f);
-        portRt.pivot = new Vector2(1f, 0f);
-        portRt.sizeDelta = new Vector2(480f, 540f);
-        portRt.anchoredPosition = new Vector2(-80f, 248f); // Bottom sits just above the 220px cyan top line
-
-        // Set display properties
-        portrait.color = Color.white;
-        portrait.preserveAspect = true;
-        portrait.enabled = true;
-
-        // Assign default sprite
-        Sprite def = neutralSprite ??
-                    (neutralSprites != null && neutralSprites.Length > 0 ? neutralSprites[0] : null) ??
-                    explainingSprite ?? cuteSprite;
-        if (def != null)
-        {
-            portrait.sprite = def;
-        }
-
-        // Also sync the styler's reference
         NyxarisUIStyler styler = GetStyler();
-        if (styler != null)
+        if (styler != null && styler.portraitImage != null)
         {
-            styler.portraitImage = portrait;
+            portrait = styler.portraitImage;
+        }
+        else if (portrait == null && mainInterfacePanel != null)
+        {
+            Transform p = mainInterfacePanel.transform.Find("UIspace/Portrait") ?? 
+                          mainInterfacePanel.transform.Find("Portrait");
+            if (p != null) portrait = p.GetComponent<Image>();
         }
 
-        // Start hidden (HideInterface will be called after)
-        portraitRoot.SetActive(false);
-
-        Debug.Log($"[NyxarisManager] Portrait created on root Canvas '{rootCanvas.name}'. " +
-                  $"Sprite: {(portrait.sprite != null ? portrait.sprite.name : "NONE")}");
-    }
-
-    // ═══════════════════════════════════════════════════════════
-    //  SPRITE LOADING
-    // ═══════════════════════════════════════════════════════════
-
-    [ContextMenu("Auto Load Expression Sprites")]
-    public void AutoLoadExpressionSprites()
-    {
-        if (neutralSprite == null) neutralSprite = LoadSpriteDirectly("neutral");
-        if (explainingSprite == null) explainingSprite = LoadSpriteDirectly("explaining");
-        if (cuteSprite == null) cuteSprite = LoadSpriteDirectly("cutely-annoyed");
-
-        if (neutralSprites == null || neutralSprites.Length == 0)
+        if (portrait != null)
         {
-            List<Sprite> list = LoadAllSubSprites("neutral");
-            if (neutralSprite != null && !list.Contains(neutralSprite)) list.Insert(0, neutralSprite);
-            neutralSprites = list.ToArray();
-        }
-        if (explainingSprites == null || explainingSprites.Length == 0)
-        {
-            List<Sprite> list = LoadAllSubSprites("explaining");
-            if (explainingSprite != null && !list.Contains(explainingSprite)) list.Insert(0, explainingSprite);
-            explainingSprites = list.ToArray();
-        }
-        if (cuteSprites == null || cuteSprites.Length == 0)
-        {
-            List<Sprite> list = LoadAllSubSprites("cutely-annoyed");
-            if (cuteSprite != null && !list.Contains(cuteSprite)) list.Insert(0, cuteSprite);
-            cuteSprites = list.ToArray();
-        }
-    }
+            portrait.color = Color.white;
+            portrait.preserveAspect = true;
 
-    public Sprite LoadSpriteDirectly(string fileNameNoExt)
-    {
-        // Single sprite load
-        Sprite s = Resources.Load<Sprite>("NyxarisExpressions/" + fileNameNoExt);
-        if (s != null) return s;
-
-        // LoadAll for Multiple sprite mode textures
-        Sprite[] all = Resources.LoadAll<Sprite>("NyxarisExpressions");
-        if (all != null)
-        {
-            foreach (Sprite spr in all)
+            frameAnimator = portrait.GetComponent<NyxarisFrameAnimator>();
+            if (frameAnimator == null)
             {
-                if (spr != null && spr.name.ToLower().Contains(fileNameNoExt.ToLower()))
-                    return spr;
+                frameAnimator = portrait.gameObject.AddComponent<NyxarisFrameAnimator>();
             }
+            frameAnimator.targetImage = portrait;
+            frameAnimator.PlayAnimation("nuetral", 12f);
         }
-
-#if UNITY_EDITOR
-        // Editor fallback: try AssetDatabase
-        string[] paths = new[] {
-            "Assets/Scenes/art/Nyxaris Expressions art/" + fileNameNoExt + ".png",
-            "Assets/Resources/NyxarisExpressions/" + fileNameNoExt + ".png"
-        };
-        foreach (string path in paths)
-        {
-            UnityEngine.Object[] assets = AssetDatabase.LoadAllAssetsAtPath(path);
-            if (assets != null)
-            {
-                foreach (var a in assets)
-                {
-                    if (a is Sprite spr && spr != null) return spr;
-                }
-            }
-        }
-#endif
-        return null;
-    }
-
-    private List<Sprite> LoadAllSubSprites(string fileNameNoExt)
-    {
-        List<Sprite> result = new List<Sprite>();
-        Sprite[] all = Resources.LoadAll<Sprite>("NyxarisExpressions");
-        if (all != null)
-        {
-            foreach (var s in all)
-            {
-                if (s != null && s.name.ToLower().Contains(fileNameNoExt.ToLower()) && !result.Contains(s))
-                    result.Add(s);
-            }
-        }
-#if UNITY_EDITOR
-        if (result.Count == 0)
-        {
-            string path = "Assets/Scenes/art/Nyxaris Expressions art/" + fileNameNoExt + ".png";
-            UnityEngine.Object[] assets = AssetDatabase.LoadAllAssetsAtPath(path);
-            if (assets != null)
-            {
-                foreach (var a in assets)
-                {
-                    if (a is Sprite s && s != null && !result.Contains(s)) result.Add(s);
-                }
-            }
-        }
-#endif
-        return result;
     }
 
     public void EnsureDefaultPortrait()
     {
-        if (portrait == null) CreateStandalonePortrait();
+        if (portrait == null) SetupPortraitAndAnimator();
         if (portrait == null) return;
 
         portrait.enabled = true;
@@ -322,7 +192,15 @@ public class NyxarisManager : MonoBehaviour
         portrait.color = Color.white;
         portrait.preserveAspect = true;
 
-        if (portrait.sprite == null)
+        if (frameAnimator != null)
+        {
+            frameAnimator.targetImage = portrait;
+            if (!frameAnimator.IsPlaying && !frameAnimator.IsFrozenOnLastFrame)
+            {
+                frameAnimator.PlayAnimation("nuetral", 12f);
+            }
+        }
+        else if (portrait.sprite == null)
         {
             AutoLoadExpressionSprites();
             Sprite def = neutralSprite ??
@@ -330,17 +208,6 @@ public class NyxarisManager : MonoBehaviour
                         explainingSprite ?? cuteSprite;
             if (def != null) portrait.sprite = def;
         }
-    }
-
-    // ═══════════════════════════════════════════════════════════
-    //  INTERFACE SHOW / HIDE
-    // ═══════════════════════════════════════════════════════════
-
-    private NyxarisUIStyler GetStyler()
-    {
-        if (mainInterfacePanel == null) return null;
-        return mainInterfacePanel.GetComponent<NyxarisUIStyler>() ?? 
-               mainInterfacePanel.GetComponentInChildren<NyxarisUIStyler>(true);
     }
 
     public void ShowInterface()
@@ -351,24 +218,20 @@ public class NyxarisManager : MonoBehaviour
             return;
         }
 
-        EnsureDefaultPortrait();
-
-        // Show portrait overlay
-        if (portraitRoot != null) portraitRoot.SetActive(true);
-
         if (mainInterfacePanel != null)
         {
+            mainInterfacePanel.SetActive(true);
+            EnsureCanvasScaling();
+
             NyxarisUIStyler styler = GetStyler();
             if (styler != null)
             {
-                mainInterfacePanel.SetActive(true);
                 styler.ApplyStyling();
                 styler.AnimateOpen();
             }
-            else
-            {
-                mainInterfacePanel.SetActive(true);
-            }
+
+            EnsureDefaultPortrait();
+
             if (messageInput != null)
             {
                 messageInput.text = "";
@@ -381,9 +244,6 @@ public class NyxarisManager : MonoBehaviour
 
     public void HideInterface()
     {
-        // Hide portrait overlay
-        if (portraitRoot != null) portraitRoot.SetActive(false);
-
         if (mainInterfacePanel != null)
         {
             NyxarisUIStyler styler = GetStyler();
@@ -404,7 +264,7 @@ public class NyxarisManager : MonoBehaviour
     {
         if (HUDManager.IsInMainMenu())
         {
-            if ((mainInterfacePanel != null && mainInterfacePanel.activeSelf) || (portraitRoot != null && portraitRoot.activeSelf))
+            if (mainInterfacePanel != null && mainInterfacePanel.activeSelf)
             {
                 HideInterface();
             }
@@ -441,8 +301,15 @@ public class NyxarisManager : MonoBehaviour
         }
     }
 
+    private NyxarisUIStyler GetStyler()
+    {
+        if (mainInterfacePanel == null) return null;
+        return mainInterfacePanel.GetComponent<NyxarisUIStyler>() ?? 
+               mainInterfacePanel.GetComponentInChildren<NyxarisUIStyler>(true);
+    }
+
     // ═══════════════════════════════════════════════════════════
-    //  MESSAGING
+    //  MESSAGING & BRAIN INTEGRATION
     // ═══════════════════════════════════════════════════════════
 
     public void SendInputMessage()
@@ -465,9 +332,35 @@ public class NyxarisManager : MonoBehaviour
             if (!string.IsNullOrEmpty(dropdownMode)) mode = dropdownMode;
         }
 
-        NyxarisRequest requestData = new NyxarisRequest { 
-            message = msg, mode = mode, trust = currentTrust,
-            level = SceneManager.GetActiveScene().name
+        // Live Player Stats Injection
+        float hp = 100f, maxHp = 100f, mana = 100f, maxMana = 100f;
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
+        {
+            Health h = player.GetComponent<Health>();
+            if (h != null)
+            {
+                hp = h.CurrentHealth;
+                maxHp = h.MaxHealth;
+            }
+            MageCombat mc = player.GetComponent<MageCombat>();
+            if (mc != null)
+            {
+                mana = mc.currentMana;
+                maxMana = mc.maxMana;
+            }
+        }
+
+        NyxarisRequest requestData = new NyxarisRequest 
+        { 
+            message = msg, 
+            mode = mode, 
+            trust = currentTrust,
+            level = SceneManager.GetActiveScene().name,
+            player_hp = hp,
+            player_max_hp = maxHp,
+            player_mana = mana,
+            player_max_mana = maxMana
         };
         string json = JsonUtility.ToJson(requestData);
 
@@ -476,104 +369,430 @@ public class NyxarisManager : MonoBehaviour
         bool success = false;
         NyxarisResponse response = null;
 
-        using (UnityWebRequest request = new UnityWebRequest("http://127.0.0.1:5001/nyxaris", "POST"))
+        // 1. Try Primary API Host (5000)
+        yield return TryPostRequest(apiHost, json, (res) => { response = res; success = true; });
+
+        // 2. Try Fallback Host (5001) if not successful
+        if (!success)
         {
-            byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
-            request.uploadHandler = new UploadHandlerRaw(bodyRaw);
-            request.downloadHandler = new DownloadHandlerBuffer();
-            request.SetRequestHeader("Content-Type", "application/json");
-            request.timeout = 2; // 2-second strict timeout for instant feedback
-
-            yield return request.SendWebRequest();
-
-            if (request.result == UnityWebRequest.Result.Success && !string.IsNullOrEmpty(request.downloadHandler.text))
-            {
-                try
-                {
-                    response = JsonUtility.FromJson<NyxarisResponse>(request.downloadHandler.text);
-                    if (response != null && !string.IsNullOrEmpty(response.response))
-                    {
-                        success = true;
-                    }
-                }
-                catch (System.Exception ex)
-                {
-                    Debug.LogWarning("[NyxarisManager] Server response parse error, falling back to local AI engine: " + ex.Message);
-                }
-            }
+            yield return TryPostRequest(apiHostFallback, json, (res) => { response = res; success = true; });
         }
 
         if (styler != null) styler.HideLoading();
 
-        if (!success)
+        // 3. Built-in Local Heuristic Mind Fallback
+        if (!success || response == null || string.IsNullOrEmpty(response.response))
         {
-            // Fast Instant Local Engine Fallback
-            response = GetLocalFastResponse(msg);
+            response = GetLocalFastResponse(msg, hp, maxHp, mana, maxMana);
         }
 
-        Debug.Log("Nyxaris Expression: " + response.sprite_key);
+        // Apply Trust Delta
+        if (response.new_trust > 0f)
+        {
+            currentTrust = Mathf.Clamp01(response.new_trust);
+        }
+
         if (styler != null && !string.IsNullOrEmpty(response.sprite_key))
             styler.SetSpriteKeyDisplay(response.sprite_key);
 
-        SetEmotion(response.emotion);
-        StartCoroutine(TypeText(response.response));
+        // Show/Hide Minigame Quick-Launch Button
+        if (styler != null)
+        {
+            if (!string.IsNullOrEmpty(response.suggested_minigame))
+                styler.ShowMinigameShortcut(response.suggested_minigame);
+            else
+                styler.HideMinigameShortcut();
+        }
+
+        // Play Frame Animation (smooth 20 FPS, freeze on last frame)
+        PlayAnimation(response.animation, response.emotion);
+
+        if (currentTypewriterCoroutine != null) StopCoroutine(currentTypewriterCoroutine);
+        currentTypewriterCoroutine = StartCoroutine(TypeText(response.response));
     }
 
-    private NyxarisResponse GetLocalFastResponse(string userMsg)
+    private IEnumerator TryPostRequest(string url, string json, System.Action<NyxarisResponse> onParsed)
     {
-        string textLower = userMsg.ToLower();
-        string activeScene = SceneManager.GetActiveScene().name;
-        
-        string respText = "";
-        string emotion = "explaining";
+        using (UnityWebRequest req = new UnityWebRequest(url, "POST"))
+        {
+            byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
+            req.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            req.downloadHandler = new DownloadHandlerBuffer();
+            req.SetRequestHeader("Content-Type", "application/json");
+            req.timeout = 15; // Generous timeout for local AI model generation
 
-        if (textLower.Contains("who") || textLower.Contains("killer") || textLower.Contains("massacre") || textLower.Contains("follower"))
-        {
-            respText = "My followers were slaughtered in cold blood across this realm. Clues point to a warrior hidden among the mountain clans—or something far darker impersonating them.";
-            emotion = "explaining";
+            yield return req.SendWebRequest();
+
+            if (req.result == UnityWebRequest.Result.Success && !string.IsNullOrEmpty(req.downloadHandler.text))
+            {
+                try
+                {
+                    NyxarisResponse parsed = JsonUtility.FromJson<NyxarisResponse>(req.downloadHandler.text);
+                    if (parsed != null && !string.IsNullOrEmpty(parsed.response))
+                    {
+                        onParsed?.Invoke(parsed);
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogWarning("[NyxarisManager] Parse error from " + url + ": " + ex.Message);
+                }
+            }
         }
-        else if (textLower.Contains("strawhat") || textLower.Contains("dojo 1") || textLower.Contains("dojo1"))
+    }
+
+    public void PlayAnimation(string animKey, string fallbackEmotion = "")
+    {
+        if (frameAnimator != null)
         {
-            respText = "The Strawhat Clan claims innocence, insisting the killer is a shape-shifter in the Samurai Clan. Do not lower your guard in their dōjō.";
-            emotion = "thinking";
-        }
-        else if (textLower.Contains("samurai") || textLower.Contains("dojo 2") || textLower.Contains("dojo2") || textLower.Contains("master"))
-        {
-            respText = "Rumors say the Samurai Clan's Master was sighted alive, despite dying two years ago... Be vigilant; things are not as they appear.";
-            emotion = "angry";
-        }
-        else if (textLower.Contains("cave") || textLower.Contains("spider") || textLower.Contains("tsuchigumo"))
-        {
-            respText = "The giant spiders multiplying in the regional cave are no mere beasts. They serve Tsuchigumo—the true culprit behind the massacre!";
-            emotion = "explaining";
-        }
-        else if (textLower.Contains("hello") || textLower.Contains("hi") || textLower.Contains("hey") || textLower.Contains("nyxaris"))
-        {
-            respText = "I am with you, mortal. Speak your mind or ask for guidance on our investigation.";
-            emotion = "kind";
+            string key = !string.IsNullOrEmpty(animKey) ? animKey : fallbackEmotion;
+            frameAnimator.PlayAnimation(key, 20f);
         }
         else
         {
-            // Scene-based contextual responses
-            if (activeScene.Contains("Dojo1"))
+            SetEmotionFallback(fallbackEmotion);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  INSTANT C# OFFLINE HEURISTIC MIND ENGINE
+    // ═══════════════════════════════════════════════════════════
+    private NyxarisResponse GetLocalFastResponse(string userMsg, float hp, float maxHp, float mana, float maxMana)
+    {
+        string textLower = userMsg.ToLower();
+        string activeScene = SceneManager.GetActiveScene().name;
+        float hpPct = Mathf.Clamp01(hp / Mathf.Max(1f, maxHp));
+        float manaPct = Mathf.Clamp01(mana / Mathf.Max(1f, maxMana));
+
+        string[] explainingPool = {
+            "nyxarisexplaining0-c6c6f20e",
+            "nyxarisexplaining1-a4a19986",
+            "nyxarisexcitedarmsspreadexplaining-cb776e55",
+            "nyxaristalkingeyesclosed-a238b88a",
+            "nyxarisconfidently-64b9a921",
+            "nyxarisconfidently0-146ef255"
+        };
+
+        string[] casualTalkPool = {
+            "nyxarishappytosay-e0fd84be",
+            "nyxarishappy-f4e5a565",
+            "nyxarishappythinking-bd1f19af",
+            "nyxarisshrug-82e20542",
+            "nyxarisnuetral-411247bb",
+            "nyxarisnuetralstare-14b61402"
+        };
+
+        string[] thinkingPool = {
+            "nyxaristhinking-616901a8",
+            "nyxariscutelythinking-08686484",
+            "nyxarishappythinking-bd1f19af"
+        };
+
+        string[] tsundereTeasePool = {
+            "nyxariscutelyannoyed-9f21f3fd",
+            "nyxariseyesrolling-0c15d4fb",
+            "nyxarisannoyedarmsfolded-6d8ef381",
+            "nyxarisannoyed-1fd7f301",
+            "nyxarischeeksfulloffoodormana-246d2ced"
+        };
+
+        string[] excitedPool = {
+            "nyxarisexcited-f2ab5508",
+            "nyxarisexcitedarmsspreadexplaining-cb776e55",
+            "nyxarisinfactuation-56ed8338"
+        };
+
+        string[] affectionPool = {
+            "nyxarisinlove-279c11ce",
+            "nyxarisinfactuation-56ed8338",
+            "nyxarishappytosay-e0fd84be"
+        };
+
+        string respText;
+        string emotion;
+        string anim;
+        string suggestedMg = null;
+        float trustDelta = 0.02f;
+
+        // 1. Low HP / Hurt Reaction
+        if (hpPct < 0.35f && (textLower.Contains("heal") || textLower.Contains("hurt") || textLower.Contains("hp") || textLower.Contains("health") || textLower.Contains("help") || textLower.Contains("dying") || textLower.Contains("pain") || textLower.Contains("ouch")))
+        {
+            string[] responses = {
+                "You are battered, mortal! Do not throw your life away so recklessly. Take a breath or train in the Void Surge.",
+                "Your wounds are severe! Step back and gather health orbs before you collapse!",
+                "Look at you, barely standing! A fallen warrior is of no use to my mission. Recover immediately!"
+            };
+            respText = responses[Random.Range(0, responses.Length)];
+            emotion = "cutely_upset";
+            anim = "nyxariscutelyupset-72bf7d95";
+            suggestedMg = "VoidSurge";
+            trustDelta = 0.04f;
+        }
+        // 2. Low Mana Reaction
+        else if (manaPct < 0.30f && (textLower.Contains("mana") || textLower.Contains("spell") || textLower.Contains("mp") || textLower.Contains("magic") || textLower.Contains("empty") || textLower.Contains("cast")))
+        {
+            string[] responses = {
+                "Your mana is dangerously depleted. Refresh your arcane flow before engaging the next clan guardian.",
+                "You cannot conjure spells on empty reserves! Collect mana orbs or meditate for a moment.",
+                "The void essence within you runs thin. Recharging your magic is essential right now."
+            };
+            respText = responses[Random.Range(0, responses.Length)];
+            emotion = "warning";
+            anim = "nyxarissternorimportantwarning-534901f6";
+            suggestedMg = "OrbSplash";
+            trustDelta = 0.03f;
+        }
+        // 3. Minigame & Training Inquiries
+        else if (textLower.Contains("minigame") || textLower.Contains("arcade") || textLower.Contains("train") || textLower.Contains("practice") || textLower.Contains("void surge") || textLower.Contains("orb splash") || textLower.Contains("shadow runner") || textLower.Contains("skybound") || textLower.Contains("play"))
+        {
+            string[] games = { "VoidSurge", "OrbSplash", "ShadowRunner", "SkyboundBox" };
+            suggestedMg = games[Random.Range(0, games.Length)];
+            string[] responses = {
+                $"Sharpen your instincts in {suggestedMg}! Gathering void essence now will make your strikes lethal.",
+                $"A true warrior trains constantly. Test your reflexes in {suggestedMg} and return stronger!",
+                $"Looking to hone your arcane mastery? Step into {suggestedMg} and collect divine rewards."
+            };
+            respText = responses[Random.Range(0, responses.Length)];
+            emotion = "excited";
+            anim = excitedPool[Random.Range(0, excitedPool.Length)];
+            trustDelta = 0.05f;
+        }
+        // 4. Identity & Lore of Nyxaris
+        else if (textLower.Contains("who are you") || textLower.Contains("what are you") || textLower.Contains("your name") || textLower.Contains("goddess") || textLower.Contains("about yourself"))
+        {
+            string[] responses = {
+                "I am Nyxaris, Goddess of the Dark Multiverse. Bound across timelines to restore cosmic balance—and uncover the truth behind my followers' demise.",
+                "You stand before Nyxaris. Though my mortal form is diminished in this realm, the primordial void still answers my command.",
+                "I am the sovereign of shadows and forgotten realms. Together, we are going to unravel the conspiracy consuming this forest."
+            };
+            respText = responses[Random.Range(0, responses.Length)];
+            emotion = "confidently";
+            anim = explainingPool[Random.Range(0, explainingPool.Length)];
+            trustDelta = 0.03f;
+        }
+        // 5. Followers Massacre & Mystery Lore
+        else if (textLower.Contains("who") || textLower.Contains("killer") || textLower.Contains("massacre") || textLower.Contains("follower") || textLower.Contains("culprit") || textLower.Contains("murder") || textLower.Contains("died") || textLower.Contains("who did this"))
+        {
+            string[] responses = {
+                "My followers were slaughtered in cold blood across this timeline. Clues point to a warrior hidden among the mountain clans—or something far darker impersonating them.",
+                "Someone orchestrated the massacre to spark war between the Strawhat and Samurai clans. We must expose the imposter before more blood is spilled.",
+                "The killer leaves a trail of deception. Investigate both dōjōs in the mountains—the evidence will lead us to the culprit."
+            };
+            respText = responses[Random.Range(0, responses.Length)];
+            emotion = "explaining";
+            anim = explainingPool[Random.Range(0, explainingPool.Length)];
+            trustDelta = 0.03f;
+        }
+        // 6. Strawhat Clan Lore
+        else if (textLower.Contains("strawhat") || textLower.Contains("dojo 1") || textLower.Contains("dojo1") || textLower.Contains("straw"))
+        {
+            string[] responses = {
+                "The Strawhat Clan claims innocence, insisting the killer is a shape-shifter in the Samurai Clan. Do not lower your guard in their dōjō.",
+                "Their warriors fight with swift straw blades. Challenge their altar guardian and demand the truth about the killings.",
+                "The Strawhat masters know more than they let on. Watch their movements carefully when you step past their gates."
+            };
+            respText = responses[Random.Range(0, responses.Length)];
+            emotion = "thinking";
+            anim = thinkingPool[Random.Range(0, thinkingPool.Length)];
+        }
+        // 7. Samurai Clan Lore
+        else if (textLower.Contains("samurai") || textLower.Contains("dojo 2") || textLower.Contains("dojo2") || textLower.Contains("master"))
+        {
+            string[] responses = {
+                "Rumors say the Samurai Clan's Master was sighted alive, despite dying two years ago... Be vigilant; things are not as they appear.",
+                "The Samurai Clan blames the Strawhats, but this resurrected Master suggests dark illusions are at play.",
+                "Face the Samurai Clan guardian. We must determine if their fallen Master has truly returned from the grave."
+            };
+            respText = responses[Random.Range(0, responses.Length)];
+            emotion = "warning";
+            anim = "nyxarissternorimportantwarning-534901f6";
+        }
+        // 8. Cave & Tsuchigumo Reveal
+        else if (textLower.Contains("cave") || textLower.Contains("spider") || textLower.Contains("tsuchigumo") || textLower.Contains("web"))
+        {
+            string[] responses = {
+                "The giant spiders multiplying in the regional cave serve Tsuchigumo—the true shape-shifting culprit behind the massacre!",
+                "Tsuchigumo weaves webs of discord, impersonating both clans to fuel their hatred. Descend the cave and crush this beast!",
+                "The bottom of the mountain cave holds the final answer. Steel yourself, mortal—Tsuchigumo will not surrender easily."
+            };
+            respText = responses[Random.Range(0, responses.Length)];
+            emotion = "pissed";
+            anim = "nyxarispissed-7e387d67";
+            trustDelta = 0.05f;
+        }
+        // 9. Guidance, Navigation & "What should I do?"
+        else if (textLower.Contains("what should i do") || textLower.Contains("what now") || textLower.Contains("where do i go") || textLower.Contains("where to go") || textLower.Contains("next") || textLower.Contains("lost") || textLower.Contains("guide me") || textLower.Contains("direction"))
+        {
+            string[] responses = {
+                "Head upward through the mountain path. We must visit both Dōjō 1 (Strawhat) and Dōjō 2 (Samurai) to gather clues before entering the cave.",
+                "Explore the Cherry Blossom Village and test your blade against clan warriors. When you are ready, the cave depths await.",
+                "Keep advancing along the stone path. Every enemy defeated brings us closer to uncovering Tsuchigumo's nest."
+            };
+            respText = responses[Random.Range(0, responses.Length)];
+            emotion = "explaining";
+            anim = explainingPool[Random.Range(0, explainingPool.Length)];
+        }
+        // 10. Flirting / High Affinity
+        else if (textLower.Contains("cute") || textLower.Contains("love") || textLower.Contains("pretty") || textLower.Contains("beautiful") || textLower.Contains("marry") || textLower.Contains("kiss") || textLower.Contains("gorgeous") || textLower.Contains("sweet"))
+        {
+            if (currentTrust > 0.65f)
             {
-                respText = "Confront the Strawhat warriors at the altar. Search for any sign of who orchestrated the massacre.";
-                emotion = "explaining";
-            }
-            else if (activeScene.Contains("Dojo2"))
-            {
-                respText = "This dōjō reeks of deception. The Master who stands before you is a false illusion!";
-                emotion = "thinking";
-            }
-            else if (activeScene.Contains("Cave"))
-            {
-                respText = "We stand at the threshold of truth. Tsuchigumo awaits below in the webs. Prepare yourself for battle!";
-                emotion = "angry";
+                string[] responses = {
+                    "H-hush, mortal! A goddess does not get swayed by simple sweet-talking... Though, I suppose your company isn't entirely dreadful.",
+                    "Flattery from you is surprisingly pleasant... Not that I'm getting attached or anything! Keep your eyes on the road.",
+                    "You truly are bold to speak to a deity like that. Just make sure you stay alive so I can keep hearing it."
+                };
+                respText = responses[Random.Range(0, responses.Length)];
+                emotion = "in_love";
+                anim = affectionPool[Random.Range(0, affectionPool.Length)];
+                trustDelta = 0.08f;
             }
             else
             {
-                respText = "Keep moving through the Cherry Blossom Forest. The answers we seek lie in the mountain dōjōs and the depths of the cave.";
+                string[] responses = {
+                    "Flattery will not distract me from our mission, mortal. Focus on the investigation at hand!",
+                    "Do not think cheap compliments will earn you divine favor so easily. Prove your worth in battle first!",
+                    "A goddess has no time for idle flirtation. Keep your blade sharp and your mind focused."
+                };
+                respText = responses[Random.Range(0, responses.Length)];
+                emotion = "cutely_annoyed";
+                anim = tsundereTeasePool[Random.Range(0, tsundereTeasePool.Length)];
+            }
+        }
+        // 11. Playful, Teasing, or Humorous
+        else if (textLower.Contains("tease") || textLower.Contains("annoying") || textLower.Contains("bossy") || textLower.Contains("funny") || textLower.Contains("joke") || textLower.Contains("short") || textLower.Contains("horns") || textLower.Contains("lazy") || textLower.Contains("food") || textLower.Contains("eat") || textLower.Contains("hungry") || textLower.Contains("baka"))
+        {
+            string[] responses = {
+                "Who are you calling bossy?! I am guiding you so you don't wander off a cliff, ungrateful mortal!",
+                "Keep making remarks like that and I might just let the next spider have a nibble of your cloak!",
+                "My mana reserves require constant replenishment... which totally includes delicious festival treats, obviously!"
+            };
+            respText = responses[Random.Range(0, responses.Length)];
+            emotion = "cutely_annoyed";
+            anim = tsundereTeasePool[Random.Range(0, tsundereTeasePool.Length)];
+            trustDelta = 0.03f;
+        }
+        // 12. Gratitude, Agreement & Affirmations
+        else if (textLower.Contains("thank") || textLower.Contains("thanks") || textLower.Contains("ok") || textLower.Contains("okay") || textLower.Contains("alright") || textLower.Contains("got it") || textLower.Contains("understood") || textLower.Contains("yes") || textLower.Contains("yeah") || textLower.Contains("sure") || textLower.Contains("will do"))
+        {
+            string[] responses = {
+                "Good. As long as we understand each other, nothing in this forest can stand in our way.",
+                "I expect nothing less from my companion. Let us proceed with haste.",
+                "Very well. Lead onward, and strike true when the moment comes."
+            };
+            respText = responses[Random.Range(0, responses.Length)];
+            emotion = "happy_to_say";
+            anim = casualTalkPool[Random.Range(0, casualTalkPool.Length)];
+            trustDelta = 0.02f;
+        }
+        // 13. General Readiness & "How are you?"
+        else if (textLower.Contains("ready") || textLower.Contains("how are you") || textLower.Contains("how r u") || textLower.Contains("what's up") || textLower.Contains("whats up") || textLower.Contains("how do you feel") || textLower.Contains("are you okay") || textLower.Contains("you ready"))
+        {
+            if (currentTrust > 0.6f)
+            {
+                string[] responses = {
+                    "I am primed for battle and eager to see what we uncover next. How are you holding up?",
+                    "My arcane senses are tingling with anticipation. Whenever you are ready to move, I am with you.",
+                    "Feeling stronger by your side, mortal. Let us see what secrets this mountain still hides."
+                };
+                respText = responses[Random.Range(0, responses.Length)];
+                emotion = "happy_to_say";
+                anim = casualTalkPool[Random.Range(0, casualTalkPool.Length)];
+                trustDelta = 0.03f;
+            }
+            else
+            {
+                string[] responses = {
+                    "My senses are focused on the investigation. Make sure your reflexes are just as sharp.",
+                    "I am ready when you are. Do not let your guard down for a single moment.",
+                    "Standing by. Speak your intent or lead the way toward our next objective."
+                };
+                respText = responses[Random.Range(0, responses.Length)];
+                emotion = "neutral";
+                anim = casualTalkPool[Random.Range(0, casualTalkPool.Length)];
+            }
+        }
+        // 14. Greetings & Casual Status
+        else if (textLower.Contains("hello") || textLower.Contains("hi") || textLower.Contains("hey") || textLower.Contains("nyxaris") || textLower.Contains("greetings") || textLower.Contains("yo"))
+        {
+            if (hpPct < 0.4f)
+            {
+                respText = "I am with you, mortal. But you look exhausted—rest a moment before charging into danger.";
+                emotion = "worried_upset";
+                anim = "nyxarisworriedupsetthinkingmp4-bd2148fc";
+                suggestedMg = "OrbSplash";
+            }
+            else if (currentTrust > 0.6f)
+            {
+                string[] responses = {
+                    "Greetings! It is good to see you standing tall. What shall we investigate next?",
+                    "Ah, there you are. I was wondering when you would seek my counsel again.",
+                    "Hello, companion. Ready to turn this mountain upside down?"
+                };
+                respText = responses[Random.Range(0, responses.Length)];
+                emotion = "happy_to_say";
+                anim = casualTalkPool[Random.Range(0, casualTalkPool.Length)];
+                trustDelta = 0.03f;
+            }
+            else
+            {
+                string[] responses = {
+                    "I am with you, mortal. Speak your mind or ask for guidance on our investigation.",
+                    "Greetings. What observations do you have to share from your journey?",
+                    "I am listening. What direction shall we take?"
+                };
+                respText = responses[Random.Range(0, responses.Length)];
+                emotion = "neutral";
+                anim = casualTalkPool[Random.Range(0, casualTalkPool.Length)];
+            }
+        }
+        // 15. Dynamic Conversational Fallback
+        else
+        {
+            if (activeScene.Contains("Dojo1"))
+            {
+                string[] responses = {
+                    "We are at the Strawhat Dōjō. Stay alert and watch for any hidden clues near their altar.",
+                    "The Strawhat warriors are sizing you up. Speak with their master or challenge their champions.",
+                    "Look around this dōjō carefully. The killer may have left traces of their presence."
+                };
+                respText = responses[Random.Range(0, responses.Length)];
                 emotion = "explaining";
+                anim = explainingPool[Random.Range(0, explainingPool.Length)];
+            }
+            else if (activeScene.Contains("Dojo2"))
+            {
+                string[] responses = {
+                    "This dōjō reeks of deception. The Master who stands before you is a false illusion!",
+                    "Keep your distance from the Samurai guards until we verify who is commanding them.",
+                    "Something is unnatural about this place. Be ready to draw your weapon at a moment's notice."
+                };
+                respText = responses[Random.Range(0, responses.Length)];
+                emotion = "thinking";
+                anim = thinkingPool[Random.Range(0, thinkingPool.Length)];
+            }
+            else if (activeScene.Contains("Cave"))
+            {
+                string[] responses = {
+                    "We stand at the threshold of truth. Tsuchigumo awaits below in the webs. Prepare yourself for battle!",
+                    "The webs grow thicker here. Watch the shadows above as we descend into the lair.",
+                    "Tsuchigumo's venomous presence is heavy in the air. Let us cleanse this cave together!"
+                };
+                respText = responses[Random.Range(0, responses.Length)];
+                emotion = "angry";
+                anim = "nyxarisangry-e56db4b1";
+            }
+            else
+            {
+                string[] responses = {
+                    "I hear you, mortal. Keep moving through the Cherry Blossom Forest—the clues we need are waiting ahead.",
+                    "Interesting thought. Let us press onward to the mountain dōjōs and see what we can find.",
+                    "Indeed. Stay vigilant and keep your blade ready. Every step brings us closer to the truth.",
+                    "A curious remark. Keep your focus on our quest, and let us unveil what lies in the cave."
+                };
+                respText = responses[Random.Range(0, responses.Length)];
+                emotion = "explaining";
+                anim = casualTalkPool[Random.Range(0, casualTalkPool.Length)];
             }
         }
 
@@ -581,73 +800,23 @@ public class NyxarisManager : MonoBehaviour
         {
             response = respText,
             emotion = emotion,
-            sprite_key = emotion
+            animation = anim,
+            sprite_key = emotion,
+            suggested_minigame = suggestedMg,
+            new_trust = Mathf.Clamp01(currentTrust + trustDelta)
         };
     }
 
-    // ═══════════════════════════════════════════════════════════
-    //  EMOTIONS
-    // ═══════════════════════════════════════════════════════════
-
-    void SetEmotion(string emotion)
+    private void SetEmotionFallback(string emotion)
     {
-        if (resetEmotionCoroutine != null) StopCoroutine(resetEmotionCoroutine);
-        
-        Sprite selectedSprite = null;
-        switch (emotion.ToLower().Trim())
-        {
-            case "explaining":
-                selectedSprite = explainingSprite ?? GetRandomSprite(explainingSprites);
-                break;
-            case "thinking":
-                selectedSprite = GetRandomSprite(thinkingSprites) ?? explainingSprite;
-                break;
-            case "angry":
-                selectedSprite = GetRandomSprite(angrySprites) ?? cuteSprite;
-                break;
-            case "cute":
-            case "cutely-annoyed":
-                selectedSprite = cuteSprite ?? GetRandomSprite(cuteSprites);
-                break;
-            case "motherly":
-                selectedSprite = GetRandomSprite(motherlySprites) ?? neutralSprite;
-                break;
-            case "kind":
-                selectedSprite = GetRandomSprite(kindSprites) ?? neutralSprite;
-                break;
-            default:
-                selectedSprite = neutralSprite ?? GetRandomSprite(neutralSprites);
-                break;
-        }
+        Sprite selectedSprite = neutralSprite;
+        string e = emotion.ToLower();
+        if (e.Contains("explain")) selectedSprite = explainingSprite ?? neutralSprite;
+        else if (e.Contains("annoy") || e.Contains("cute") || e.Contains("love")) selectedSprite = cuteSprite ?? neutralSprite;
 
-        if (selectedSprite != null && portrait != null)
+        if (portrait != null && selectedSprite != null)
         {
             portrait.sprite = selectedSprite;
-            portrait.enabled = true;
-            portrait.color = Color.white;
-            if (emotion != "neutral")
-                resetEmotionCoroutine = StartCoroutine(ResetEmotionAfterDelay());
-        }
-    }
-
-    Sprite GetRandomSprite(Sprite[] sprites)
-    {
-        if (sprites == null || sprites.Length == 0) return null;
-        return sprites[Random.Range(0, sprites.Length)];
-    }
-
-    IEnumerator ResetEmotionAfterDelay()
-    {
-        yield return new WaitForSeconds(3.0f);
-        if (portrait != null)
-        {
-            Sprite def = neutralSprite ?? (neutralSprites != null && neutralSprites.Length > 0 ? neutralSprites[0] : null);
-            if (def != null)
-            {
-                portrait.sprite = def;
-                portrait.enabled = true;
-                portrait.color = Color.white;
-            }
         }
     }
 
@@ -656,11 +825,21 @@ public class NyxarisManager : MonoBehaviour
         NyxarisUIStyler styler = GetStyler();
         if (styler != null) styler.BouncePortrait();
 
+        if (dialogueText == null) yield break;
+
         dialogueText.text = "";
         foreach (char c in text)
         {
             dialogueText.text += c;
-            yield return new WaitForSeconds(0.008f); // Super crisp & instant typing animation
+            yield return new WaitForSecondsRealtime(0.008f); // Realtime typewriter
         }
+        dialogueText.text = text;
+    }
+
+    public void AutoLoadExpressionSprites()
+    {
+        if (neutralSprite == null) neutralSprite = Resources.Load<Sprite>("NyxarisExpressions/neutral");
+        if (explainingSprite == null) explainingSprite = Resources.Load<Sprite>("NyxarisExpressions/explaining");
+        if (cuteSprite == null) cuteSprite = Resources.Load<Sprite>("NyxarisExpressions/cutely-annoyed");
     }
 }
