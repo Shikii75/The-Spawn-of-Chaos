@@ -112,15 +112,15 @@ public class NyxarisUIStyler : MonoBehaviour
 
     private void SanitizeLayoutValues()
     {
-        panelHeight = 210f;
+        panelHeight = 250f;
         portraitWidth = 1200f; // 2x larger
         portraitHeight = 900f;  // 2x larger
         portraitOffsetX = -40f; // Right edge offset
-        portraitOffsetY = 15f + panelHeight; // Base touches top of panel (Y = 15 + 210 = 225)
-        dialogueLeftPad = 32f;
-        dialogueRightPad = -32f;
-        dialogueTopPad = -38f;
-        dialogueBottomPad = 68f;
+        portraitOffsetY = panelHeight - 2f; // Base touches top cyan divider of panel (Y = 248)
+        dialogueLeftPad = 36f;
+        dialogueRightPad = -36f;
+        dialogueTopPad = -42f;
+        dialogueBottomPad = 92f;
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -141,7 +141,7 @@ public class NyxarisUIStyler : MonoBehaviour
         Transform img1 = transform.Find("Image (1)");
         if (img1 != null && img1 != dialoguePanelImage?.transform) img1.gameObject.SetActive(false);
 
-        // Canvas scaler — 1920×1080 reference with Match Height (1.0) so UI never overflows vertically
+        // Canvas scaler — 1920×1080 reference with balanced 0.5 match so UI never clips on any aspect ratio
         Canvas nearestCanvas = GetComponentInParent<Canvas>();
         Canvas rootCanvas = nearestCanvas != null ? nearestCanvas.rootCanvas : null;
         if (rootCanvas != null)
@@ -151,7 +151,7 @@ public class NyxarisUIStyler : MonoBehaviour
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920f, 1080f);
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 1.0f;
+            scaler.matchWidthOrHeight = 0.5f;
         }
 
         // MainInterface RectTransform fill
@@ -202,13 +202,13 @@ public class NyxarisUIStyler : MonoBehaviour
         dialoguePanelImage.type = Image.Type.Sliced;
         dialoguePanelImage.color = panelBgColor;
 
-        // Fits camera horizontally across screen bottom (from 1.5% to 98.5% width)
+        // Solid full-width bottom dialogue bar with 250px height
         RectTransform rt = dialoguePanelImage.rectTransform;
-        rt.anchorMin = new Vector2(0.015f, 0f);
-        rt.anchorMax = new Vector2(0.985f, 0f);
+        rt.anchorMin = new Vector2(0f, 0f);
+        rt.anchorMax = new Vector2(1f, 0f);
         rt.pivot = new Vector2(0.5f, 0f);
         rt.sizeDelta = new Vector2(0f, panelHeight);
-        rt.anchoredPosition = new Vector2(0f, 15f);
+        rt.anchoredPosition = Vector2.zero;
 
         // Hide any old border
         Transform oldLine = dialoguePanelImage.transform.Find("TopBorderLine");
@@ -392,13 +392,13 @@ public class NyxarisUIStyler : MonoBehaviour
         inputFieldImage.type = Image.Type.Sliced;
         inputFieldImage.color = inputBgColor;
 
-        // Position: bottom row of the panel, takes 88% width, leaving room for send button
+        // Position: bottom row of the panel, elevated 22px with 52px height
         RectTransform ir = inputFieldImage.rectTransform;
         ir.anchorMin = new Vector2(0f, 0f);
         ir.anchorMax = new Vector2(0.88f, 0f);
         ir.pivot = new Vector2(0f, 0f);
-        ir.sizeDelta = new Vector2(-20f, 46f);
-        ir.anchoredPosition = new Vector2(32f, 14f);
+        ir.sizeDelta = new Vector2(-20f, 52f);
+        ir.anchoredPosition = new Vector2(36f, 22f);
 
         // Hide any glow border
         Transform glowBorder = inputFieldImage.transform.Find("InputGlowBorder");
@@ -416,8 +416,8 @@ public class NyxarisUIStyler : MonoBehaviour
                 {
                     taRt.anchorMin = Vector2.zero;
                     taRt.anchorMax = Vector2.one;
-                    taRt.offsetMin = new Vector2(14f, 4f);
-                    taRt.offsetMax = new Vector2(-14f, -4f);
+                    taRt.offsetMin = new Vector2(16f, 4f);
+                    taRt.offsetMax = new Vector2(-16f, -4f);
                 }
             }
 
@@ -452,13 +452,13 @@ public class NyxarisUIStyler : MonoBehaviour
         sendButtonImage.type = Image.Type.Sliced;
         sendButtonImage.color = accentCyan;
 
-        // Position: right of the input field, same row
+        // Position: right of the input field, same row, elevated 22px with 52px height
         RectTransform br = sendButtonImage.rectTransform;
         br.anchorMin = new Vector2(0.88f, 0f);
         br.anchorMax = new Vector2(1f, 0f);
         br.pivot = new Vector2(0f, 0f);
-        br.sizeDelta = new Vector2(-44f, 46f);
-        br.anchoredPosition = new Vector2(12f, 14f);
+        br.sizeDelta = new Vector2(-48f, 52f);
+        br.anchoredPosition = new Vector2(12f, 22f);
 
         if (sendButtonText != null)
         {

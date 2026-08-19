@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 
 /// <summary>
@@ -240,6 +241,8 @@ public class MageCombat : MonoBehaviour
         }
     }
 
+    private Coroutine shadowVFXCoroutine;
+
     private void PerformAttack1()
     {
         comboStep = 1;
@@ -258,13 +261,37 @@ public class MageCombat : MonoBehaviour
             ResetAllAttackTriggers();
 
             // 2. Force-play the Attack state at frame 0 with NO cross-fade blending.
-            //    This is the key fix: animator.Play() with normalizedTime=0 starts the
-            //    animation clip cleanly at the exact sample rate set in the Animation Window,
-            //    bypassing the transition system's cross-fade which corrupts sprite playback speed.
             animator.Play("Attack", 0, 0f);
         }
 
+        if (shadowVFXCoroutine != null) StopCoroutine(shadowVFXCoroutine);
+        shadowVFXCoroutine = StartCoroutine(Attack1ShadowFXRoutine());
+
         EnableMeleeCollider(meleeDamage);
+    }
+
+    private IEnumerator Attack1ShadowFXRoutine()
+    {
+        // Punch 1 apex (Frames 4-5 @ 16 FPS = 0.25s)
+        yield return new WaitForSeconds(0.25f);
+        if (comboStep == 1 && PlayerCombatJuice.Instance != null)
+        {
+            float dir = (transform.localScale.x < 0f) ? -1f : 1f;
+            Vector3 fist1Pos = transform.position + new Vector3(dir * 1.15f, 0.2f, 0f);
+            PlayerCombatJuice.Instance.SpawnShadowPunchVFX(fist1Pos, dir, isHeavy: false);
+            PlayerCombatJuice.Instance.TriggerSquashAndStretch(new Vector3(1.2f, 0.85f, 1f), 0.12f);
+        }
+
+        // Punch 2 apex (Frames 9-10 @ 16 FPS = 0.56s from start, +0.31s delta)
+        yield return new WaitForSeconds(0.31f);
+        if (comboStep == 1 && PlayerCombatJuice.Instance != null)
+        {
+            float dir = (transform.localScale.x < 0f) ? -1f : 1f;
+            Vector3 fist2Pos = transform.position + new Vector3(dir * 1.35f, 0.25f, 0f);
+            PlayerCombatJuice.Instance.SpawnShadowPunchVFX(fist2Pos, dir, isHeavy: true);
+            PlayerCombatJuice.Instance.TriggerSquashAndStretch(new Vector3(1.3f, 0.78f, 1f), 0.15f);
+        }
+        shadowVFXCoroutine = null;
     }
 
     private void PerformSecondHit()
@@ -285,13 +312,26 @@ public class MageCombat : MonoBehaviour
             ResetAllAttackTriggers();
 
             // 2. Force-play the followupAttack state at frame 0 with NO cross-fade blending.
-            //    Use "followupAttack" (the state that holds the follow-up clip) directly.
-            //    This bypasses the transition system entirely — no 0.1s or 0.25s blended
-            //    cross-fades that cause the sprite animation to play at wrong speeds.
             animator.Play("followupAttack", 0, 0f);
         }
 
+        if (shadowVFXCoroutine != null) StopCoroutine(shadowVFXCoroutine);
+        shadowVFXCoroutine = StartCoroutine(SecondHitShadowFXRoutine());
+
         EnableMeleeCollider(secondHitDamage);
+    }
+
+    private IEnumerator SecondHitShadowFXRoutine()
+    {
+        yield return new WaitForSeconds(0.18f);
+        if (comboStep == 2 && PlayerCombatJuice.Instance != null)
+        {
+            float dir = (transform.localScale.x < 0f) ? -1f : 1f;
+            Vector3 fistPos = transform.position + new Vector3(dir * 1.4f, 0.3f, 0f);
+            PlayerCombatJuice.Instance.SpawnShadowPunchVFX(fistPos, dir, isHeavy: true);
+            PlayerCombatJuice.Instance.TriggerSquashAndStretch(new Vector3(1.35f, 0.72f, 1.0f), 0.16f);
+        }
+        shadowVFXCoroutine = null;
     }
 
     private void ResetCombo()
@@ -299,6 +339,12 @@ public class MageCombat : MonoBehaviour
         comboStep = 0;
         secondHitQueued = false;
         comboTimer = 0f;
+
+        if (shadowVFXCoroutine != null)
+        {
+            StopCoroutine(shadowVFXCoroutine);
+            shadowVFXCoroutine = null;
+        }
 
         // Clean up any lingering triggers when combo window expires
         ResetAllAttackTriggers();

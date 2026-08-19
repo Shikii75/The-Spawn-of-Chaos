@@ -105,6 +105,48 @@ public class TutorialLevelBuilder : EditorWindow
         signSr.color = new Color(0.9f, 0.8f, 0.3f, 1f);
         signObj.transform.localScale = new Vector3(2.5f, 1.2f, 1f);
 
+        // ── GENBU FERRY CROSSING (X = 53.5, Y = -6 to X = 61.5, Y = 3.5) ──
+        GameObject waypointsHolder = new GameObject("Genbu_Waypoints");
+        waypointsHolder.transform.SetParent(sec2.transform);
+
+        GameObject spGO = new GameObject("StartLedgePoint");
+        spGO.transform.SetParent(waypointsHolder.transform);
+        spGO.transform.position = new Vector3(53.5f, -6.0f, 0f);
+
+        GameObject dpGO = new GameObject("DestinationPlatformPoint");
+        dpGO.transform.SetParent(waypointsHolder.transform);
+        dpGO.transform.position = new Vector3(61.5f, 3.5f, 0f);
+
+        GameObject dlpGO = new GameObject("DisembarkLandingPoint");
+        dlpGO.transform.SetParent(waypointsHolder.transform);
+        dlpGO.transform.position = new Vector3(64.5f, 4.5f, 0f);
+
+        GameObject genbuPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/NPC/Genbu.prefab");
+        GameObject genbuInstance = null;
+        if (genbuPrefab != null)
+        {
+            genbuInstance = (GameObject)Object.Instantiate(genbuPrefab, spGO.transform.position, Quaternion.identity, sec2.transform);
+        }
+        else
+        {
+            genbuInstance = new GameObject("Genbu_GiantTurtle");
+            genbuInstance.transform.SetParent(sec2.transform);
+            genbuInstance.transform.position = spGO.transform.position;
+            genbuInstance.AddComponent<SpriteRenderer>();
+            genbuInstance.AddComponent<Animator>();
+            genbuInstance.AddComponent<BoxCollider2D>();
+            genbuInstance.AddComponent<SpawnOfChaos.NPC.GenbuFerryController>();
+        }
+        genbuInstance.name = "Genbu_GiantTurtle";
+
+        SpawnOfChaos.NPC.GenbuFerryController ferry = genbuInstance.GetComponent<SpawnOfChaos.NPC.GenbuFerryController>();
+        if (ferry != null)
+        {
+            ferry.startLedgePoint = spGO.transform;
+            ferry.destinationPlatformPoint = dpGO.transform;
+            ferry.disembarkLandingPoint = dlpGO.transform;
+        }
+
         // ── SECTION 3: CAVERN ARENA WAVE TRIAL (X = 60 to 95, Y = 4) ─────
         GameObject sec3 = new GameObject("Section3_CavernArenaWaveTrial");
         sec3.transform.SetParent(root.transform);

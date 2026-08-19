@@ -106,7 +106,7 @@ TextureImporter:
       name: frame_004_0
       rect:
         serializedVersion: 2
-        x: 317
+        x: 269
         y: 49
         width: 262
         height: 352
@@ -128,7 +128,7 @@ TextureImporter:
       name: frame_004_1
       rect:
         serializedVersion: 2
-        x: 357
+        x: 483
         y: 53
         width: 8
         height: 8
