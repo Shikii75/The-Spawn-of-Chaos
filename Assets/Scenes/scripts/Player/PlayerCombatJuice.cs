@@ -167,6 +167,29 @@ public class PlayerCombatJuice : MonoBehaviour
     }
 
     /// <summary>
+    /// Spawns a procedural slash arc at the attack position.
+    /// </summary>
+    public void SpawnSlashArc(Vector3 position, float facingDirection, bool isHeavy)
+    {
+        EnsureSpritesGenerated();
+
+        GameObject arcObj = new GameObject(isHeavy ? "HeavySlashArc" : "SlashArc");
+        arcObj.transform.position = position;
+
+        float baseScale = isHeavy ? 1.6f : 1.15f;
+        arcObj.transform.localScale = new Vector3(facingDirection * baseScale, baseScale, 1f);
+
+        SpriteRenderer sr = arcObj.AddComponent<SpriteRenderer>();
+        sr.sprite = slashArcSprite;
+        sr.color = isHeavy
+            ? new Color(1.0f, 0.55f, 0.15f, 0.95f)
+            : new Color(1.0f, 0.85f, 0.35f, 0.9f);
+        sr.sortingOrder = 20;
+
+        StartCoroutine(AnimateShadowPunchArc(arcObj, sr, isHeavy));
+    }
+
+    /// <summary>
     /// <summary>
     /// Spawns dark arcane shadow VFX (expanding shadow shockwave arc + chaos ember particle burst)
     /// at the apex/extension point of each player punch.
