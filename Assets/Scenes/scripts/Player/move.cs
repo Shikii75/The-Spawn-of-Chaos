@@ -19,7 +19,7 @@ public class move : MonoBehaviour
 
     [Header("Dash Settings")]
     public float dashSpeed = 16f;
-    public float dashDuration = 0.2f;
+    public float dashDuration = 0.45f;
     public float dashCooldown = 0.8f;
     public bool invulnerableDuringDash = true;
 
@@ -31,6 +31,7 @@ public class move : MonoBehaviour
     public float LastFacingSign => lastFacingSign;
     public bool IsInvulnerable => isDashing && invulnerableDuringDash;
     public bool IsDashing => isDashing;
+    public bool IsGrounded => isGrounded;
 
     [Header("Debuffs")]
     private float speedDebuffMultiplier = 1.0f;
@@ -42,12 +43,21 @@ public class move : MonoBehaviour
     [Tooltip("Movement speed multiplier when running (triggered by double-tapping horizontal directional input).")]
     public float runSpeedMultiplier = 1.6f;
     [Tooltip("Time window in seconds to register a double tap for running.")]
-    public float doubleTapThreshold = 0.25f;
+    public float doubleTapThreshold = 0.35f;
 
     [Header("Jump Lockout Settings")]
     [Tooltip("Duration in seconds after launching a jump where ground checks are temporarily locked out so the jump animation plays full multi-frame flight.")]
     public float jumpLockoutDuration = 0.25f;
     private float jumpLockoutTimer = 0f;
+
+    [Header("Extended Fall & Proximity Landing Settings")]
+    [Tooltip("Minimum airtime in seconds before switching from standard jump to the extended falling loop.")]
+    public float fallThresholdTime = 0.35f;
+    [Tooltip("Downward distance to scan for ground while falling to trigger the 4 mid-air landing anticipation frames.")]
+    public float landingProximityDistance = 1.8f;
+    private float airTimeCounter = 0f;
+    private bool hasTriggeredStartLanding = false;
+    private bool isFallingState = false;
 
     private float lastLeftTapTime = -10f;
     private float lastRightTapTime = -10f;
@@ -110,6 +120,16 @@ public class move : MonoBehaviour
         }
 
         initialAbsScale = new Vector3(Mathf.Abs(transform.localScale.x), Mathf.Abs(transform.localScale.y), Mathf.Abs(transform.localScale.z));
+
+        // Enforce Start Dash Run full duration to match 23-frame animation
+        if (dashDuration > 0.6f || dashDuration < 0.3f)
+        {
+            dashDuration = 0.45f;
+        }
+        if (dashSpeed < 18f)
+        {
+            dashSpeed = 22f;
+        }
         if (initialAbsScale == Vector3.zero) initialAbsScale = Vector3.one;
 
         boxCollider = GetComponent<BoxCollider2D>();
@@ -126,9 +146,34 @@ public class move : MonoBehaviour
     [Tooltip("If true, initializes Lumi companion orb. Set to false for BasePlayer tutorial skin.")]
     public bool enableOrbCompanion = true;
 
-    private void EnsureLumiCompanionInitialized()
+    [Tooltip("If true, initializes the Nyxaris Tutorial Guide Orb during the tutorial.")]
+    public bool enableNyxarisTutorialOrb = true;
+
+    public void EnsureLumiCompanionInitialized()
     {
-        if (!enableOrbCompanion) return;
+        bool isTutorial = string.Equals(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name, "TutorialScene", System.StringComparison.OrdinalIgnoreCase);
+
+        // 1. Initialize Nyxaris Tutorial Guide in TutorialScene
+        if ((isTutorial || enableNyxarisTutorialOrb) && NyxarisOrbGuide.Instance == null)
+        {
+            GameObject existingLocations = GameObject.Find("Nyxaris Guide Locations");
+            if (existingLocations == null) existingLocations = GameObject.Find("Nyxaris Guide locations");
+            if (existingLocations != null)
+            {
+                if (existingLocations.GetComponent<NyxarisOrbGuide>() == null)
+                    existingLocations.AddComponent<NyxarisOrbGuide>();
+                Debug.Log("[move] Bound Nyxaris Orb Guide to existing 'Nyxaris Guide Locations' hierarchy.");
+            }
+            else
+            {
+                GameObject nyxarisGO = new GameObject("Nyxaris_Guide_Master");
+                nyxarisGO.AddComponent<NyxarisOrbGuide>();
+                Debug.Log("[move] Initialized Nyxaris Orb Guide Master for Tutorial.");
+            }
+        }
+
+        // 2. In non-tutorial scenes, initialize Lumi companion if enabled
+        if (!enableOrbCompanion || isTutorial) return;
 
         if (OrbInventorySystem.Instance == null)
         {
@@ -178,12 +223,12 @@ public class move : MonoBehaviour
         }
 
         float horizontalInput = Input.GetAxisRaw("Horizontal");
-        if (horizontalInput != 0)
+        if (horizontalInput != 0 && !isDashing)
         {
             lastFacingSign = Mathf.Sign(horizontalInput);
         }
 
-        // Handle active dash
+        // Handle active dash burst: Snappy 0.45s dash that cleanly flows into Fall (air) or Run (ground)
         if (isDashing)
         {
             dashTimeLeft -= Time.deltaTime;
@@ -191,39 +236,78 @@ public class move : MonoBehaviour
             {
                 isDashing = false;
                 rb.gravityScale = gravityScale; // Restore gravity
-                rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
 
-                if (anim != null)
+                // Use a fresh physics check instead of the stale isGrounded flag
+                bool actuallyGrounded = CheckIsGrounded();
+
+                if (!actuallyGrounded)
                 {
-                    var stateInfo = anim.GetCurrentAnimatorStateInfo(0);
-                    if (stateInfo.IsName("Dash") || stateInfo.IsName("dash"))
+                    // Air dash completed: Force into falling animation immediately!
+                    isGrounded = false;
+                    groundedGraceTimer = 0f; // Clear stale grace timer
+                    isFallingState = true;
+                    hasTriggeredStartLanding = false;
+                    airTimeCounter = 0.25f; // Ready for proximity landing detection
+                    isDoubleTapRunning = false;
+                    if (anim != null)
                     {
-                        if (!isGrounded)
+                        try
                         {
-                            if (anim.HasState(0, Animator.StringToHash("jump"))) anim.Play("jump");
-                            else if (anim.HasState(0, Animator.StringToHash("Jump"))) anim.Play("Jump");
+                            anim.SetBool("isJumping", false);
+                            anim.SetBool("isWalking", false);
+                            anim.SetBool("isRunning", false);
+                            anim.SetBool("isFalling", true);
+                            if (anim.HasState(0, Animator.StringToHash("falling"))) anim.Play("falling", 0, 0f);
+                            else if (anim.HasState(0, Animator.StringToHash("Falling"))) anim.Play("Falling", 0, 0f);
+                            else if (anim.HasState(0, Animator.StringToHash("magefalling"))) anim.Play("magefalling", 0, 0f);
                         }
-                        else if (isDoubleTapRunning && horizontalInput != 0)
+                        catch (System.Exception) { }
+                    }
+                }
+                else if (isDoubleTapRunning && horizontalInput != 0)
+                {
+                    // Ground dash completed with movement held: flow directly into continuous Run!
+                    rb.linearVelocity = new Vector2(horizontalInput * moveSpeed * runSpeedMultiplier, rb.linearVelocity.y);
+                    if (anim != null)
+                    {
+                        try
                         {
-                            if (anim.HasState(0, Animator.StringToHash("Run"))) anim.Play("Run");
-                            else if (anim.HasState(0, Animator.StringToHash("run"))) anim.Play("run");
+                            anim.SetBool("isRunning", true);
+                            if (anim.HasState(0, Animator.StringToHash("Run"))) anim.Play("Run", 0, 0f);
+                            else if (anim.HasState(0, Animator.StringToHash("run"))) anim.Play("run", 0, 0f);
                         }
-                        else if (horizontalInput != 0)
+                        catch (System.Exception) { }
+                    }
+                }
+                else
+                {
+                    // Ground dash completed without holding direction: halt in idle
+                    isDoubleTapRunning = false;
+                    rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+                    if (anim != null)
+                    {
+                        try
                         {
-                            if (anim.HasState(0, Animator.StringToHash("walk"))) anim.Play("walk");
-                            else if (anim.HasState(0, Animator.StringToHash("Walk"))) anim.Play("Walk");
+                            if (horizontalInput != 0)
+                            {
+                                if (anim.HasState(0, Animator.StringToHash("walk"))) anim.Play("walk", 0, 0f);
+                            }
+                            else
+                            {
+                                if (anim.HasState(0, Animator.StringToHash("idle"))) anim.Play("idle", 0, 0f);
+                            }
                         }
-                        else
-                        {
-                            if (anim.HasState(0, Animator.StringToHash("idle"))) anim.Play("idle");
-                            else if (anim.HasState(0, Animator.StringToHash("Idle"))) anim.Play("Idle");
-                        }
+                        catch (System.Exception) { }
                     }
                 }
             }
             else
             {
-                rb.linearVelocity = new Vector2(lastFacingSign * dashSpeed, 0f); // zero gravity/vertical movement during dash
+                // Dynamic speed curve across the 23-frame dash: starts explosive (22) and smoothly blends into top run speed (14)
+                float progress = 1f - (dashTimeLeft / dashDuration);
+                float targetRunSpeed = moveSpeed * runSpeedMultiplier;
+                float currentBurstSpeed = Mathf.Lerp(dashSpeed, targetRunSpeed, progress);
+                rb.linearVelocity = new Vector2(lastFacingSign * currentBurstSpeed, 0f);
                 return;
             }
         }
@@ -266,36 +350,88 @@ public class move : MonoBehaviour
             rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
             if (anim != null)
             {
-                anim.SetBool("isWalking", false);
-                anim.SetBool("isRunning", false);
-                anim.SetBool("isBlob", false);
-                anim.SetBool("isJumping", !isGrounded);
+                try
+                {
+                    anim.SetBool("isWalking", false);
+                    anim.SetBool("isRunning", false);
+                    anim.SetBool("isBlob", false);
+                    anim.SetBool("isJumping", !isGrounded);
+                }
+                catch (System.Exception) { }
             }
             return;
         }
 
-        // Handle double-tap detection for running (holding Left or Right / A or D)
-        bool leftKeyDown = Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A) || (horizontalInput < -0.1f && prevHorizontalInput >= -0.1f);
-        bool rightKeyDown = Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D) || (horizontalInput > 0.1f && prevHorizontalInput <= 0.1f);
+                // Handle double-tap detection: Double-tap initiates explosive Start Dash Run; holding sustains continuous Run
+        bool leftKeyDown = Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A);
+        bool rightKeyDown = Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D);
 
         if (leftKeyDown)
         {
-            if (Time.time - lastLeftTapTime <= doubleTapThreshold && lastTapDirection == -1)
+            float timeSinceLastLeft = Time.time - lastLeftTapTime;
+            if (timeSinceLastLeft <= doubleTapThreshold && lastTapDirection == -1 && dashCooldownTimer <= 0f && !isBlobForm)
             {
                 isDoubleTapRunning = true;
+                isDashing = true;
+                dashTimeLeft = dashDuration;
+                dashCooldownTimer = dashCooldown;
+                rb.gravityScale = 0f;
+                rb.linearVelocity = new Vector2(-1f * dashSpeed, 0f);
+                lastFacingSign = -1f;
+                if (PlayerCombatJuice.Instance != null)
+                {
+                    // Dash stretch disabled to maintain stable frame scale
+                }
+                if (anim != null)
+                {
+                    try
+                    {
+                        anim.SetTrigger("dash");
+                        anim.Play("Dash", 0, 0f);
+                    }
+                    catch (System.Exception) { }
+                }
+                lastLeftTapTime = -10f; // Reset to prevent triple-tap re-trigger
             }
-            lastLeftTapTime = Time.time;
-            lastTapDirection = -1;
+            else
+            {
+                lastLeftTapTime = Time.time;
+                lastTapDirection = -1;
+            }
         }
 
         if (rightKeyDown)
         {
-            if (Time.time - lastRightTapTime <= doubleTapThreshold && lastTapDirection == 1)
+            float timeSinceLastRight = Time.time - lastRightTapTime;
+            if (timeSinceLastRight <= doubleTapThreshold && lastTapDirection == 1 && dashCooldownTimer <= 0f && !isBlobForm)
             {
                 isDoubleTapRunning = true;
+                isDashing = true;
+                dashTimeLeft = dashDuration;
+                dashCooldownTimer = dashCooldown;
+                rb.gravityScale = 0f;
+                rb.linearVelocity = new Vector2(1f * dashSpeed, 0f);
+                lastFacingSign = 1f;
+                if (PlayerCombatJuice.Instance != null)
+                {
+                    // Dash stretch disabled to maintain stable frame scale
+                }
+                if (anim != null)
+                {
+                    try
+                    {
+                        anim.SetTrigger("dash");
+                        anim.Play("Dash", 0, 0f);
+                    }
+                    catch (System.Exception) { }
+                }
+                lastRightTapTime = -10f; // Reset to prevent triple-tap re-trigger
             }
-            lastRightTapTime = Time.time;
-            lastTapDirection = 1;
+            else
+            {
+                lastRightTapTime = Time.time;
+                lastTapDirection = 1;
+            }
         }
 
         prevHorizontalInput = horizontalInput;
@@ -310,8 +446,9 @@ public class move : MonoBehaviour
         bool isRunning = isMoving && isDoubleTapRunning && !isBlobForm;
         bool isWalking = isMoving && !isDoubleTapRunning && !isBlobForm;
 
-        // 👇 Check if pressing M AND moving left or right
-        if (Input.GetKey(KeyCode.M) && horizontalInput != 0)
+        // 👇 Check if pressing M or S/DownArrow AND moving left or right
+        bool blobInputHeld = (Input.GetKey(KeyCode.M) || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow));
+        if (blobInputHeld && horizontalInput != 0 && !isDashing)
         {
             isBlobForm = true;
         }
@@ -330,12 +467,16 @@ public class move : MonoBehaviour
             rb.linearVelocity = new Vector2(lastFacingSign * dashSpeed, 0f);
             if (PlayerCombatJuice.Instance != null)
             {
-                PlayerCombatJuice.Instance.TriggerDashStretch();
+                // Dash stretch disabled to maintain stable frame scale
             }
             if (anim != null)
             {
-                anim.SetTrigger("dash");
-                anim.Play("Dash", 0, 0f);
+                try
+                {
+                    anim.SetTrigger("dash");
+                    anim.Play("Dash", 0, 0f);
+                }
+                catch (System.Exception) { }
             }
             return;
         }
@@ -358,17 +499,40 @@ public class move : MonoBehaviour
         bool combatActive = MageCombat.Instance != null && MageCombat.Instance.IsAttacking;
         if (anim != null && !combatActive)
         {
-            bool hasWalkParam = HasAnimatorParameter(anim, "isWalking");
-            anim.SetBool("isWalking", isWalking);
-            if (hasWalkParam)
+            try
             {
-                anim.SetBool("isRunning", isRunning);
+                bool isDescending = !isGrounded && !isDashing && (rb != null && rb.linearVelocity.y <= 0.05f);
+                bool isAscendingJump = !isGrounded && !isDashing && (rb != null && rb.linearVelocity.y > 0.05f);
+
+                // Set all core locomotion and airborne bools every frame
+                anim.SetBool("isWalking", isGrounded && isWalking);
+                anim.SetBool("isRunning", isGrounded && isRunning);
+                anim.SetBool("isBlob", isBlobForm);
+                anim.SetBool("isJumping", isAscendingJump);
+                anim.SetBool("isFalling", isDescending);
+
+                if (isDescending && !hasTriggeredStartLanding)
+                {
+                    var curState = anim.GetCurrentAnimatorStateInfo(0);
+                    if (!curState.IsName("falling") && !curState.IsName("Falling") && !curState.IsName("magefalling") && !curState.IsName("startLanding") && !curState.IsName("Dash"))
+                    {
+                        if (anim.HasState(0, Animator.StringToHash("falling"))) anim.Play("falling", 0, 0f);
+                    }
+                }
+
+                if (isBlobForm)
+                {
+                    if (anim.HasState(0, Animator.StringToHash("blob")))
+                    {
+                        var curState = anim.GetCurrentAnimatorStateInfo(0);
+                        if (!curState.IsName("blob"))
+                        {
+                            anim.Play("blob", 0, 0f);
+                        }
+                    }
+                }
             }
-            else
-            {
-                anim.SetBool("isRunning", isMoving && !isBlobForm);
-            }
-            anim.SetBool("isBlob", isBlobForm);
+            catch (System.Exception) { }
         }
 
         // Flip sprite based on movement direction (preserving exact initial inspector scales)
@@ -399,7 +563,7 @@ public class move : MonoBehaviour
         }
 
         // 👇 Jump logic (disable jumping while in blob form)
-        if ((Input.GetButtonDown("Jump") || Input.GetKeyDown(KeyCode.Space)) && isGrounded && !isBlobForm)
+        if ((Input.GetButtonDown("Jump") || Input.GetKeyDown(KeyCode.Space)) && isGrounded && !isBlobForm && !isDashing)
         {
             jumpLockoutTimer = jumpLockoutDuration; // Lockout ground checks for initial launch phase so full animation plays
             groundedGraceTimer = 0f; // Reset grace timer on jump
@@ -414,57 +578,154 @@ public class move : MonoBehaviour
                 float actualDist = (hit.collider != null && !hit.collider.isTrigger && hit.collider.gameObject != gameObject) ? Mathf.Max(0.5f, hit.distance - 0.5f) : maxDist;
                 Vector2 targetPos = startPos + new Vector2(0f, actualDist);
 
-                // Execute Pixelated Dissolve & Rebuild Visual FX
+                // Execute Pixelated Dissolve & Rebuild Visual FX -> instantly enter 'falling' state on arrival
                 if (dissolveFX != null)
                 {
                     dissolveFX.PlayDissolveTeleport(startPos, targetPos, () => {
-                        rb.linearVelocity = new Vector2(rb.linearVelocity.x, 3.5f); // Natural air float momentum
+                        rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0.5f); // Smooth downward descent transition
+                        isFallingState = true;
+                        hasTriggeredStartLanding = false;
                         if (anim != null)
                         {
-                            anim.SetBool("isJumping", true);
-                            if (anim.HasState(0, Animator.StringToHash("jump")))
-                                anim.Play("jump", 0, 0f);
-                            else if (anim.HasState(0, Animator.StringToHash("Jump")))
-                                anim.Play("Jump", 0, 0f);
-                            else if (anim.HasState(0, Animator.StringToHash("air")))
-                                anim.Play("air", 0, 0f);
+                            try
+                            {
+                                anim.SetBool("isJumping", false);
+                                anim.SetBool("isFalling", true);
+                                if (anim.HasState(0, Animator.StringToHash("falling")))
+                                    anim.Play("falling", 0, 0f);
+                                else if (anim.HasState(0, Animator.StringToHash("Falling")))
+                                    anim.Play("Falling", 0, 0f);
+                                else if (anim.HasState(0, Animator.StringToHash("magefalling")))
+                                    anim.Play("magefalling", 0, 0f);
+                            }
+                            catch (System.Exception) { }
                         }
                     });
                 }
                 else
                 {
                     transform.position = targetPos;
-                    rb.linearVelocity = new Vector2(rb.linearVelocity.x, 3.5f);
+                    rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0.5f);
+                    isFallingState = true;
+                    hasTriggeredStartLanding = false;
+                    if (anim != null)
+                    {
+                        try
+                        {
+                            anim.SetBool("isJumping", false);
+                            anim.SetBool("isFalling", true);
+                            if (anim.HasState(0, Animator.StringToHash("falling")))
+                                anim.Play("falling", 0, 0f);
+                        }
+                        catch (System.Exception) { }
+                    }
                 }
             }
             else
             {
-                // Standard physics jump
+                // Standard physics jump: Ascend with physics and play jump liftoff
                 rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
-            }
 
-            if (PlayerCombatJuice.Instance != null)
-            {
-                PlayerCombatJuice.Instance.TriggerJumpStretch();
-            }
+                if (PlayerCombatJuice.Instance != null)
+                {
+                    PlayerCombatJuice.Instance.TriggerJumpStretch();
+                }
 
-            if (anim != null)
-            {
-                anim.SetBool("isJumping", true);
-                anim.SetTrigger("jump");
-                anim.SetTrigger("Jump");
-                if (anim.HasState(0, Animator.StringToHash("jump")))
-                    anim.Play("jump", 0, 0f);
-                else if (anim.HasState(0, Animator.StringToHash("Jump")))
-                    anim.Play("Jump", 0, 0f);
-                else if (anim.HasState(0, Animator.StringToHash("air")))
-                    anim.Play("air", 0, 0f);
+                if (anim != null)
+                {
+                    try
+                    {
+                        anim.SetBool("isJumping", true);
+                        anim.SetBool("isFalling", false);
+                        anim.SetTrigger("jump");
+                        anim.SetTrigger("Jump");
+                        if (anim.HasState(0, Animator.StringToHash("jump")))
+                            anim.Play("jump", 0, 0f);
+                        else if (anim.HasState(0, Animator.StringToHash("Jump")))
+                            anim.Play("Jump", 0, 0f);
+                        else if (anim.HasState(0, Animator.StringToHash("air")))
+                            anim.Play("air", 0, 0f);
+                    }
+                    catch (System.Exception) { }
+                }
             }
         }
 
-        if (!combatActive && anim != null)
+        // isJumping is managed strictly by ascending phase / apex transitions
+        // to allow smooth transition into falling and startLanding without AnyState interruptions.
+
+        // --- Apex Fall & Pre-Landing Evaluation ---
+        // Any form of descending (walked off ledge, post-dash, post-jump apex) = falling animation
+        if (!isGrounded && !isDashing)
         {
-            anim.SetBool("isJumping", !isGrounded);
+            airTimeCounter += Time.deltaTime;
+
+            // 1. Universal Descent Rule: Any downward velocity or zero-gravity apex = immediately enter 'falling'
+            if (rb != null && rb.linearVelocity.y <= 0.05f && !hasTriggeredStartLanding)
+            {
+                if (!isFallingState)
+                {
+                    isFallingState = true;
+                    if (anim != null && !combatActive)
+                    {
+                        try
+                        {
+                            anim.SetBool("isJumping", false);
+                            anim.SetBool("isFalling", true);
+                            if (anim.HasState(0, Animator.StringToHash("falling"))) anim.Play("falling", 0, 0f);
+                            else if (anim.HasState(0, Animator.StringToHash("Falling"))) anim.Play("Falling", 0, 0f);
+                            else if (anim.HasState(0, Animator.StringToHash("magefalling"))) anim.Play("magefalling", 0, 0f);
+                        }
+                        catch (System.Exception) { }
+                    }
+                }
+            }
+
+            // 2. Pre-Landing for Drops: Anticipate ground contact while airborne so Frames 1-4 play in air and Frame 5 touches down
+            if (rb != null && rb.linearVelocity.y < -1.0f && airTimeCounter >= 0.2f && !hasTriggeredStartLanding)
+            {
+                int groundMask = ~LayerMask.GetMask("Player", "Ignore Raycast");
+                Vector2 rayOrigin = (Vector2)transform.position + feetOffset;
+                RaycastHit2D hit = Physics2D.Raycast(rayOrigin, Vector2.down, landingProximityDistance, groundMask);
+                if (hit.collider != null && !hit.collider.isTrigger && !hit.collider.CompareTag("enemy") && hit.collider.gameObject != gameObject)
+                {
+                    hasTriggeredStartLanding = true;
+                    if (anim != null && !combatActive)
+                    {
+                        try
+                        {
+                            anim.SetBool("isJumping", false);
+                            anim.SetBool("isFalling", false);
+                            anim.SetTrigger("startLanding");
+                            anim.SetTrigger("StartLanding");
+                            if (anim.HasState(0, Animator.StringToHash("startLanding"))) anim.Play("startLanding", 0, 0f);
+                            else if (anim.HasState(0, Animator.StringToHash("StartLanding"))) anim.Play("StartLanding", 0, 0f);
+                            else if (anim.HasState(0, Animator.StringToHash("magestartlanding"))) anim.Play("magestartlanding", 0, 0f);
+                            else if (anim.HasState(0, Animator.StringToHash("land"))) anim.Play("land", 0, 0f);
+                            else if (anim.HasState(0, Animator.StringToHash("Land"))) anim.Play("Land", 0, 0f);
+                        }
+                        catch (System.Exception) { }
+                    }
+                }
+            }
+        }
+        else
+        {
+            airTimeCounter = 0f;
+            hasTriggeredStartLanding = false;
+            if (isFallingState)
+            {
+                isFallingState = false;
+                if (anim != null)
+                {
+                    try
+                    {
+                        anim.SetBool("isJumping", false);
+                        anim.SetBool("isFalling", false);
+                    }
+                    catch (System.Exception) { }
+                }
+            }
         }
 
         // Dynamic Gravity Modifiers for Snappy 2D Jump Physics
@@ -484,22 +745,37 @@ public class move : MonoBehaviour
             }
         }
 
-        // Safeguard: Instantly force exit from jump state when grounded
+        // Safeguard & Fluid cancel: Instantly transition from jump/landing states when grounded
         // BUT skip during active attacks so we don't rip the player out of attack animations
         if (isGrounded && jumpLockoutTimer <= 0f && anim != null && !combatActive)
         {
             var stateInfo = anim.GetCurrentAnimatorStateInfo(0);
-            if (stateInfo.IsName("jump") || stateInfo.IsName("Jump"))
+            bool inAirOrLandingState = stateInfo.IsName("jump") || stateInfo.IsName("Jump") ||
+                                       stateInfo.IsName("falling") || stateInfo.IsName("Falling") || stateInfo.IsName("magefalling") ||
+                                       stateInfo.IsName("startLanding") || stateInfo.IsName("StartLanding") || stateInfo.IsName("magestartlanding") ||
+                                       stateInfo.IsName("land") || stateInfo.IsName("Land");
+
+            if (inAirOrLandingState)
             {
-                if (isRunning)
+                // If holding horizontal movement on touchdown (Frame 5), seamlessly cancel into run/walk immediately!
+                if (isRunning && horizontalInput != 0)
                 {
                     if (anim.HasState(0, Animator.StringToHash("Run"))) anim.Play("Run");
                     else if (anim.HasState(0, Animator.StringToHash("run"))) anim.Play("run");
                 }
-                else if (isWalking)
+                else if (isWalking && horizontalInput != 0)
                 {
                     if (anim.HasState(0, Animator.StringToHash("walk"))) anim.Play("walk");
                     else if (anim.HasState(0, Animator.StringToHash("Walk"))) anim.Play("Walk");
+                }
+                else if (stateInfo.IsName("startLanding") || stateInfo.IsName("StartLanding") || stateInfo.IsName("magestartlanding") || stateInfo.IsName("land") || stateInfo.IsName("Land"))
+                {
+                    // Allow full 7-frame landing cushion to finish before returning to idle
+                    if (stateInfo.normalizedTime >= 0.9f)
+                    {
+                        if (anim.HasState(0, Animator.StringToHash("idle"))) anim.Play("idle");
+                        else if (anim.HasState(0, Animator.StringToHash("Idle"))) anim.Play("Idle");
+                    }
                 }
                 else
                 {
@@ -767,6 +1043,9 @@ public class move : MonoBehaviour
             isGrounded = CheckIsGrounded();
         }
     }
+
+    
+
 
     private bool HasAnimatorParameter(Animator animator, string paramName)
     {

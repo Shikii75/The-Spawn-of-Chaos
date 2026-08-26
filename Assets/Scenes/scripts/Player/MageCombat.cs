@@ -121,6 +121,7 @@ public class MageCombat : MonoBehaviour
         if (NyxarisManager.Instance != null && NyxarisManager.Instance.mainInterfacePanel != null && NyxarisManager.Instance.mainInterfacePanel.activeSelf) return;
         if (ShopUI.Instance != null && ShopUI.Instance.IsShopActive) return;
         if (NPCDialogueUI.Instance != null && NPCDialogueUI.Instance.IsDialogueActive) return;
+        if (move.Instance != null && move.Instance.IsDashing) return;
 
         bool isAttack1Active = IsAttack1Playing();
         bool isSecondHitActive = IsSecondHitPlaying();

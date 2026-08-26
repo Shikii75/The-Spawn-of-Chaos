@@ -38,7 +38,7 @@ public class LightOrbCompanion : MonoBehaviour
     public float hoverAmplitude = 0.18f;
 
     [Header("Grapple Hook Settings")]
-    public KeyCode grappleKey = KeyCode.Q;
+    public KeyCode grappleKey = KeyCode.E;
     public float grappleSpeed = 20f;
     public float grappleFlingForce = 14f;
     public float maxGrappleDistance = 15f;
@@ -58,7 +58,7 @@ public class LightOrbCompanion : MonoBehaviour
     public float shieldDamageReduction = 0.75f;
 
     [Header("Orb Body Trace Attack ('X' Key)")]
-    public KeyCode orbAttackKey = KeyCode.X;
+    public KeyCode orbAttackKey = KeyCode.V;
     public int orbAttackDamage = 35;
     public float orbAttackSpeed = 28f;
     public float orbAttackMaxDistance = 14f;
@@ -487,6 +487,8 @@ public class LightOrbCompanion : MonoBehaviour
 
     private void Update()
     {
+
+
         if (playerTransform == null)
         {
             FindPlayerReferences();
@@ -576,12 +578,7 @@ public class LightOrbCompanion : MonoBehaviour
                 TriggerPopBounce(1.35f);
                 PerformManaDrainHeal();
             }
-            // Light Spear Parkour ('F' Key Press)
-            else if (Input.GetKeyDown(KeyCode.F))
-            {
-                TriggerPopBounce(1.4f);
-                SpawnLightSpear();
-            }
+
             else if (isCaveMode)
             {
                 currentState = LightOrbState.CaveGuide;
@@ -1295,20 +1292,7 @@ public class LightOrbCompanion : MonoBehaviour
         Destroy(healAuraGO);
     }
 
-    private void SpawnLightSpear()
-    {
-        currentState = LightOrbState.LightSpearParkour;
-
-        float facingDir = (playerTransform != null && playerTransform.localScale.x < 0) ? -1.0f : 1.0f;
-        Vector3 spawnPos = playerTransform.position + new Vector3(facingDir * 2.2f, 0.2f, 0f);
-
-        GameObject spearGO = new GameObject("LightSpearPlatform");
-        spearGO.transform.position = spawnPos;
-        spearGO.transform.localScale = new Vector3(facingDir, 1f, 1f);
-        spearGO.AddComponent<LightSpearPlatform>();
-
-        Debug.Log("Lumi: Summoned Parkour Light Spear Platform!");
-    }
+    // Legacy light spear purged
 
     private void StartBodyTraceAttack()
     {

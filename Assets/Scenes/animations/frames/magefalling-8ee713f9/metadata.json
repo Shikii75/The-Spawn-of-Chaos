@@ -1,0 +1,22 @@
+{
+  "id": "magefalling-8ee713f9",
+  "slug": "magefalling",
+  "label": "magefalling",
+  "video_source": "source.MP4",
+  "frame_interval_sec": 0.2,
+  "extract_stats": {
+    "frame_count": 46,
+    "source_frames_read": 227,
+    "effective_fps_estimate": 24.029640084685955,
+    "stride": 5,
+    "interval_requested_sec": 0.2,
+    "duration_approx_sec": 9.446666666666667,
+    "pattern": "frame_%03d.png"
+  },
+  "raw_frame_count": 46,
+  "clean_frame_count": 46,
+  "frame_pattern": "frame_%03d.png",
+  "updated_at": "2026-08-26T11:48:42.308565+00:00",
+  "video_relpath": "source.MP4",
+  "bg_removal_method": "rembg"
+}

@@ -169,6 +169,12 @@ namespace SpawnOfChaos.NPC
             float absZ = Mathf.Max(0.1f, initialAbsScale.z);
 
             transform.localScale = new Vector3(sign * absX, absY, absZ);
+
+            // Counteract parent horizontal flip so prompt UI and text are NEVER mirrored
+            if (promptUIGO != null)
+            {
+                promptUIGO.transform.localScale = new Vector3(Mathf.Sign(transform.localScale.x), 1f, 1f);
+            }
         }
 
         private void CreateWorldSpacePromptUI()
@@ -176,6 +182,7 @@ namespace SpawnOfChaos.NPC
             promptUIGO = new GameObject("Genbu_PromptUI");
             promptUIGO.transform.SetParent(transform, false);
             promptUIGO.transform.localPosition = new Vector3(0f, promptYOffset, 0f);
+            promptUIGO.transform.localScale = new Vector3(Mathf.Sign(transform.localScale.x), 1f, 1f);
 
             // Glowing Dark-Arcane Capsule Background
             GameObject bgGO = new GameObject("PromptBg");
@@ -219,11 +226,12 @@ namespace SpawnOfChaos.NPC
                 if (playerTransform == null) return;
             }
 
-            // Floating prompt bobbing animation
+            // Floating prompt bobbing animation and unmirrored scale maintenance
             if (promptUIGO != null && promptUIGO.activeSelf)
             {
                 float floatY = promptYOffset + Mathf.Sin(Time.time * 3f) * 0.08f;
                 promptUIGO.transform.localPosition = new Vector3(0f, floatY, 0f);
+                promptUIGO.transform.localScale = new Vector3(Mathf.Sign(transform.localScale.x), 1f, 1f);
             }
 
             switch (currentState)

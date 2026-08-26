@@ -1,0 +1,22 @@
+{
+  "id": "magejump-8ef82184",
+  "slug": "magejump",
+  "label": "magejump",
+  "video_source": "source.MP4",
+  "frame_interval_sec": 0.1,
+  "extract_stats": {
+    "frame_count": 13,
+    "source_frames_read": 25,
+    "effective_fps_estimate": 24.549918166939445,
+    "stride": 2,
+    "interval_requested_sec": 0.1,
+    "duration_approx_sec": 1.0183333333333333,
+    "pattern": "frame_%03d.png"
+  },
+  "raw_frame_count": 13,
+  "clean_frame_count": 13,
+  "frame_pattern": "frame_%03d.png",
+  "updated_at": "2026-08-26T11:38:23.768670+00:00",
+  "video_relpath": "source.MP4",
+  "bg_removal_method": "rembg"
+}

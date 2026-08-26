@@ -842,4 +842,148 @@ public class NyxarisManager : MonoBehaviour
         if (explainingSprite == null) explainingSprite = Resources.Load<Sprite>("NyxarisExpressions/explaining");
         if (cuteSprite == null) cuteSprite = Resources.Load<Sprite>("NyxarisExpressions/cutely-annoyed");
     }
+
+    [System.Serializable]
+    public class CinematicLine
+    {
+        public string animationKey;
+        public string text;
+
+        public CinematicLine(string anim, string t)
+        {
+            animationKey = anim;
+            text = t;
+        }
+    }
+
+    public static NyxarisManager EnsureInstanceInScene()
+    {
+        if (Instance != null) return Instance;
+
+        GameObject prefab = Resources.Load<GameObject>("Prefabs/MainInterface") ?? 
+                            Resources.Load<GameObject>("MainInterface");
+        if (prefab != null)
+        {
+            GameObject go = Object.Instantiate(prefab);
+            go.name = "MainInterface";
+            return go.GetComponentInChildren<NyxarisManager>(true);
+        }
+        return null;
+    }
+
+    private Coroutine cinematicCoroutine;
+
+    /// <summary>
+    /// Starts a one-way cinematic dialogue sequence where player presses [E] to advance.
+    /// Input typing is disabled, and animated character portraits react to each line.
+    /// </summary>
+    public void StartCinematicStoryDialogue(CinematicLine[] lines, System.Action onComplete)
+    {
+        if (cinematicCoroutine != null) StopCoroutine(cinematicCoroutine);
+        cinematicCoroutine = StartCoroutine(CinematicStoryRoutine(lines, onComplete));
+    }
+
+    private IEnumerator CinematicStoryRoutine(CinematicLine[] lines, System.Action onComplete)
+    {
+        try
+        {
+            if (mainInterfacePanel != null)
+            {
+                mainInterfacePanel.SetActive(true);
+                Canvas c = mainInterfacePanel.GetComponentInParent<Canvas>();
+                if (c != null)
+                {
+                    c.sortingOrder = 950;
+                    c.renderMode = RenderMode.ScreenSpaceOverlay;
+                }
+            }
+
+            EnsureCanvasScaling();
+            EnsureDefaultPortrait();
+
+            // Hide message input & buttons during cinematic dialogue
+            if (messageInput != null) messageInput.gameObject.SetActive(false);
+
+            Transform uiSpace = mainInterfacePanel != null ? mainInterfacePanel.transform.Find("UIspace") : null;
+            if (uiSpace != null)
+            {
+                Transform sendBtn = uiSpace.Find("SendButton") ?? uiSpace.Find("SubmitButton");
+                if (sendBtn != null) sendBtn.gameObject.SetActive(false);
+            }
+
+            // Lock player movement during conversation
+            move.ExternalMovementLock = true;
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                var line = lines[i];
+
+                // 1. Play Portrait Expression Animation
+                if (frameAnimator != null && !string.IsNullOrEmpty(line.animationKey))
+                {
+                    frameAnimator.PlayAnimation(line.animationKey, 14f);
+                }
+                else
+                {
+                    SetEmotionFallback(line.animationKey);
+                }
+
+                // 2. Typewriter line
+                if (dialogueText != null) dialogueText.text = "";
+                string fullText = line.text;
+                int charIndex = 0;
+                float charInterval = 0.02f;
+
+                while (charIndex < fullText.Length)
+                {
+                    if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || Input.GetMouseButtonDown(0))
+                    {
+                        if (dialogueText != null) dialogueText.text = fullText;
+                        yield return new WaitForSeconds(0.12f);
+                        break;
+                    }
+
+                    if (dialogueText != null) dialogueText.text += fullText[charIndex];
+                    charIndex++;
+                    yield return new WaitForSeconds(charInterval);
+                }
+
+                if (dialogueText != null)
+                {
+                    dialogueText.text = fullText + "\n\n<color=#D47BFF><size=70%>► Press [E] to continue</size></color>";
+                }
+
+                // 3. Wait for Player to press [E] or any key to advance
+                yield return new WaitForSeconds(0.1f);
+                float lineWaitTimer = 0f;
+                while (lineWaitTimer < 8f)
+                {
+                    lineWaitTimer += Time.deltaTime;
+                    if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || Input.GetMouseButtonDown(0))
+                    {
+                        break;
+                    }
+                    yield return null;
+                }
+                yield return new WaitForSeconds(0.08f);
+            }
+        }
+        finally
+        {
+            HideInterface();
+            move.ExternalMovementLock = false;
+            onComplete?.Invoke();
+        }
+    }
+
+    void OnDisable()
+    {
+        move.ExternalMovementLock = false;
+    }
+
+    void OnDestroy()
+    {
+        move.ExternalMovementLock = false;
+    }
+
 }

@@ -5,7 +5,7 @@ using UnityEngine;
 namespace SpawnOfChaos.Props
 {
     /// <summary>
-    /// PurpleWater2D - Interactive 2D Spring-Mesh Purple Water System.
+    /// PurpleWater2D - Interactive 2D Spring-Mesh Pink Water System.
     /// Simulates real-time Hooke's Law spring node surface wave physics, velocity-based wake trails,
     /// entry/exit splash impulses, concentric pink glow rings, and fluid buoyancy drag on submerged entities.
     /// </summary>
@@ -35,9 +35,11 @@ namespace SpawnOfChaos.Props
         public float fluidAngularDamping = 2f;
 
         [Header("Color Palette")]
-        public Color topSurfaceColor = new Color(0.85f, 0.07f, 0.49f, 0.9f); // Magenta #D8117E
-        public Color bottomDeepColor = new Color(0.14f, 0.02f, 0.22f, 0.95f); // Deep Void #240438
-        public Color foamGlowColor = new Color(0.88f, 0.25f, 0.98f, 1.0f); // Foam #E040FB
+        public Color topSurfaceColor = new Color(1.0f, 0.18f, 0.58f, 0.95f); // Luminous pink
+        public Color bottomDeepColor = new Color(0.10f, 0.015f, 0.16f, 0.98f); // Deep plum
+        public Color foamGlowColor = new Color(1.0f, 0.66f, 0.92f, 1.0f); // Soft foam highlight
+        public Color causticColor = new Color(0.84f, 0.22f, 0.72f, 1.0f); // Moving inner glow
+        public Color surfaceHighlightColor = new Color(1.0f, 0.88f, 0.96f, 1.0f); // Liquid sheen
 
         public struct SpringNode
         {
@@ -85,7 +87,11 @@ namespace SpawnOfChaos.Props
             waterMaterial.SetColor("_TopColor", topSurfaceColor);
             waterMaterial.SetColor("_BottomColor", bottomDeepColor);
             waterMaterial.SetColor("_FoamColor", foamGlowColor);
-            waterMaterial.SetFloat("_FoamHeight", 0.05f);
+            waterMaterial.SetColor("_CausticColor", causticColor);
+            waterMaterial.SetColor("_HighlightColor", surfaceHighlightColor);
+            waterMaterial.SetFloat("_FoamHeight", 0.045f);
+            waterMaterial.SetFloat("_CausticStrength", 0.16f);
+            waterMaterial.SetFloat("_SurfaceSheen", 0.3f);
 
             meshRenderer.material = waterMaterial;
             meshRenderer.sortingLayerName = "Default";

@@ -18,6 +18,8 @@ public class BreakableObject : MonoBehaviour, IDamageable
     public float dropChance = 0.5f;
 
     private bool isBroken = false;
+    public bool IsBroken => isBroken;
+    public static event System.Action<BreakableObject> OnAnyObjectBroken;
     private SpriteRenderer sr;
     private Collider2D col;
 
@@ -61,7 +63,9 @@ public class BreakableObject : MonoBehaviour, IDamageable
 
     private void Break()
     {
+        if (isBroken) return;
         isBroken = true;
+        OnAnyObjectBroken?.Invoke(this);
 
         // Spawn particles
         if (breakParticlesPrefab != null)

@@ -159,25 +159,28 @@ public class HitFeedbackManager : MonoBehaviour
 
     /// <summary>
     /// Freezes Time.timeScale for brief duration using real-time delay.
+    /// Safely guarded so multiple simultaneous hits never leave Time.timeScale frozen.
     /// </summary>
     public void TriggerHitstop(float duration)
     {
         if (duration <= 0f) return;
-        if (hitstopCoroutine != null) StopCoroutine(hitstopCoroutine);
+        // If already in a hitstop, let the existing one finish to prevent timeScale freeze
+        if (hitstopCoroutine != null) return;
         hitstopCoroutine = StartCoroutine(HitstopRoutine(duration));
     }
 
     private IEnumerator HitstopRoutine(float duration)
     {
-        float prevTimeScale = Time.timeScale;
-        // Don't freeze if already paused by PauseMenu (timeScale == 0)
-        if (prevTimeScale > 0.01f)
+        try
         {
-            Time.timeScale = 0.001f; // Near instant freeze
+            Time.timeScale = 0.001f;
             yield return new WaitForSecondsRealtime(duration);
-            Time.timeScale = 1.0f;
         }
-        hitstopCoroutine = null;
+        finally
+        {
+            Time.timeScale = 1.0f;
+            hitstopCoroutine = null;
+        }
     }
 
     /// <summary>

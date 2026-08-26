@@ -212,9 +212,9 @@ MonoBehaviour:
   useTeleportJump: 0
   teleportJumpDistance: 4.2
   blobSpeedMultiplier: 1.5
-  dashSpeed: 16
-  dashDuration: 0.2
-  dashCooldown: 0.8
+  dashSpeed: 22
+  dashDuration: 0.45
+  dashCooldown: 0.4
   invulnerableDuringDash: 1
   runSpeedMultiplier: 1.6
   doubleTapThreshold: 0.25
