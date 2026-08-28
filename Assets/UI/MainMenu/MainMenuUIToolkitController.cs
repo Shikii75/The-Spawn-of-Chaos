@@ -158,7 +158,8 @@ public class MainMenuUIToolkitController : MonoBehaviour
         BindVisualElements();
         RegisterCallbacks();
         LoadSavedSettings();
-        InitializeSpiritOrbs();
+        // Fireflies removed
+        ClearSpiritOrbs();
         PlayTitleMusic();
 
         // Start logo frame-by-frame animation
@@ -198,7 +199,7 @@ public class MainMenuUIToolkitController : MonoBehaviour
         }
 
         // Update atmospheric fireflies drifting bottom to top
-        UpdateSpiritOrbs(Time.unscaledDeltaTime);
+        // UpdateSpiritOrbs disabled
     }
 
     private void BindVisualElements()
@@ -206,6 +207,7 @@ public class MainMenuUIToolkitController : MonoBehaviour
         titleLogo = root.Q<VisualElement>("title-logo");
         ambientGlow = root.Q<VisualElement>("ambient-glow");
         orbsContainer = root.Q<VisualElement>("orbs-container");
+        if (orbsContainer != null) orbsContainer.style.display = DisplayStyle.None;
 
         ApplyLogoSize();
 
