@@ -4,8 +4,9 @@ using UnityEngine.SceneManagement;
 using TMPro;
 
 /// <summary>
-/// Pause menu with a dark fantasy / arcane aesthetic — soft glowing frames,
-/// mystical orbs, arcane rune patterns, and flowing violet energy.
+/// Pause menu with the Main Menu's Cyber-Gothic Glassmorphic aesthetic — 
+/// removes the card container box and presents sleek neon-accented cyber buttons 
+/// floating seamlessly over the misty Torii background.
 /// Triggered by P or Escape.
 /// </summary>
 public class PauseMenu : MonoBehaviour
@@ -25,22 +26,10 @@ public class PauseMenu : MonoBehaviour
     private static readonly Color NeonPurpleDim     = new Color(0.34f, 0.88f, 1f, 0.42f);
     private static readonly Color ArcaneViolet      = new Color(0.45f, 0.48f, 0.95f, 1f);
     private static readonly Color ArcaneVioletDim   = new Color(0.45f, 0.48f, 0.95f, 0.35f);
-    private static readonly Color DeepVoid          = new Color(0.025f, 0.045f, 0.11f, 0.97f);
-    private static readonly Color PanelInner        = new Color(0.035f, 0.075f, 0.15f, 0.96f);
-    private static readonly Color FrameGlow         = new Color(0.28f, 0.82f, 1f, 0.70f);
-    private static readonly Color FrameInner        = new Color(0.30f, 0.38f, 0.92f, 0.55f);
 
-    [Header("Title Screen Artwork & Button Sprites")]
-    [Tooltip("Logo sprite from the title screen. Automatically loads Assets/Scenes/art/mainmenulogo.png.")]
+    [Header("Title Screen Artwork & Sprites")]
     public Sprite logoSprite;
-    [Tooltip("Background sprite. Automatically loads Assets/Scenes/art/main_menu_bg.png.")]
     public Sprite backgroundSprite;
-    [Tooltip("Resume button sprite. Automatically loads Assets/Scenes/art/pause_resume.png or play_btn.png.")]
-    public Sprite resumeButtonSprite;
-    [Tooltip("Restart button sprite. Automatically loads Assets/Scenes/art/pause_restart.png.")]
-    public Sprite restartButtonSprite;
-    [Tooltip("Quit button sprite. Automatically loads Assets/Scenes/art/pause_quit.png or quit_btn.png.")]
-    public Sprite quitButtonSprite;
 
     private GameObject pauseOverlay;
 
@@ -61,11 +50,6 @@ public class PauseMenu : MonoBehaviour
         }
     }
 
-    void Reset()
-    {
-        AutoLoadSprites();
-    }
-
     void Awake()
     {
         Instance = this;
@@ -83,18 +67,6 @@ public class PauseMenu : MonoBehaviour
         if (backgroundSprite == null)
         {
             backgroundSprite = LoadSpriteDirectly("main_menu_bg");
-        }
-        if (resumeButtonSprite == null)
-        {
-            resumeButtonSprite = LoadSpriteDirectly("pause_resume") ?? LoadSpriteDirectly("play_btn");
-        }
-        if (restartButtonSprite == null)
-        {
-            restartButtonSprite = LoadSpriteDirectly("pause_restart");
-        }
-        if (quitButtonSprite == null)
-        {
-            quitButtonSprite = LoadSpriteDirectly("pause_quit") ?? LoadSpriteDirectly("quit_btn");
         }
     }
 
@@ -182,7 +154,7 @@ public class PauseMenu : MonoBehaviour
                 Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             Image bgImgComp = bgRT.GetComponent<Image>();
             bgImgComp.sprite = backgroundSprite;
-            bgImgComp.color = new Color(0.35f, 0.32f, 0.50f, 0.45f); // Soft dark violet overlay tint
+            bgImgComp.color = new Color(0.40f, 0.36f, 0.55f, 0.50f); // Soft dark violet overlay tint
             bgImgComp.raycastTarget = false;
         }
 
@@ -194,50 +166,17 @@ public class PauseMenu : MonoBehaviour
         Image vignetteImg = vignetteRT.GetComponent<Image>();
         vignetteImg.sprite = vignetteSprite;
         vignetteImg.raycastTarget = false;
-        vignetteImg.color = new Color(0.05f, 0.01f, 0.10f, 0.82f);
+        vignetteImg.color = new Color(0.04f, 0.01f, 0.08f, 0.85f);
 
-        // ── Layer 2: main card panel (Semi-transparent gothic glass card) ──
-        Sprite roundedSprite = CreateRoundedFrameSprite(128, 128, 24);
-        RectTransform glowRT = UIFactory.CreatePanel(
-            overlayRT, "PauseGlow",
-            new Color(0.22f, 0.78f, 1f, 0.18f),
+        // ── Layer 2: Main Content Column (NO Card Frame - Open & Seamless) ──
+        RectTransform contentColumnRT = UIFactory.CreatePanel(
+            overlayRT, "PauseContentColumn", Color.clear,
             new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
-        glowRT.sizeDelta = new Vector2(620f, 720f);
-        Image glowImg = glowRT.GetComponent<Image>();
-        glowImg.sprite = roundedSprite;
-        glowImg.type = Image.Type.Sliced;
-        glowImg.raycastTarget = false;
-
-        RectTransform panelRT = UIFactory.CreatePanel(
-            overlayRT, "PausePanel", new Color(0.04f, 0.03f, 0.09f, 0.82f),
-            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
-        panelRT.sizeDelta = new Vector2(580f, 680f);
-
-        Image panelImg = panelRT.GetComponent<Image>();
-        panelImg.sprite = roundedSprite;
-        panelImg.type = Image.Type.Sliced;
-
-        // Border ring & inner fill
-        RectTransform borderInnerRT = UIFactory.CreatePanel(
-            panelRT, "BorderInner", Color.clear,
-            Vector2.zero, Vector2.one,
-            new Vector2(2f, 2f), new Vector2(-2f, -2f));
-        Image borderInnerImg = borderInnerRT.GetComponent<Image>();
-        borderInnerImg.sprite = roundedSprite;
-        borderInnerImg.type = Image.Type.Sliced;
-        borderInnerImg.color = FrameInner;
-
-        RectTransform innerRT = UIFactory.CreatePanel(
-            panelRT, "PanelInner", new Color(0.03f, 0.05f, 0.12f, 0.88f),
-            Vector2.zero, Vector2.one,
-            new Vector2(5f, 5f), new Vector2(-5f, -5f));
-        Image innerImg = innerRT.GetComponent<Image>();
-        innerImg.sprite = roundedSprite;
-        innerImg.type = Image.Type.Sliced;
+        contentColumnRT.sizeDelta = new Vector2(440f, 760f);
 
         // Content vertical layout
-        VerticalLayoutGroup vlg = UIFactory.AddVerticalLayout(panelRT.gameObject, 12f,
-            new RectOffset(32, 32, 24, 20), TextAnchor.UpperCenter);
+        VerticalLayoutGroup vlg = UIFactory.AddVerticalLayout(contentColumnRT.gameObject, 14f,
+            new RectOffset(10, 10, 10, 10), TextAnchor.MiddleCenter);
         vlg.childControlWidth = false;
         vlg.childControlHeight = false;
         vlg.childForceExpandWidth = false;
@@ -247,122 +186,216 @@ public class PauseMenu : MonoBehaviour
         if (logoSprite != null)
         {
             GameObject logoGO = new GameObject("TitleLogo", typeof(RectTransform), typeof(Image));
-            logoGO.transform.SetParent(panelRT, false);
+            logoGO.transform.SetParent(contentColumnRT, false);
             Image logoImgComp = logoGO.GetComponent<Image>();
             logoImgComp.sprite = logoSprite;
             logoImgComp.preserveAspect = true;
             logoImgComp.raycastTarget = false;
             
             LayoutElement le = logoGO.AddComponent<LayoutElement>();
-            le.preferredWidth = 460f;
-            le.preferredHeight = 160f;
-            le.minWidth = 460f;
-            le.minHeight = 160f;
+            le.preferredWidth = 380f;
+            le.preferredHeight = 110f;
+            le.minWidth = 380f;
+            le.minHeight = 110f;
         }
         else
         {
             TextMeshProUGUI titleText = UIFactory.CreateText(
-                panelRT, "PausedTitle", "PAUSED",
-                56f, UIFactory.TextWhite, TextAlignmentOptions.Center);
+                contentColumnRT, "PausedTitle", "PAUSED",
+                48f, UIFactory.TextWhite, TextAlignmentOptions.Center);
             titleText.fontStyle = FontStyles.Bold;
             titleText.characterSpacing = 12f;
             
             LayoutElement le = titleText.gameObject.AddComponent<LayoutElement>();
-            le.preferredWidth = 500f;
-            le.preferredHeight = 70f;
+            le.preferredWidth = 420f;
+            le.preferredHeight = 56f;
         }
 
         // Subtitle & divider
         TextMeshProUGUI subtitleText = UIFactory.CreateText(
-            panelRT, "Subtitle", "GAME PAUSED",
-            16f, NeonPurpleDim, TextAlignmentOptions.Center);
+            contentColumnRT, "Subtitle", "GAME PAUSED",
+            14f, NeonPurpleDim, TextAlignmentOptions.Center);
         subtitleText.characterSpacing = 6f;
         subtitleText.fontStyle = FontStyles.Bold;
         
         LayoutElement subLe = subtitleText.gameObject.AddComponent<LayoutElement>();
-        subLe.preferredWidth = 500f;
-        subLe.preferredHeight = 22f;
+        subLe.preferredWidth = 420f;
+        subLe.preferredHeight = 20f;
 
-        CreateArcaneDivider(panelRT, "TitleDivider");
+        CreateArcaneDivider(contentColumnRT, "TitleDivider");
 
-        // ── Custom Sprite Buttons (Matching Title Screen Dimensions) ──
-        Button resumeBtn = CreateCustomSpriteButton(panelRT, "ResumeButton", resumeButtonSprite, "RESUME", () => ResumeGame(), new Vector2(320f, 96f));
-        Button restartBtn = CreateCustomSpriteButton(panelRT, "RestartButton", restartButtonSprite, "RESTART", () => RestartLevel(), new Vector2(320f, 92f));
-        Button minigamesBtn = CreateArcaneButton(panelRT, "MinigamesButton", "MINIGAMES", "🎮", 18f, new Vector2(320f, 52f), () => OpenMinigamesMenu(), true);
-        Button quitBtn = CreateCustomSpriteButton(panelRT, "QuitButton", quitButtonSprite, "QUIT TO MENU", () => QuitToMenu(menuSceneName), new Vector2(320f, 88f));
+        // ── Main Menu Styled Cyber-Gothic Glassmorphic Buttons ──
+        // 1. Resume (Cyan/Teal)
+        CreateCyberGothicButton(
+            contentColumnRT, "ResumeBtn", "RESUME", "CONTINUE EXPEDITION", "✦",
+            new Color(0.18f, 0.83f, 0.75f, 1f), // #2dd4bf
+            () => ResumeGame()
+        );
+
+        // 2. Restart (Arcane Violet)
+        CreateCyberGothicButton(
+            contentColumnRT, "RestartBtn", "RESTART", "RETRY FROM CHECKPOINT", "❖",
+            new Color(0.66f, 0.33f, 0.97f, 1f), // #a855f7
+            () => RestartLevel()
+        );
+
+        // 3. Minigames (Aether Gold/Cyan)
+        CreateCyberGothicButton(
+            contentColumnRT, "MinigamesBtn", "ARCADE VAULT", "TRAINING & MINIGAMES", "◈",
+            new Color(0.98f, 0.75f, 0.14f, 1f), // #fbbf24
+            () => OpenMinigamesMenu()
+        );
+
+        // 4. Quit to Menu (Rose Crimson)
+        CreateCyberGothicButton(
+            contentColumnRT, "QuitBtn", "QUIT TO MENU", "RETURN TO TITLE SCREEN", "✕",
+            new Color(0.96f, 0.25f, 0.37f, 1f), // #f43f5e
+            () => QuitToMenu(menuSceneName)
+        );
 
         // Footer hint
-        CreateArcaneDivider(panelRT, "BottomDivider");
+        CreateArcaneDivider(contentColumnRT, "BottomDivider");
 
         TextMeshProUGUI hintText = UIFactory.CreateText(
-            panelRT, "Hint", "PRESS ESC OR P TO RESUME",
-            13f, new Color(0.45f, 0.67f, 0.84f, 0.72f), TextAlignmentOptions.Center);
-        hintText.characterSpacing = 2f;
+            contentColumnRT, "Hint", "PRESS ESC OR P TO RESUME",
+            12f, new Color(0.55f, 0.72f, 0.90f, 0.75f), TextAlignmentOptions.Center);
+        hintText.characterSpacing = 3f;
         
         LayoutElement hintLe = hintText.gameObject.AddComponent<LayoutElement>();
-        hintLe.preferredWidth = 500f;
-        hintLe.preferredHeight = 22f;
+        hintLe.preferredWidth = 420f;
+        hintLe.preferredHeight = 20f;
 
         // Ambient FX
         PauseMenuAmbientFX ambientFX = pauseOverlay.AddComponent<PauseMenuAmbientFX>();
-        ambientFX.Initialize(glowImg, vignetteRT, glowImg.color);
+        ambientFX.Initialize(null, vignetteRT, new Color(0.4f, 0.2f, 0.8f, 0.25f));
 
         pauseOverlay.SetActive(false);
     }
 
-    private Button CreateCustomSpriteButton(Transform parent, string name, Sprite btnSprite, string fallbackText, UnityEngine.Events.UnityAction onClick, Vector2 size)
-    {
-        GameObject containerGO = new GameObject(name, typeof(RectTransform));
-        containerGO.transform.SetParent(parent, false);
-        RectTransform containerRT = containerGO.GetComponent<RectTransform>();
-        containerRT.sizeDelta = size;
+    // ── Procedural Cyber-Gothic Button Construction (Matching Main Menu) ──
 
-        LayoutElement le = containerGO.AddComponent<LayoutElement>();
+    private Button CreateCyberGothicButton(
+        Transform parent, string name, string labelText, string hintText, string runeIcon,
+        Color themeColor, UnityEngine.Events.UnityAction onClick)
+    {
+        Vector2 size = new Vector2(380f, 68f);
+
+        // Outer Button Container
+        GameObject btnGO = new GameObject(name, typeof(RectTransform));
+        btnGO.transform.SetParent(parent, false);
+        RectTransform btnRT = btnGO.GetComponent<RectTransform>();
+        btnRT.sizeDelta = size;
+
+        LayoutElement le = btnGO.AddComponent<LayoutElement>();
         le.minWidth = size.x;
         le.minHeight = size.y;
         le.preferredWidth = size.x;
         le.preferredHeight = size.y;
-        le.flexibleWidth = 0f;
-        le.flexibleHeight = 0f;
 
-        Image btnImg = containerGO.AddComponent<Image>();
+        // Button Background (Dark Glassmorphic Cyber Frame)
+        Image bgImg = btnGO.AddComponent<Image>();
+        bgImg.sprite = CreateCyberFrameSprite(128, 64, 14);
+        bgImg.type = Image.Type.Sliced;
+        bgImg.color = new Color(0.07f, 0.08f, 0.12f, 0.96f);
 
-        if (btnSprite != null)
-        {
-            btnImg.sprite = btnSprite;
-            btnImg.color = Color.white;
-            btnImg.preserveAspect = true;
-        }
-        else
-        {
-            // Fallback styled background
-            btnImg.sprite = CreateRoundedFrameSprite(64, 64, 14);
-            btnImg.type = Image.Type.Sliced;
-            btnImg.color = new Color(0.08f, 0.15f, 0.28f, 0.95f);
+        // Glowing Border Outline
+        RectTransform borderRT = UIFactory.CreatePanel(
+            btnRT, "Border", new Color(themeColor.r, themeColor.g, themeColor.b, 0.50f),
+            Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        Image borderImg = borderRT.GetComponent<Image>();
+        borderImg.sprite = CreateCyberFrameSprite(128, 64, 14);
+        borderImg.type = Image.Type.Sliced;
+        borderImg.raycastTarget = false;
 
-            TextMeshProUGUI label = UIFactory.CreateText(
-                containerRT, "Label", fallbackText,
-                22f, UIFactory.TextWhite, TextAlignmentOptions.Center);
-            label.fontStyle = FontStyles.Bold;
-            label.characterSpacing = 4f;
-        }
+        // Top Accent Glow Line
+        RectTransform topAccentRT = UIFactory.CreatePanel(
+            btnRT, "TopAccent", new Color(themeColor.r, themeColor.g, themeColor.b, 0.70f),
+            new Vector2(0f, 1f), new Vector2(1f, 1f),
+            new Vector2(12f, -3f), new Vector2(-12f, 0f));
+        Image topAccentImg = topAccentRT.GetComponent<Image>();
+        topAccentImg.raycastTarget = false;
 
-        Button btn = containerRT.gameObject.AddComponent<Button>();
-        btn.targetGraphic = btnImg;
+        // Bottom Accent Line
+        RectTransform botAccentRT = UIFactory.CreatePanel(
+            btnRT, "BotAccent", new Color(themeColor.r, themeColor.g, themeColor.b, 0.30f),
+            new Vector2(0f, 0f), new Vector2(1f, 0f),
+            new Vector2(20f, 0f), new Vector2(-20f, 2f));
+        Image botAccentImg = botAccentRT.GetComponent<Image>();
+        botAccentImg.raycastTarget = false;
+
+        // Left Rune Badge Circle
+        RectTransform runeLeftRT = UIFactory.CreatePanel(
+            btnRT, "RuneLeft", new Color(themeColor.r, themeColor.g, themeColor.b, 0.18f),
+            new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
+            new Vector2(16f, -15f), new Vector2(46f, 15f));
+        Image runeLeftBg = runeLeftRT.GetComponent<Image>();
+        runeLeftBg.sprite = CreateOrbSprite(32);
+        runeLeftBg.raycastTarget = false;
+
+        TextMeshProUGUI runeLeftTxt = UIFactory.CreateText(
+            runeLeftRT, "RuneTxt", runeIcon, 14f, themeColor, TextAlignmentOptions.Center);
+        runeLeftTxt.fontStyle = FontStyles.Bold;
+
+        // Right Rune Badge Circle
+        RectTransform runeRightRT = UIFactory.CreatePanel(
+            btnRT, "RuneRight", new Color(themeColor.r, themeColor.g, themeColor.b, 0.18f),
+            new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
+            new Vector2(-46f, -15f), new Vector2(-16f, 15f));
+        Image runeRightBg = runeRightRT.GetComponent<Image>();
+        runeRightBg.sprite = CreateOrbSprite(32);
+        runeRightBg.raycastTarget = false;
+
+        TextMeshProUGUI runeRightTxt = UIFactory.CreateText(
+            runeRightRT, "RuneTxt", runeIcon, 14f, themeColor, TextAlignmentOptions.Center);
+        runeRightTxt.fontStyle = FontStyles.Bold;
+
+        // Center Content Text (Title + Sub-hint)
+        RectTransform textContainerRT = UIFactory.CreatePanel(
+            btnRT, "TextContainer", Color.clear,
+            new Vector2(0f, 0f), new Vector2(1f, 1f),
+            new Vector2(50f, 0f), new Vector2(-50f, 0f));
+
+        VerticalLayoutGroup textVlg = UIFactory.AddVerticalLayout(textContainerRT.gameObject, 1f,
+            new RectOffset(0, 0, 8, 8), TextAnchor.MiddleCenter);
+        textVlg.childControlWidth = false;
+        textVlg.childControlHeight = false;
+
+        TextMeshProUGUI label = UIFactory.CreateText(
+            textContainerRT, "Label", labelText, 17f,
+            new Color(0.96f, 0.97f, 1.0f, 1f), TextAlignmentOptions.Center);
+        label.fontStyle = FontStyles.Bold;
+        label.characterSpacing = 5f;
+
+        LayoutElement labelLe = label.gameObject.AddComponent<LayoutElement>();
+        labelLe.preferredWidth = 260f;
+        labelLe.preferredHeight = 24f;
+
+        TextMeshProUGUI hint = UIFactory.CreateText(
+            textContainerRT, "Hint", hintText, 9.5f,
+            new Color(0.70f, 0.75f, 0.88f, 0.70f), TextAlignmentOptions.Center);
+        hint.characterSpacing = 2f;
+
+        LayoutElement hintLe = hint.gameObject.AddComponent<LayoutElement>();
+        hintLe.preferredWidth = 260f;
+        hintLe.preferredHeight = 16f;
+
+        // Button Component
+        Button btn = btnGO.AddComponent<Button>();
+        btn.targetGraphic = bgImg;
 
         ColorBlock cb = btn.colors;
         cb.normalColor = Color.white;
-        cb.highlightedColor = new Color(1f, 1f, 1f, 1f);
-        cb.pressedColor = new Color(0.82f, 0.82f, 0.92f, 1f);
-        cb.fadeDuration = 0.08f;
+        cb.highlightedColor = Color.white;
+        cb.pressedColor = new Color(0.85f, 0.85f, 0.95f, 1f);
+        cb.fadeDuration = 0.1f;
         btn.colors = cb;
 
         if (onClick != null)
             btn.onClick.AddListener(onClick);
 
-        // Attach interactive scaling hover/press animation
-        PauseSpriteButtonFX fx = containerRT.gameObject.AddComponent<PauseSpriteButtonFX>();
-        fx.Initialize(btnImg);
+        // Attach Interactive Cyber-Gothic Hover & Press Animation
+        CyberGothicButtonFX fx = btnGO.AddComponent<CyberGothicButtonFX>();
+        fx.Initialize(bgImg, borderImg, topAccentImg, botAccentImg, label, hint, themeColor);
 
         return btn;
     }
@@ -374,8 +407,8 @@ public class PauseMenu : MonoBehaviour
         RectTransform rowRT = UIFactory.CreatePanel(
             parent, name, Color.clear,
             new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
-        rowRT.sizeDelta = new Vector2(400f, 16f);
-        UIFactory.AddLayoutElement(rowRT.gameObject, preferredHeight: 16f, preferredWidth: 400f);
+        rowRT.sizeDelta = new Vector2(380f, 16f);
+        UIFactory.AddLayoutElement(rowRT.gameObject, preferredHeight: 16f, preferredWidth: 380f);
 
         HorizontalLayoutGroup hlg = UIFactory.AddHorizontalLayout(rowRT.gameObject, 0f,
             new RectOffset(0, 0, 0, 0), TextAnchor.MiddleCenter);
@@ -383,19 +416,19 @@ public class PauseMenu : MonoBehaviour
         hlg.childForceExpandWidth = false;
 
         // Left fade line
-        CreateDividerSegment(rowRT, 140f, new Color(0.65f, 0.20f, 0.95f, 0.50f));
+        CreateDividerSegment(rowRT, 130f, new Color(0.65f, 0.20f, 0.95f, 0.45f));
         // Left small orb
         CreateDividerOrb(rowRT, 6f, NeonPurpleDim);
         // Center line
-        CreateDividerSegment(rowRT, 60f, new Color(0.50f, 0.15f, 0.85f, 0.65f));
+        CreateDividerSegment(rowRT, 50f, new Color(0.50f, 0.15f, 0.85f, 0.65f));
         // Center orb (larger, brighter)
         CreateDividerOrb(rowRT, 10f, NeonPurple);
         // Right line
-        CreateDividerSegment(rowRT, 60f, new Color(0.50f, 0.15f, 0.85f, 0.65f));
+        CreateDividerSegment(rowRT, 50f, new Color(0.50f, 0.15f, 0.85f, 0.65f));
         // Right small orb
         CreateDividerOrb(rowRT, 6f, NeonPurpleDim);
         // Right fade line
-        CreateDividerSegment(rowRT, 140f, new Color(0.65f, 0.20f, 0.95f, 0.50f));
+        CreateDividerSegment(rowRT, 130f, new Color(0.65f, 0.20f, 0.95f, 0.45f));
     }
 
     private void CreateDividerSegment(Transform parent, float width, Color color)
@@ -420,99 +453,6 @@ public class PauseMenu : MonoBehaviour
         orbImg.color = color;
         orbImg.raycastTarget = false;
         UIFactory.AddLayoutElement(orbRT.gameObject, preferredWidth: size + 6f, preferredHeight: size);
-    }
-
-    // ── Arcane Button ──────────────────────────────────────────────
-
-    private Button CreateArcaneButton(Transform parent, string name, string label, string icon,
-        float fontSize, Vector2 size, UnityEngine.Events.UnityAction onClick, bool isPrimary = false)
-    {
-        Sprite roundedSprite = CreateRoundedFrameSprite(64, 64, 14);
-
-        RectTransform containerRT = UIFactory.CreatePanel(
-            parent, name, Color.clear,
-            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
-        containerRT.sizeDelta = size;
-
-        // Glow underlay
-        RectTransform glowRT = UIFactory.CreatePanel(
-            containerRT, name + "_Glow", Color.clear,
-            Vector2.zero, Vector2.one,
-            new Vector2(-4f, -4f), new Vector2(4f, 4f));
-        Image glowImg = glowRT.GetComponent<Image>();
-        glowImg.sprite = roundedSprite;
-        glowImg.type = Image.Type.Sliced;
-        glowImg.color = new Color(0.65f, 0.12f, 1f, 0f);
-        glowImg.raycastTarget = false;
-
-        // Border
-        RectTransform borderRT = UIFactory.CreatePanel(
-            containerRT, name + "_Border", isPrimary ? new Color(0.34f, 0.88f, 1f, 0.95f) : FrameGlow,
-            Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-        Image borderImg = borderRT.GetComponent<Image>();
-        borderImg.sprite = roundedSprite;
-        borderImg.type = Image.Type.Sliced;
-
-        // Inner bg
-        RectTransform innerRT = UIFactory.CreatePanel(
-            borderRT, name + "_Bg", isPrimary
-                ? new Color(0.05f, 0.28f, 0.40f, 0.98f)
-                : new Color(0.035f, 0.075f, 0.15f, 0.96f),
-            Vector2.zero, Vector2.one,
-            new Vector2(2f, 2f), new Vector2(-2f, -2f));
-        Image innerImg = innerRT.GetComponent<Image>();
-        innerImg.sprite = roundedSprite;
-        innerImg.type = Image.Type.Sliced;
-
-        // Left accent — soft glow bar instead of hard stripe
-        RectTransform accentRT = UIFactory.CreatePanel(
-            innerRT, "AccentGlow",
-            isPrimary ? new Color(0.40f, 0.94f, 1f, 0.36f) : new Color(0.28f, 0.68f, 1f, 0.15f),
-            new Vector2(0f, 0f), new Vector2(0f, 1f),
-            new Vector2(4f, 6f), new Vector2(12f, -6f));
-        Image accentImg = accentRT.GetComponent<Image>();
-        accentImg.sprite = CreateOrbSprite(16);
-        accentImg.raycastTarget = false;
-
-        Button btn = containerRT.gameObject.AddComponent<Button>();
-        btn.targetGraphic = innerImg;
-
-        ColorBlock cb = btn.colors;
-        cb.normalColor = isPrimary ? new Color(0.05f, 0.28f, 0.40f, 0.98f) : new Color(0.035f, 0.075f, 0.15f, 0.96f);
-        cb.highlightedColor = isPrimary ? new Color(0.08f, 0.43f, 0.58f, 1f) : new Color(0.07f, 0.13f, 0.25f, 0.98f);
-        cb.pressedColor = isPrimary ? new Color(0.04f, 0.20f, 0.30f, 1f) : new Color(0.04f, 0.09f, 0.18f, 0.98f);
-        cb.disabledColor = new Color(0.12f, 0.10f, 0.16f, 0.45f);
-        cb.colorMultiplier = 1f;
-        cb.fadeDuration = 0.08f;
-        btn.colors = cb;
-
-        if (onClick != null)
-            btn.onClick.AddListener(onClick);
-
-        // Icon
-        TextMeshProUGUI iconText = UIFactory.CreateText(
-            innerRT, "Icon", icon,
-            fontSize + 4f, NeonPurple, TextAlignmentOptions.Center);
-        UIFactory.SetRect(iconText.rectTransform,
-            new Vector2(0f, 0f), new Vector2(0f, 1f),
-            new Vector2(14f, 0f), new Vector2(54f, 0f));
-
-        // Label
-        TextMeshProUGUI text = UIFactory.CreateText(
-            innerRT, "Label", label,
-            fontSize, UIFactory.TextWhite, TextAlignmentOptions.Left);
-        UIFactory.SetRect(text.rectTransform,
-            new Vector2(0f, 0f), Vector2.one,
-            new Vector2(58f, 0f), new Vector2(-12f, 0f));
-        text.fontStyle = FontStyles.Bold;
-        text.characterSpacing = 5f;
-        text.outlineColor = new Color(0.03f, 0f, 0.06f, 0.65f);
-        text.outlineWidth = 0.2f;
-
-        ArcaneButtonEffects fx = containerRT.gameObject.AddComponent<ArcaneButtonEffects>();
-        fx.Initialize(text, innerImg, borderImg, glowImg);
-
-        return btn;
     }
 
     // ── Public API ─────────────────────────────────────────────────
@@ -561,8 +501,8 @@ public class PauseMenu : MonoBehaviour
 
     // ── Procedural Textures ────────────────────────────────────────
 
-    /// <summary>Rounded rectangle frame — 9-slice ready, soft edges.</summary>
-    private static Sprite CreateRoundedFrameSprite(int width, int height, int radius)
+    /// <summary>Cyber-Gothic rounded rectangle frame — 9-slice ready, smooth corners.</summary>
+    private static Sprite CreateCyberFrameSprite(int width, int height, int radius)
     {
         Texture2D tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
         tex.filterMode = FilterMode.Bilinear;
@@ -578,7 +518,6 @@ public class PauseMenu : MonoBehaviour
                 bool inside = IsInsideRoundedRect(x, y, width, height, radius);
                 if (inside)
                 {
-                    // Soft edge antialiasing
                     float edgeDist = GetRoundedRectEdgeDist(x, y, width, height, radius);
                     float alpha = Mathf.Clamp01(edgeDist + 0.5f);
                     tex.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
@@ -598,15 +537,10 @@ public class PauseMenu : MonoBehaviour
 
     private static bool IsInsideRoundedRect(int x, int y, int w, int h, int r)
     {
-        // Check corners
-        if (x < r && y < r) // bottom-left
-            return (r - x) * (r - x) + (r - y) * (r - y) <= r * r;
-        if (x >= w - r && y < r) // bottom-right
-            return (x - (w - r - 1)) * (x - (w - r - 1)) + (r - y) * (r - y) <= r * r;
-        if (x < r && y >= h - r) // top-left
-            return (r - x) * (r - x) + (y - (h - r - 1)) * (y - (h - r - 1)) <= r * r;
-        if (x >= w - r && y >= h - r) // top-right
-            return (x - (w - r - 1)) * (x - (w - r - 1)) + (y - (h - r - 1)) * (y - (h - r - 1)) <= r * r;
+        if (x < r && y < r) return (r - x) * (r - x) + (r - y) * (r - y) <= r * r;
+        if (x >= w - r && y < r) return (x - (w - r - 1)) * (x - (w - r - 1)) + (r - y) * (r - y) <= r * r;
+        if (x < r && y >= h - r) return (r - x) * (r - x) + (y - (h - r - 1)) * (y - (h - r - 1)) <= r * r;
+        if (x >= w - r && y >= h - r) return (x - (w - r - 1)) * (x - (w - r - 1)) + (y - (h - r - 1)) * (y - (h - r - 1)) <= r * r;
         return true;
     }
 
@@ -626,12 +560,9 @@ public class PauseMenu : MonoBehaviour
             return r - dist;
         }
 
-        // Edge distances for non-corner areas
-        float minEdge = Mathf.Min(Mathf.Min(x, w - 1 - x), Mathf.Min(y, h - 1 - y));
-        return minEdge;
+        return Mathf.Min(Mathf.Min(x, w - 1 - x), Mathf.Min(y, h - 1 - y));
     }
 
-    /// <summary>Creates a soft circular orb sprite with glow falloff.</summary>
     private static Sprite CreateOrbSprite(int size)
     {
         Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
@@ -650,16 +581,15 @@ public class PauseMenu : MonoBehaviour
                 float dist = Mathf.Sqrt(dx * dx + dy * dy);
                 float norm = dist / radius;
 
-                // Soft falloff: bright center, fading edges
                 float alpha;
                 if (norm <= 0.5f)
                     alpha = 1f;
                 else if (norm <= 1f)
                     alpha = 1f - (norm - 0.5f) * 2f;
                 else
-                    alpha = Mathf.Max(0f, 1f - (norm - 1f) * 3f) * 0.3f; // faint outer glow
+                    alpha = Mathf.Max(0f, 1f - (norm - 1f) * 3f) * 0.3f;
 
-                alpha = alpha * alpha; // quadratic falloff for softness
+                alpha = alpha * alpha;
                 tex.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
             }
         }
@@ -693,259 +623,115 @@ public class PauseMenu : MonoBehaviour
         tex.Apply();
         return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
     }
-
-    /// <summary>Creates a subtle arcane rune/circle pattern tile.</summary>
-    private static Sprite CreateRunePatternSprite(int size, int _)
-    {
-        Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
-        tex.filterMode = FilterMode.Bilinear;
-        tex.wrapMode = TextureWrapMode.Repeat;
-
-        Color clear = new Color(1f, 1f, 1f, 0f);
-        Color line = new Color(1f, 1f, 1f, 0.25f);
-        Color lineFaint = new Color(1f, 1f, 1f, 0.12f);
-
-        // Clear
-        for (int y = 0; y < size; y++)
-            for (int x = 0; x < size; x++)
-                tex.SetPixel(x, y, clear);
-
-        float cx = size * 0.5f;
-        float cy = size * 0.5f;
-
-        // Draw concentric circles (arcane rings)
-        DrawCircle(tex, cx, cy, size * 0.38f, line);
-        DrawCircle(tex, cx, cy, size * 0.22f, lineFaint);
-
-        // Draw cross lines through center (mystic compass)
-        for (int i = 0; i < size; i++)
-        {
-            int mid = size / 2;
-            // Vertical line
-            if (Mathf.Abs(i - mid) > size * 0.15f)
-            {
-                if (i >= 0 && i < size)
-                    tex.SetPixel(mid, i, lineFaint);
-            }
-            // Horizontal line
-            if (Mathf.Abs(i - mid) > size * 0.15f)
-            {
-                if (i >= 0 && i < size)
-                    tex.SetPixel(i, mid, lineFaint);
-            }
-        }
-
-        // Small dots at cardinal points
-        DrawDot(tex, (int)cx, (int)(cy + size * 0.38f), 1, line);
-        DrawDot(tex, (int)cx, (int)(cy - size * 0.38f), 1, line);
-        DrawDot(tex, (int)(cx + size * 0.38f), (int)cy, 1, line);
-        DrawDot(tex, (int)(cx - size * 0.38f), (int)cy, 1, line);
-
-        tex.Apply();
-        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
-    }
-
-    private static void DrawCircle(Texture2D tex, float cx, float cy, float radius, Color color)
-    {
-        int steps = Mathf.CeilToInt(radius * 8f);
-        for (int i = 0; i <= steps; i++)
-        {
-            float angle = (i / (float)steps) * Mathf.PI * 2f;
-            int x = Mathf.RoundToInt(cx + Mathf.Cos(angle) * radius);
-            int y = Mathf.RoundToInt(cy + Mathf.Sin(angle) * radius);
-            if (x >= 0 && x < tex.width && y >= 0 && y < tex.height)
-                tex.SetPixel(x, y, color);
-        }
-    }
-
-    private static void DrawDot(Texture2D tex, int cx, int cy, int radius, Color color)
-    {
-        for (int dy = -radius; dy <= radius; dy++)
-        {
-            for (int dx = -radius; dx <= radius; dx++)
-            {
-                if (dx * dx + dy * dy <= radius * radius)
-                {
-                    int px = cx + dx;
-                    int py = cy + dy;
-                    if (px >= 0 && px < tex.width && py >= 0 && py < tex.height)
-                        tex.SetPixel(px, py, color);
-                }
-            }
-        }
-    }
 }
 
-// ── Arcane button hover effects (unscaled time for pause compatibility) ──
+// ── Interactive Cyber-Gothic Button Animation (Unscaled Time) ──
 
-public class ArcaneButtonEffects : MonoBehaviour,
+public class CyberGothicButtonFX : MonoBehaviour,
     UnityEngine.EventSystems.IPointerEnterHandler,
     UnityEngine.EventSystems.IPointerExitHandler,
     UnityEngine.EventSystems.IPointerDownHandler,
     UnityEngine.EventSystems.IPointerUpHandler
 {
     private RectTransform rectTransform;
-    private TextMeshProUGUI buttonText;
-    private Image buttonImage;
+    private Image bgImage;
     private Image borderImage;
-    private Image glowImage;
-    private string originalText;
+    private Image topAccentImage;
+    private Image botAccentImage;
+    private TextMeshProUGUI labelText;
+    private TextMeshProUGUI hintText;
+    private Color themeColor;
 
-    private Vector3 targetScale = Vector3.one;
-    private Color targetTextColor;
-    private Color targetBorderColor;
-    private float targetGlowAlpha;
-
-    private Color originalTextColor;
-    private Color originalBorderColor;
     private Vector3 originalScale;
-
-    private float lerpSpeed = 10f; // slightly slower for a more mystical feel
+    private Vector3 targetScale = Vector3.one;
     private bool isHovered;
 
-    private static readonly Color ArcanePurple = new Color(0.34f, 0.88f, 1f, 1f);
-    private static readonly Color WarmHighlight = new Color(0.88f, 0.98f, 1f, 1f);
+    private Color origBgColor;
+    private Color targetBgColor;
+    private Color origBorderColor;
+    private Color targetBorderColor;
+    private Color origTopAccentColor;
+    private Color targetTopAccentColor;
+    private Color origLabelColor;
+    private Color targetLabelColor;
 
-    public void Initialize(TextMeshProUGUI txt, Image buttonBg, Image border, Image glow)
+    public void Initialize(
+        Image bg, Image border, Image topAccent, Image botAccent,
+        TextMeshProUGUI label, TextMeshProUGUI hint, Color theme)
     {
         rectTransform = GetComponent<RectTransform>();
-        buttonText = txt;
-        buttonImage = buttonBg;
+        bgImage = bg;
         borderImage = border;
-        glowImage = glow;
+        topAccentImage = topAccent;
+        botAccentImage = botAccent;
+        labelText = label;
+        hintText = hint;
+        themeColor = theme;
 
         originalScale = rectTransform.localScale;
         targetScale = originalScale;
 
-        if (buttonText != null)
-        {
-            originalText = buttonText.text;
-            originalTextColor = buttonText.color;
-            targetTextColor = originalTextColor;
-        }
+        origBgColor = bgImage != null ? bgImage.color : new Color(0.07f, 0.08f, 0.12f, 0.96f);
+        targetBgColor = origBgColor;
 
-        if (borderImage != null)
-        {
-            originalBorderColor = borderImage.color;
-            targetBorderColor = originalBorderColor;
-        }
+        origBorderColor = borderImage != null ? borderImage.color : new Color(theme.r, theme.g, theme.b, 0.50f);
+        targetBorderColor = origBorderColor;
+
+        origTopAccentColor = topAccentImage != null ? topAccentImage.color : new Color(theme.r, theme.g, theme.b, 0.70f);
+        targetTopAccentColor = origTopAccentColor;
+
+        origLabelColor = labelText != null ? labelText.color : Color.white;
+        targetLabelColor = origLabelColor;
     }
 
     void Update()
     {
-        float dt = Time.unscaledDeltaTime * lerpSpeed;
+        float dt = Time.unscaledDeltaTime * 14f;
 
         rectTransform.localScale = Vector3.Lerp(rectTransform.localScale, targetScale, dt);
 
-        if (buttonText != null)
-            buttonText.color = Color.Lerp(buttonText.color, targetTextColor, dt);
+        if (bgImage != null)
+            bgImage.color = Color.Lerp(bgImage.color, targetBgColor, dt);
 
         if (borderImage != null)
             borderImage.color = Color.Lerp(borderImage.color, targetBorderColor, dt);
 
-        if (glowImage != null)
-        {
-            Color c = glowImage.color;
-            c.a = Mathf.Lerp(c.a, targetGlowAlpha, dt);
-            glowImage.color = c;
-        }
+        if (topAccentImage != null)
+            topAccentImage.color = Color.Lerp(topAccentImage.color, targetTopAccentColor, dt);
+
+        if (labelText != null)
+            labelText.color = Color.Lerp(labelText.color, targetLabelColor, dt);
     }
 
     public void OnPointerEnter(UnityEngine.EventSystems.PointerEventData eventData)
     {
         isHovered = true;
-        targetScale = originalScale * 1.03f;
-        targetTextColor = WarmHighlight;
-        targetBorderColor = ArcanePurple;
-        targetGlowAlpha = 0.30f;
-
-        if (buttonText != null)
-            buttonText.text = "✦  " + originalText;
+        targetScale = originalScale * 1.04f;
+        targetBgColor = new Color(0.14f, 0.08f, 0.24f, 0.98f);
+        targetBorderColor = new Color(themeColor.r, themeColor.g, themeColor.b, 1.0f);
+        targetTopAccentColor = new Color(1f, 1f, 1f, 1.0f); // Bright white-neon flash
+        targetLabelColor = Color.white;
     }
 
     public void OnPointerExit(UnityEngine.EventSystems.PointerEventData eventData)
     {
         isHovered = false;
         targetScale = originalScale;
-        targetTextColor = originalTextColor;
-        targetBorderColor = originalBorderColor;
-        targetGlowAlpha = 0f;
-
-        if (buttonText != null)
-            buttonText.text = originalText;
+        targetBgColor = origBgColor;
+        targetBorderColor = origBorderColor;
+        targetTopAccentColor = origTopAccentColor;
+        targetLabelColor = origLabelColor;
     }
 
     public void OnPointerDown(UnityEngine.EventSystems.PointerEventData eventData)
     {
-        targetScale = originalScale * 0.97f;
+        targetScale = originalScale * 0.96f;
+        targetBgColor = new Color(themeColor.r * 0.3f, themeColor.g * 0.3f, themeColor.b * 0.3f, 0.98f);
     }
 
     public void OnPointerUp(UnityEngine.EventSystems.PointerEventData eventData)
     {
-        targetScale = isHovered ? originalScale * 1.03f : originalScale;
-    }
-}
-
-public class PauseSpriteButtonFX : MonoBehaviour,
-    UnityEngine.EventSystems.IPointerEnterHandler,
-    UnityEngine.EventSystems.IPointerExitHandler,
-    UnityEngine.EventSystems.IPointerDownHandler,
-    UnityEngine.EventSystems.IPointerUpHandler
-{
-    private RectTransform rectTransform;
-    private Image buttonImage;
-    private Vector3 originalScale;
-    private Vector3 targetScale = Vector3.one;
-    private Color originalColor = Color.white;
-    private Color targetColor = Color.white;
-    private bool isHovered;
-
-    public void Initialize(Image img)
-    {
-        rectTransform = GetComponent<RectTransform>();
-        buttonImage = img;
-        originalScale = rectTransform.localScale;
-        targetScale = originalScale;
-        if (buttonImage != null)
-        {
-            originalColor = buttonImage.color;
-            targetColor = originalColor;
-        }
-    }
-
-    void Update()
-    {
-        float dt = Time.unscaledDeltaTime * 12f;
-        rectTransform.localScale = Vector3.Lerp(rectTransform.localScale, targetScale, dt);
-        if (buttonImage != null)
-        {
-            buttonImage.color = Color.Lerp(buttonImage.color, targetColor, dt);
-        }
-    }
-
-    public void OnPointerEnter(UnityEngine.EventSystems.PointerEventData eventData)
-    {
-        isHovered = true;
-        targetScale = originalScale * 1.06f;
-        targetColor = new Color(1f, 1f, 1f, 1f);
-    }
-
-    public void OnPointerExit(UnityEngine.EventSystems.PointerEventData eventData)
-    {
-        isHovered = false;
-        targetScale = originalScale;
-        targetColor = originalColor;
-    }
-
-    public void OnPointerDown(UnityEngine.EventSystems.PointerEventData eventData)
-    {
-        targetScale = originalScale * 0.94f;
-        targetColor = new Color(0.85f, 0.85f, 0.95f, 1f);
-    }
-
-    public void OnPointerUp(UnityEngine.EventSystems.PointerEventData eventData)
-    {
-        targetScale = isHovered ? originalScale * 1.06f : originalScale;
-        targetColor = isHovered ? new Color(1f, 1f, 1f, 1f) : originalColor;
+        targetScale = isHovered ? originalScale * 1.04f : originalScale;
+        targetBgColor = isHovered ? new Color(0.14f, 0.08f, 0.24f, 0.98f) : origBgColor;
     }
 }
