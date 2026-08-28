@@ -58,7 +58,7 @@ public class ParallaxBackground : MonoBehaviour
         startposY = transform.position.y;
 
         SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
-        if (spriteRenderer != null)
+        if (spriteRenderer != null && spriteRenderer.sprite != null)
         {
             length = spriteRenderer.bounds.size.x;
         }
@@ -66,7 +66,6 @@ public class ParallaxBackground : MonoBehaviour
         {
             if (infiniteHorizontalScroll)
             {
-                Debug.LogWarning($"ParallaxBackground on '{gameObject.name}' has Infinite Scroll enabled but no SpriteRenderer was found. Disabling infinite scroll.", this);
                 infiniteHorizontalScroll = false;
             }
         }
@@ -77,12 +76,26 @@ public class ParallaxBackground : MonoBehaviour
     {
         if (cam == null) return;
 
-        // Apply auto-scroll offset over time
-        autoScrollOffsetRealX += autoScrollSpeedX * Time.deltaTime;
-        autoScrollOffsetRealY += autoScrollSpeedY * Time.deltaTime;
+        // Apply auto-scroll offset over time with wrapping to prevent infinite coordinate expansion
+        if (autoScrollSpeedX != 0f)
+        {
+            autoScrollOffsetRealX += autoScrollSpeedX * Time.deltaTime;
+            if (length > 0f && Mathf.Abs(autoScrollOffsetRealX) > length)
+            {
+                autoScrollOffsetRealX %= length;
+            }
+        }
+        if (autoScrollSpeedY != 0f)
+        {
+            autoScrollOffsetRealY += autoScrollSpeedY * Time.deltaTime;
+            if (limitVerticalOffset && Mathf.Abs(autoScrollOffsetRealY) > maxVerticalOffset)
+            {
+                autoScrollOffsetRealY = Mathf.Clamp(autoScrollOffsetRealY, -maxVerticalOffset, maxVerticalOffset);
+            }
+        }
 
         // Calculate parallax displacement relative to camera movement
-        float temp = (cam.position.x * (1 - parallaxEffectX));
+        float temp = (cam.position.x * (1f - parallaxEffectX));
         float distX = (cam.position.x * parallaxEffectX) + autoScrollOffsetRealX;
         float distY = (cam.position.y * parallaxEffectY) + autoScrollOffsetRealY;
 
@@ -109,7 +122,7 @@ public class ParallaxBackground : MonoBehaviour
         }
 
         // Infinite wrapping
-        if (infiniteHorizontalScroll)
+        if (infiniteHorizontalScroll && length > 0.001f)
         {
             if (temp > startposX + length)
             {

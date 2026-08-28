@@ -15,6 +15,7 @@ public class move : MonoBehaviour
 
     [Header("Blob Form Settings")]
     public float blobSpeedMultiplier = 1.5f; // Makes the blob dash faster than normal running
+    public Vector2 blobColliderSize = new Vector2(1.2f, 0.45f); // Dedicated miniature collider matching blob sprite bounds
     private bool isBlobForm = false;
 
     [Header("Dash Settings")]
@@ -29,7 +30,8 @@ public class move : MonoBehaviour
     public float lastFacingSign = 1f;
 
     public float LastFacingSign => lastFacingSign;
-    public bool IsInvulnerable => isDashing && invulnerableDuringDash;
+    public bool IsInvulnerable => (isDashing && invulnerableDuringDash) || isBlobForm;
+    public bool IsBlobForm => isBlobForm;
     public bool IsDashing => isDashing;
     public bool IsGrounded => isGrounded;
 
@@ -70,9 +72,12 @@ public class move : MonoBehaviour
     private PlayerPixelDissolveFX dissolveFX;
     private bool isGrounded;
     private Vector3 initialAbsScale = Vector3.one;
-    private BoxCollider2D boxCollider;
+    private Collider2D standingCollider;
+    private BoxCollider2D blobCollider;
     private Vector2 standingColSize;
     private Vector2 standingColOffset;
+    private System.Collections.Generic.List<Collider2D> disabledCollidersInBlob = new System.Collections.Generic.List<Collider2D>();
+    private System.Collections.Generic.List<MonoBehaviour> disabledComponentsInBlob = new System.Collections.Generic.List<MonoBehaviour>();
     private bool wasBlobFormLastFrame = false;
 
     public static move Instance { get; private set; }
@@ -101,9 +106,9 @@ public class move : MonoBehaviour
         if (transform.parent != null)
         {
             Debug.Log($"[move] Detaching Player from parent '{transform.parent.name}' to enable DontDestroyOnLoad.");
-            transform.SetParent(null);
+            transform.SetParent(null, true);
         }
-        DontDestroyOnLoad(gameObject);
+        if (Application.isPlaying) DontDestroyOnLoad(gameObject);
 
         rb = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
@@ -132,12 +137,64 @@ public class move : MonoBehaviour
         }
         if (initialAbsScale == Vector3.zero) initialAbsScale = Vector3.one;
 
-        boxCollider = GetComponent<BoxCollider2D>();
-        if (boxCollider != null)
+        // Setup Dual-Collider System: Standing Collider (Capsule/Box) & 4x Smaller Dedicated Blob Collider
+        // 1. Locate primary standing collider on player
+        standingCollider = null;
+        var rootCols = GetComponents<Collider2D>();
+        foreach (var c in rootCols)
         {
-            standingColSize = boxCollider.size;
-            standingColOffset = boxCollider.offset;
+            if (c != null && c.enabled && !c.isTrigger)
+            {
+                standingCollider = c;
+                break;
+            }
         }
+        if (standingCollider == null && rootCols.Length > 0)
+        {
+            standingCollider = rootCols[0];
+        }
+
+        if (standingCollider != null)
+        {
+            standingColOffset = standingCollider.offset;
+            if (standingCollider is CapsuleCollider2D cc)
+                standingColSize = cc.size;
+            else if (standingCollider is BoxCollider2D bc)
+                standingColSize = bc.size;
+            else
+                standingColSize = standingCollider.bounds.size;
+        }
+        else
+        {
+            standingColSize = new Vector2(1.1f, 2.6f);
+            standingColOffset = Vector2.zero;
+        }
+
+        // 2. Compute Blob Collider: strictly 4 times smaller in height than the standing collider (and 50% width)
+        float blobH = Mathf.Max(0.12f, standingColSize.y * 0.25f);
+        float blobW = Mathf.Max(0.35f, standingColSize.x * 0.50f);
+        blobColliderSize = new Vector2(blobW, blobH);
+
+        // Find or create dedicated BoxCollider2D for blob mode
+        blobCollider = null;
+        foreach (var c in rootCols)
+        {
+            if (c is BoxCollider2D bc && c != standingCollider && (!bc.enabled || bc.size.y <= blobH + 0.1f))
+            {
+                blobCollider = bc;
+                break;
+            }
+        }
+        if (blobCollider == null)
+        {
+            blobCollider = gameObject.AddComponent<BoxCollider2D>();
+        }
+
+        float feetY = standingColOffset.y - (standingColSize.y * 0.5f);
+        blobCollider.size = blobColliderSize;
+        blobCollider.offset = new Vector2(standingColOffset.x, feetY + (blobH * 0.5f));
+        blobCollider.isTrigger = false; // Solid physics collider
+        blobCollider.enabled = false;   // Start disabled until entering Blob Form
 
         EnsureLumiCompanionInitialized();
     }
@@ -154,7 +211,7 @@ public class move : MonoBehaviour
         bool isTutorial = string.Equals(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name, "TutorialScene", System.StringComparison.OrdinalIgnoreCase);
 
         // 1. Initialize Nyxaris Tutorial Guide in TutorialScene
-        if ((isTutorial || enableNyxarisTutorialOrb) && NyxarisOrbGuide.Instance == null)
+        if (isTutorial && enableNyxarisTutorialOrb && NyxarisOrbGuide.Instance == null)
         {
             GameObject existingLocations = GameObject.Find("Nyxaris Guide Locations");
             if (existingLocations == null) existingLocations = GameObject.Find("Nyxaris Guide locations");
@@ -446,9 +503,26 @@ public class move : MonoBehaviour
         bool isRunning = isMoving && isDoubleTapRunning && !isBlobForm;
         bool isWalking = isMoving && !isDoubleTapRunning && !isBlobForm;
 
-        // 👇 Check if pressing M or S/DownArrow AND moving left or right
+        // 👇 Check if pressing M or S/DownArrow: morphs into flat puddle blob
         bool blobInputHeld = (Input.GetKey(KeyCode.M) || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow));
-        if (blobInputHeld && horizontalInput != 0 && !isDashing)
+        
+        // Auto-sustain blob form if inside a low ceiling / crawlspace (Metroid morph-ball rule)
+        bool hasLowCeilingAbove = false;
+        if (isBlobForm)
+        {
+            int ceilingMask = ~LayerMask.GetMask("Player", "Ignore Raycast");
+            float feetY = standingColOffset.y - (standingColSize.y * 0.5f);
+            float fullHeight = (standingColSize.y > 0.5f) ? standingColSize.y : 2.6f;
+            float blobH = (blobColliderSize.y > 0.05f) ? blobColliderSize.y : 0.35f;
+            Vector2 checkOrigin = (Vector2)transform.position + new Vector2(standingColOffset.x, feetY + blobH + 0.04f);
+            RaycastHit2D ceilHit = Physics2D.Raycast(checkOrigin, Vector2.up, fullHeight - blobH, ceilingMask);
+            if (ceilHit.collider != null && !ceilHit.collider.isTrigger && ceilHit.collider.gameObject != gameObject && !ceilHit.collider.CompareTag("enemy") && ceilHit.collider.GetComponent<IDamageable>() == null)
+            {
+                hasLowCeilingAbove = true;
+            }
+        }
+
+        if ((blobInputHeld || hasLowCeilingAbove) && !isDashing)
         {
             isBlobForm = true;
         }
@@ -486,13 +560,20 @@ public class move : MonoBehaviour
         if (isBlobForm)
         {
             currentSpeed *= blobSpeedMultiplier;
+            currentSpeed *= speedDebuffMultiplier;
+            if (!isDashing && rb != null) rb.gravityScale = gravityScale;
+            if (rb != null) rb.linearVelocity = new Vector2(horizontalInput * currentSpeed, rb.linearVelocity.y);
         }
-        else if (isRunning)
+        else
         {
-            currentSpeed *= runSpeedMultiplier;
+            if (!isDashing && rb != null) rb.gravityScale = gravityScale;
+            if (isRunning)
+            {
+                currentSpeed *= runSpeedMultiplier;
+            }
+            currentSpeed *= speedDebuffMultiplier;
+            if (rb != null) rb.linearVelocity = new Vector2(horizontalInput * currentSpeed, rb.linearVelocity.y);
         }
-        currentSpeed *= speedDebuffMultiplier;
-        rb.linearVelocity = new Vector2(horizontalInput * currentSpeed, rb.linearVelocity.y);
 
         // 👇 Update Animator states — but SUPPRESS during active attack animations
         //    so walk/run/idle bools don't fight with the attack state machine transitions.
@@ -522,12 +603,20 @@ public class move : MonoBehaviour
 
                 if (isBlobForm)
                 {
-                    if (anim.HasState(0, Animator.StringToHash("blob")))
+                    var curState = anim.GetCurrentAnimatorStateInfo(0);
+                    if (!curState.IsName("blob") && !curState.IsName("Blob") && !curState.IsName("mageblob"))
                     {
-                        var curState = anim.GetCurrentAnimatorStateInfo(0);
-                        if (!curState.IsName("blob"))
+                        if (anim.HasState(0, Animator.StringToHash("Blob")))
+                        {
+                            anim.Play("Blob", 0, 0f);
+                        }
+                        else if (anim.HasState(0, Animator.StringToHash("blob")))
                         {
                             anim.Play("blob", 0, 0f);
+                        }
+                        else if (anim.HasState(0, Animator.StringToHash("mageblob")))
+                        {
+                            anim.Play("mageblob", 0, 0f);
                         }
                     }
                 }
@@ -542,34 +631,107 @@ public class move : MonoBehaviour
         float scaleZ = Mathf.Max(0.1f, initialAbsScale.z);
         transform.localScale = new Vector3(facing * scaleX, scaleY, scaleZ);
 
-        // Adjust collider size dynamically for Blob Form vs Standing Form
+        // Dual-Collider State Switch: Disable ALL old colliders/components that could cause obstruction during blob
         if (isBlobForm && !wasBlobFormLastFrame)
         {
             wasBlobFormLastFrame = true;
-            if (boxCollider != null)
+            disabledCollidersInBlob.Clear();
+            disabledComponentsInBlob.Clear();
+
+            // 1. Disable all colliders on player AND all child GameObjects (hitbox, Hurtbox, attack, weapon, polygon colliders)
+            Collider2D[] allPlayerColliders = GetComponentsInChildren<Collider2D>(true);
+            foreach (var col in allPlayerColliders)
             {
-                boxCollider.size = new Vector2(standingColSize.x * 1.1f, standingColSize.y * 0.45f);
-                boxCollider.offset = new Vector2(standingColOffset.x, standingColOffset.y - standingColSize.y * 0.25f);
+                if (col != null && col != blobCollider && col.enabled)
+                {
+                    disabledCollidersInBlob.Add(col);
+                    col.enabled = false;
+                }
+            }
+
+            // 2. Disable any polygon hurtbox animators or attack components during blob form
+            var polyAnimators = GetComponentsInChildren<PlayerPolygonColliderAnimator>(true);
+            foreach (var pa in polyAnimators)
+            {
+                if (pa != null && pa.enabled)
+                {
+                    disabledComponentsInBlob.Add(pa);
+                    pa.enabled = false;
+                }
+            }
+
+            var attackScripts = GetComponentsInChildren<Attack>(true);
+            foreach (var att in attackScripts)
+            {
+                if (att != null && att.enabled)
+                {
+                    disabledComponentsInBlob.Add(att);
+                    att.enabled = false;
+                }
+            }
+
+            // 3. Activate 4x smaller dedicated solid blob collider
+            if (blobCollider != null)
+            {
+                float feetY = standingColOffset.y - (standingColSize.y * 0.5f);
+                float bH = Mathf.Max(0.12f, standingColSize.y * 0.25f);
+                float bW = Mathf.Max(0.35f, standingColSize.x * 0.50f);
+                blobCollider.size = new Vector2(bW, bH);
+                blobCollider.offset = new Vector2(standingColOffset.x, feetY + (bH * 0.5f));
+                blobCollider.isTrigger = false; // Solid physics collider
+                blobCollider.enabled = true;
             }
         }
         else if (!isBlobForm && wasBlobFormLastFrame)
         {
             wasBlobFormLastFrame = false;
-            if (boxCollider != null)
+
+            // 1. Disable blob collider
+            if (blobCollider != null)
             {
-                boxCollider.size = standingColSize;
-                boxCollider.offset = standingColOffset;
+                blobCollider.enabled = false;
             }
+
+            // 2. Restore all previously disabled colliders
+            foreach (var col in disabledCollidersInBlob)
+            {
+                if (col != null)
+                {
+                    col.enabled = true;
+                }
+            }
+            disabledCollidersInBlob.Clear();
+
+            // 3. Restore all disabled components (PlayerPolygonColliderAnimator, Attack)
+            foreach (var comp in disabledComponentsInBlob)
+            {
+                if (comp != null)
+                {
+                    comp.enabled = true;
+                }
+            }
+            disabledComponentsInBlob.Clear();
+
+            if (!isDashing) rb.gravityScale = gravityScale;
         }
 
-        // 👇 Jump logic (disable jumping while in blob form)
-        if ((Input.GetButtonDown("Jump") || Input.GetKeyDown(KeyCode.Space)) && isGrounded && !isBlobForm && !isDashing)
+        // 👇 Jump logic (supports both standard jumps and bouncy Blob Leaps)
+        if ((Input.GetButtonDown("Jump") || Input.GetKeyDown(KeyCode.Space)) && isGrounded && !isDashing)
         {
             jumpLockoutTimer = jumpLockoutDuration; // Lockout ground checks for initial launch phase so full animation plays
             groundedGraceTimer = 0f; // Reset grace timer on jump
             isGrounded = false;
 
-            if (useTeleportJump)
+            if (isBlobForm)
+            {
+                // Bouncy Blob Leap: keep low-profile puddle and bounce into the air
+                rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce * 0.95f);
+                if (PlayerCombatJuice.Instance != null)
+                {
+                    PlayerCombatJuice.Instance.TriggerJumpStretch();
+                }
+            }
+            else if (useTeleportJump)
             {
                 // Calculate target position in air with ceiling raycast check
                 Vector2 startPos = transform.position;
@@ -953,12 +1115,23 @@ public class move : MonoBehaviour
 
         // Find the active solid (non-trigger) physics collider
         Collider2D mainCol = null;
-        foreach (var col in GetComponents<Collider2D>())
+        if (isBlobForm && blobCollider != null && blobCollider.enabled)
         {
-            if (col != null && col.enabled && !col.isTrigger)
+            mainCol = blobCollider;
+        }
+        else if (standingCollider != null && standingCollider.enabled && !standingCollider.isTrigger)
+        {
+            mainCol = standingCollider;
+        }
+        else
+        {
+            foreach (var col in GetComponents<Collider2D>())
             {
-                mainCol = col;
-                break;
+                if (col != null && col.enabled && !col.isTrigger)
+                {
+                    mainCol = col;
+                    break;
+                }
             }
         }
 
@@ -972,7 +1145,8 @@ public class move : MonoBehaviour
             checkPos = (Vector2)transform.position + feetOffset;
         }
 
-        Collider2D[] hits = Physics2D.OverlapBoxAll(checkPos, feetBoxSize, 0f);
+        Vector2 boxSize = isBlobForm ? new Vector2(Mathf.Min(feetBoxSize.x, blobColliderSize.x * 0.9f), 0.2f) : feetBoxSize;
+        Collider2D[] hits = Physics2D.OverlapBoxAll(checkPos, boxSize, 0f);
 
         foreach (var col in hits)
         {

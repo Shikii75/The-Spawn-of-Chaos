@@ -21,6 +21,9 @@ public class entersign : MonoBehaviour
     [Tooltip("The key to press to interact.")]
     public KeyCode interactKey = KeyCode.E;
 
+    [Tooltip("If true, automatically triggers the transition as soon as the player steps into the trigger volume (no keypress required).")]
+    public bool autoTriggerOnWalkIn = false;
+
     private SpriteRenderer spriteRenderer;
     private Transform promptTransform;
     private Vector3 targetScale;
@@ -72,30 +75,34 @@ public class entersign : MonoBehaviour
         }
 
         // If the player is inside and presses the interact key, load the destination scene
-        if (isPlayerInside)
+        if (isPlayerInside && !autoTriggerOnWalkIn)
         {
             if (Input.GetKeyDown(interactKey))
             {
-                if (string.IsNullOrEmpty(targetSceneName))
-                {
-                    Debug.LogWarning("[entersign] Cannot load scene: Target Scene Name is empty in the Inspector on this GameObject!");
-                }
-                else
-                {
-                    Debug.Log($"Interacting! Setting target spawn point to '{targetSpawnPointName}' for target scene: {targetSceneName}");
-                    PlayerSpawnPointManager.targetSpawnPointName = targetSpawnPointName;
-
-                    // If target scene is current active scene, teleport player directly without reloading scene
-                    if (targetSceneName == SceneManager.GetActiveScene().name)
-                    {
-                        TeleportPlayerSameScene(targetSpawnPointName);
-                    }
-                    else
-                    {
-                        SceneManager.LoadScene(targetSceneName);
-                    }
-                }
+                TriggerSceneTransition();
             }
+        }
+    }
+
+    public void TriggerSceneTransition()
+    {
+        if (string.IsNullOrEmpty(targetSceneName))
+        {
+            Debug.LogWarning("[entersign] Cannot load scene: Target Scene Name is empty in the Inspector on this GameObject!");
+            return;
+        }
+
+        Debug.Log($"[entersign] Transitioning to '{targetSceneName}' at spawn point '{targetSpawnPointName}'");
+        PlayerSpawnPointManager.targetSpawnPointName = targetSpawnPointName;
+
+        // If target scene is current active scene, teleport player directly without reloading scene
+        if (targetSceneName == SceneManager.GetActiveScene().name)
+        {
+            TeleportPlayerSameScene(targetSpawnPointName);
+        }
+        else
+        {
+            SceneManager.LoadScene(targetSceneName);
         }
     }
 
@@ -126,6 +133,11 @@ public class entersign : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             isPlayerInside = true;
+            if (autoTriggerOnWalkIn)
+            {
+                TriggerSceneTransition();
+                return;
+            }
             AnimatePrompt(true);
         }
     }
@@ -135,7 +147,10 @@ public class entersign : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             isPlayerInside = false;
-            AnimatePrompt(false);
+            if (!autoTriggerOnWalkIn)
+            {
+                AnimatePrompt(false);
+            }
         }
     }
 
@@ -148,8 +163,6 @@ public class entersign : MonoBehaviour
 
         if (!gameObject.activeInHierarchy)
         {
-            // If the game object is inactive, we can't start a coroutine on it.
-            // Directly apply the target states to ensure consistency.
             SetRenderersEnabled(visible);
             SetVisualAlpha(visible ? (spriteRenderer != null ? targetColor.a : 1f) : 0f);
             if (uiPromptObject != gameObject && promptTransform != null)
@@ -178,18 +191,15 @@ public class entersign : MonoBehaviour
         {
             float t = elapsed / duration;
             
-            // 1. Opacity Fade Animation (Standard for all setups)
             if (spriteRenderer != null)
             {
                 SetVisualAlpha(Mathf.Lerp(startAlpha, endAlpha, t));
             }
 
-            // 2. Bounce & Scale Animation (Only run if visual target is separate from trigger collider)
             if (uiPromptObject != gameObject)
             {
                 if (visible)
                 {
-                    // Elastic bounce pop-in effect: overshoot to 1.15x and settle back down
                     if (t < 0.7f)
                     {
                         float subT = t / 0.7f;
@@ -203,7 +213,6 @@ public class entersign : MonoBehaviour
                 }
                 else
                 {
-                    // Smooth scale down to zero on exit
                     promptTransform.localScale = Vector3.Lerp(startScale, endScale, t);
                 }
             }
@@ -212,7 +221,6 @@ public class entersign : MonoBehaviour
             yield return null;
         }
 
-        // Final clean values assignment
         SetVisualAlpha(endAlpha);
         if (uiPromptObject != gameObject)
         {

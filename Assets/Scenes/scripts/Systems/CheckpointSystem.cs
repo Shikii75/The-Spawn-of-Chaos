@@ -26,6 +26,14 @@ public class CheckpointSystem : MonoBehaviour
 
     private bool alreadyActivated = false;
 
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatic()
+    {
+        Instance = null;
+        hasCheckpoint = false;
+        respawnPosition = Vector3.zero;
+    }
+
     void Awake()
     {
         // One persistent manager

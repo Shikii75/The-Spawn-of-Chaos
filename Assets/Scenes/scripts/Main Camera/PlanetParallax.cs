@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 /// <summary>
 /// Parallax controller for a distant planet.
@@ -140,7 +140,7 @@ public class PlanetParallax : MonoBehaviour
         float driftY = 0f;
         if (enableFloatingDrift)
         {
-            driftTimer += Time.deltaTime * driftSpeed;
+            driftTimer = (driftTimer + Time.deltaTime * driftSpeed) % (Mathf.PI * 200f);
             driftY = Mathf.Sin(driftTimer) * driftAmplitude;
         }
 

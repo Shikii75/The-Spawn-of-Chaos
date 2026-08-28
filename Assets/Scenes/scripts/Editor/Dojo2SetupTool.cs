@@ -3,12 +3,12 @@ using UnityEditor;
 using UnityEngine;
 
 /// <summary>
-/// Dojo2SetupTool - Editor menu tool to automatically attach and configure Dojo2WaveManager
-/// inside Dojo 2 in the active scene (SampleScene), wiring up mob spawners, gates, and Nightmare Orbs.
+/// Dojo2SetupTool - Automatically attaches and configures Dojo2WaveManager
+/// inside Dojo2Scene or SampleScene, wiring up mob spawners, gates, audio, and exit doors.
 /// </summary>
 public class Dojo2SetupTool : EditorWindow
 {
-    [MenuItem("Tools/Dojo 2/Setup Wave Manager and Health Orbs")]
+    [MenuItem("Tools/Dojo 2/Setup Wave Manager and Arena")]
     public static void ShowWindow()
     {
         GetWindow<Dojo2SetupTool>("Dojo 2 Setup Tool");
@@ -16,59 +16,91 @@ public class Dojo2SetupTool : EditorWindow
 
     private void OnGUI()
     {
-        GUILayout.Label("Dojo 2 Wave Battle & Health Orb Setup", EditorStyles.boldLabel);
+        GUILayout.Label("Dojo 2 Wave Battle & Arena Setup", EditorStyles.boldLabel);
         EditorGUILayout.HelpBox(
-            "Attaches and configures Dojo2WaveManager under 'Dojo 2' in the active scene.\n" +
-            "- Preserves user custom mob scale & colors\n" +
-            "- Sets up 5 escalating waves (Wave 4: 3 Health Orbs)\n" +
-            "- Connects gates, mob spawners, and Fat Kabuto spawners.", 
+            "Configures Dojo 2 Wave Manager for immediate battle start.\\n" +
+            "- Wires up 5 escalating waves of Samurai enemies\\n" +
+            "- Connects Left/Right gates and mob spawners\\n" +
+            "- Configures temple-thunder (2) BGM and reward loot\\n" +
+            "- Ensures spawn points and return doors are established.",
             MessageType.Info);
 
-        if (GUILayout.Button("Setup Dojo 2 Wave Manager in Scene", GUILayout.Height(40)))
+        if (GUILayout.Button("Setup Dojo 2 in Active Scene", GUILayout.Height(40)))
         {
-            SetupDojo2WaveManager();
+            SetupDojo2InActiveScene();
         }
     }
 
+    [MenuItem("Tools/Dojo 2/Setup Wave Manager and Health Orbs")]
     public static void SetupDojo2WaveManager()
     {
-        GameObject dojo2Root = GameObject.Find("Dojo 2") ?? GameObject.Find("Dojo2");
-        if (dojo2Root == null)
+        SetupDojo2InActiveScene();
+    }
+
+    [MenuItem("Tools/Dojo 2/Configure Active Scene")]
+    public static void SetupDojo2InActiveScene()
+    {
+        // 1. Ensure Dojo2_SpawnPoint exists for player entrance
+        GameObject spawnPointObj = GameObject.Find("Dojo2_SpawnPoint");
+        if (spawnPointObj == null)
         {
-            Debug.LogError("[Dojo2SetupTool] Could not find 'Dojo 2' root object in active scene!");
-            return;
+            spawnPointObj = new GameObject("Dojo2_SpawnPoint");
+            spawnPointObj.transform.position = new Vector3(-15.0f, -6.5f, 0f);
+            Undo.RegisterCreatedObjectUndo(spawnPointObj, "Create Dojo2_SpawnPoint");
         }
 
-        Dojo2WaveManager waveMgr = dojo2Root.GetComponent<Dojo2WaveManager>();
+        // 2. Ensure mob spawners
+        Transform mob1 = GameObject.Find("mobspawner")?.transform ?? GameObject.Find("MobSpawner 1")?.transform;
+        Transform mob2 = GameObject.Find("mobspawner (1)")?.transform ?? GameObject.Find("MobSpawner 2")?.transform;
+        GameObject mob3Obj = GameObject.Find("mobspawner (2)") ?? GameObject.Find("MobSpawner 3");
+        if (mob3Obj == null)
+        {
+            mob3Obj = new GameObject("mobspawner (2)");
+            mob3Obj.transform.position = new Vector3(10.5f, -8.0f, 0f);
+            Undo.RegisterCreatedObjectUndo(mob3Obj, "Create mobspawner (2)");
+        }
+        Transform mob3 = mob3Obj.transform;
+
+        Transform fatKabutoSpawner = GameObject.Find("FatKabutoOnlySpawner")?.transform ?? GameObject.Find("FatKabutoSpawner")?.transform;
+        if (fatKabutoSpawner == null)
+        {
+            GameObject fkObj = new GameObject("FatKabutoOnlySpawner");
+            fkObj.transform.position = new Vector3(4.15f, -6.0f, 0f);
+            Undo.RegisterCreatedObjectUndo(fkObj, "Create FatKabutoOnlySpawner");
+            fatKabutoSpawner = fkObj.transform;
+        }
+
+        // 3. Find Gates
+        GameObject gateL = GameObject.Find("Gate_L") ?? GameObject.Find("LeftGate") ?? GameObject.Find("gate_left");
+        GameObject gateR = GameObject.Find("Gate_R") ?? GameObject.Find("RightGate") ?? GameObject.Find("gate_right");
+
+        // 4. Setup DojoChallengeManager GameObject & Dojo2WaveManager
+        GameObject challengeMgr = GameObject.Find("DojoChallengeManager") ?? GameObject.Find("Dojo2ChallengeManager");
+        if (challengeMgr == null)
+        {
+            challengeMgr = new GameObject("DojoChallengeManager");
+            Undo.RegisterCreatedObjectUndo(challengeMgr, "Create DojoChallengeManager");
+        }
+
+        Dojo2WaveManager waveMgr = challengeMgr.GetComponent<Dojo2WaveManager>();
         if (waveMgr == null)
         {
-            waveMgr = Undo.AddComponent<Dojo2WaveManager>(dojo2Root);
+            waveMgr = Undo.AddComponent<Dojo2WaveManager>(challengeMgr);
         }
 
-        // Find Mob Spawners under Dojo 2
-        Transform mobSpawner1 = dojo2Root.transform.Find("MobSpawner 1") ?? dojo2Root.transform.Find("MobSpawner");
-        Transform mobSpawner2 = dojo2Root.transform.Find("MobSpawner 2");
-        Transform mobSpawner3 = dojo2Root.transform.Find("MobSpawner 3");
-        Transform fatKabutoSpawner = dojo2Root.transform.Find("FatKabutoSpawner") ?? dojo2Root.transform.Find("FatKabutoOnlySpawner");
-
         System.Collections.Generic.List<Transform> spawners = new System.Collections.Generic.List<Transform>();
-        if (mobSpawner1 != null) spawners.Add(mobSpawner1);
-        if (mobSpawner2 != null) spawners.Add(mobSpawner2);
-        if (mobSpawner3 != null) spawners.Add(mobSpawner3);
-
+        if (mob1 != null) spawners.Add(mob1);
+        if (mob2 != null) spawners.Add(mob2);
+        if (mob3 != null) spawners.Add(mob3);
         waveMgr.spawnPoints = spawners.ToArray();
-        waveMgr.fatKabutoSpawnPoint = fatKabutoSpawner != null ? fatKabutoSpawner : (mobSpawner1 != null ? mobSpawner1 : dojo2Root.transform);
-
-        // Find Dojo Gates
-        Transform leftGate = dojo2Root.transform.Find("LeftGate") ?? dojo2Root.transform.Find("gate_left");
-        Transform rightGate = dojo2Root.transform.Find("RightGate") ?? dojo2Root.transform.Find("gate_right");
+        waveMgr.fatKabutoSpawnPoint = fatKabutoSpawner;
 
         System.Collections.Generic.List<GameObject> gates = new System.Collections.Generic.List<GameObject>();
-        if (leftGate != null) gates.Add(leftGate.gameObject);
-        if (rightGate != null) gates.Add(rightGate.gameObject);
+        if (gateL != null) gates.Add(gateL);
+        if (gateR != null) gates.Add(gateR);
         waveMgr.dojoGates = gates.ToArray();
 
-        // Assign mob scene objects / prefabs
+        // Assign mob scene templates
         GameObject maleObj = GameObject.Find("NormalMaleSamurai") ?? GameObject.Find("normalmalesamurai");
         GameObject femaleObj = GameObject.Find("NormalFemaleSamurai") ?? GameObject.Find("normalfemalesamurai");
         GameObject fatObj = GameObject.Find("FatKabuto") ?? GameObject.Find("fatkabuto");
@@ -77,27 +109,41 @@ public class Dojo2SetupTool : EditorWindow
         if (femaleObj != null) waveMgr.normalFemaleSamuraiPrefab = femaleObj;
         if (fatObj != null) waveMgr.fatKabutoPrefab = fatObj;
 
-        // Set combat music to temple-thunder (2) specifically for Dojo 2
-        AudioClip templeThunder2 = Resources.Load<AudioClip>("Audio/temple-thunder (2)");
-        if (templeThunder2 != null) waveMgr.combatMusic = templeThunder2;
+        // Wave Timing & Rewards
+        waveMgr.autoStartDelay = 0.0f; // Immediate fight start!
+        waveMgr.betweenWaveDelay = 2.0f;
+        waveMgr.coinRewardCount = 15;
 
-        // Upgrade any NightmareOrb in front of Dojo 1/Dojo 2 to Health Restoration Orbs
-        NightmareOrbAI[] orbs = Object.FindObjectsByType<NightmareOrbAI>(FindObjectsSortMode.None);
-        foreach (var orb in orbs)
+        // Audio Clips
+        AudioClip combatClip = Resources.Load<AudioClip>("Audio/temple-thunder (2)") ?? Resources.Load<AudioClip>("Audio/temple-thunder");
+        if (combatClip != null) waveMgr.combatMusic = combatClip;
+
+        AudioClip ambientClip = Resources.Load<AudioClip>("Audio/bamboo-incense");
+        if (ambientClip != null) waveMgr.ambientMusic = ambientClip;
+
+        // 5. Ensure Exit Door exists to return to SampleScene
+        GameObject exitDoor = GameObject.Find("Dojo2_ExitDoor");
+        if (exitDoor == null)
         {
-            if (orb != null)
-            {
-                orb.isHealthOrbOnly = true;
-                orb.healthRestoreAmount = 35;
-                EditorUtility.SetDirty(orb);
-            }
+            exitDoor = new GameObject("Dojo2_ExitDoor");
+            exitDoor.transform.position = new Vector3(-21.0f, -6.0f, 0f);
+            var col = exitDoor.AddComponent<BoxCollider2D>();
+            col.isTrigger = true;
+            col.size = new Vector2(4.0f, 6.0f);
+
+            var es = exitDoor.AddComponent<entersign>();
+            es.targetSceneName = "SampleScene";
+            es.targetSpawnPointName = "Dojo2_ReturnPoint";
+            es.interactKey = KeyCode.E;
+            Undo.RegisterCreatedObjectUndo(exitDoor, "Create Dojo2_ExitDoor");
         }
 
         EditorUtility.SetDirty(waveMgr);
-        Undo.RegisterCompleteObjectUndo(dojo2Root, "Setup Dojo 2 Wave Manager");
+        EditorUtility.SetDirty(challengeMgr);
+        Undo.RegisterCompleteObjectUndo(challengeMgr, "Configure Dojo 2");
 
-        Debug.Log("[Dojo2SetupTool] Successfully setup Dojo 2 Wave Manager and Health Orbs!");
-        Selection.activeGameObject = dojo2Root;
+        Debug.Log($"[Dojo2SetupTool] Successfully configured Dojo 2 in scene '{UnityEngine.SceneManagement.SceneManager.GetActiveScene().name}'! Fight starts immediately.");
+        Selection.activeGameObject = challengeMgr;
     }
 }
 #endif

@@ -11,7 +11,7 @@ using UnityEditor;
 /// <summary>
 /// High-aesthetic Controller for the UI Toolkit Main Menu.
 /// Plays full-speed frame animation sequence from the 'keep-54947fd1' folder for the centerpiece logo.
-/// Features glowing purple spirit orbs / fireflies (faceless Lumi-style) floating gently from top to bottom.
+/// Features gentle fireflies floating upward through the menu atmosphere.
 /// </summary>
 [RequireComponent(typeof(UIDocument))]
 public class MainMenuUIToolkitController : MonoBehaviour
@@ -47,14 +47,14 @@ public class MainMenuUIToolkitController : MonoBehaviour
     [Tooltip("Pre-assigned animation frames (populated automatically if empty).")]
     public Texture2D[] logoAnimationFrames;
 
-    [Header("Purple Spirit Orbs / Fireflies (Top to Bottom)")]
-    [Tooltip("Total number of floating spirit orbs.")]
+    [Header("Gentle Fireflies (Bottom to Top)")]
+    [Tooltip("Total number of gentle fireflies.")]
     [Range(10, 80)]
     public int orbCount = 35;
-    [Tooltip("Downward fall speed multiplier.")]
+    [Tooltip("Upward drift speed multiplier.")]
     [Range(0.2f, 3f)]
     public float fallSpeedMultiplier = 1.0f;
-    [Tooltip("Horizontal gentle sway intensity.")]
+    [Tooltip("Horizontal firefly sway intensity.")]
     [Range(0.2f, 3f)]
     public float swayIntensity = 1.0f;
 
@@ -94,7 +94,7 @@ public class MainMenuUIToolkitController : MonoBehaviour
         public VisualElement element;
         public float posX;          // Normalized 0..1 across screen width
         public float posY;          // Normalized 0..1 across screen height
-        public float speedY;        // Downward fall speed
+        public float speedY;        // Upward drift speed
         public float baseSpeedX;    // Base horizontal wind drift
         public float swayAmp;       // Horizontal sway amplitude
         public float swayFreq;      // Horizontal sway frequency
@@ -108,14 +108,13 @@ public class MainMenuUIToolkitController : MonoBehaviour
 
     private readonly List<SpiritOrb> activeOrbs = new List<SpiritOrb>();
 
-    // Ethereal purple / lavender palette for Lumi-style spirit orbs
+    // Warm, restrained lights that read as fireflies against the dark menu.
     private static readonly Color[] OrbColors = new Color[]
     {
-        new Color(0.88f, 0.76f, 1.00f, 0.95f), // Glowing Lavender core (#e0c2ff)
-        new Color(0.75f, 0.52f, 0.99f, 0.90f), // Luminous Neon Purple (#c084fc)
-        new Color(0.66f, 0.33f, 0.97f, 0.85f), // Royal Violet (#a855f7)
-        new Color(0.85f, 0.40f, 0.98f, 0.90f), // Amethyst Star (#d966fa)
-        new Color(0.93f, 0.58f, 0.98f, 0.85f)  // Soft Orchid Aura (#eda4fa)
+        new Color(1.00f, 0.86f, 0.48f, 0.95f),
+        new Color(0.92f, 0.98f, 0.62f, 0.90f),
+        new Color(0.55f, 0.94f, 0.76f, 0.88f),
+        new Color(1.00f, 0.72f, 0.38f, 0.86f)
     };
 
     private void Awake()
@@ -198,7 +197,7 @@ public class MainMenuUIToolkitController : MonoBehaviour
             }
         }
 
-        // Update atmospheric spirit orbs drifting top to bottom
+        // Update atmospheric fireflies drifting bottom to top
         UpdateSpiritOrbs(Time.unscaledDeltaTime);
     }
 
@@ -243,7 +242,7 @@ public class MainMenuUIToolkitController : MonoBehaviour
         }
     }
 
-    #region Spirit Orbs / Fireflies Simulation (Top to Bottom)
+    #region Gentle Fireflies Simulation (Bottom to Top)
 
     private void InitializeSpiritOrbs()
     {
@@ -271,24 +270,24 @@ public class MainMenuUIToolkitController : MonoBehaviour
     {
         SpiritOrb orb = new SpiritOrb();
         orb.element = new VisualElement();
-        orb.element.AddToClassList("purple-spirit-orb");
+        orb.element.AddToClassList("menu-firefly");
 
         orb.posX = Random.value;
-        orb.posY = randomY ? Random.value : (-0.05f - Random.Range(0f, 0.05f));
+        orb.posY = randomY ? Random.value : (1.05f + Random.Range(0f, 0.08f));
 
-        // Downward slow floating speed (calm, serene snowfall / firefly pace)
-        orb.speedY = Random.Range(0.008f, 0.022f) * fallSpeedMultiplier;
-        orb.baseSpeedX = Random.Range(-0.005f, 0.008f);
+        // Slow upward drift with a slight individual horizontal bias.
+        orb.speedY = Random.Range(0.006f, 0.014f) * fallSpeedMultiplier;
+        orb.baseSpeedX = Random.Range(-0.003f, 0.003f);
 
-        // Sinusoidal horizontal wafting (gentle lazy sway)
-        orb.swayAmp = Random.Range(0.012f, 0.032f) * swayIntensity;
-        orb.swayFreq = Random.Range(0.35f, 0.95f);
+        // Sinusoidal horizontal wafting keeps the movement organic and quiet.
+        orb.swayAmp = Random.Range(0.008f, 0.022f) * swayIntensity;
+        orb.swayFreq = Random.Range(0.25f, 0.65f);
         orb.swayPhase = Random.Range(0f, Mathf.PI * 2f);
 
-        // Orb sizes (small 4px to prominent 14px)
-        orb.size = Random.Range(4.5f, 13.5f);
-        orb.baseAlpha = Random.Range(0.55f, 0.95f);
-        orb.pulseSpeed = Random.Range(0.6f, 1.8f);
+        // Small points of light, with varied pulse timing.
+        orb.size = Random.Range(3.5f, 7.5f);
+        orb.baseAlpha = Random.Range(0.35f, 0.72f);
+        orb.pulseSpeed = Random.Range(0.8f, 1.7f);
         orb.pulsePhase = Random.Range(0f, Mathf.PI * 2f);
         orb.color = OrbColors[Random.Range(0, OrbColors.Length)];
 
@@ -315,8 +314,8 @@ public class MainMenuUIToolkitController : MonoBehaviour
         {
             SpiritOrb orb = activeOrbs[i];
 
-            // Downward movement (top to bottom)
-            orb.posY += orb.speedY * dt;
+            // Upward movement (bottom to top).
+            orb.posY -= orb.speedY * dt;
 
             // Gentle organic horizontal floating sway
             float swayOffset = Mathf.Sin(time * orb.swayFreq + orb.swayPhase) * orb.swayAmp;
@@ -327,34 +326,34 @@ public class MainMenuUIToolkitController : MonoBehaviour
             else if (currentX > 1.05f) currentX = -0.05f;
             orb.posX = currentX;
 
-            // Natural fade: Fades in near top (y < 0.15), stays glowing in middle, fades out near bottom (y > 0.85)
+            // Fade in from below and out near the top of the screen.
             float verticalFade = 1.0f;
-            if (orb.posY < 0.15f)
+            if (orb.posY > 0.85f)
             {
-                verticalFade = Mathf.InverseLerp(-0.05f, 0.15f, orb.posY);
+                verticalFade = Mathf.InverseLerp(1.08f, 0.85f, orb.posY);
             }
-            else if (orb.posY > 0.85f)
+            else if (orb.posY < 0.15f)
             {
-                verticalFade = Mathf.InverseLerp(1.05f, 0.85f, orb.posY);
+                verticalFade = Mathf.InverseLerp(-0.08f, 0.15f, orb.posY);
             }
 
-            // Soft breathing firefly pulsation
-            float pulse = 0.8f + Mathf.Sin(time * orb.pulseSpeed + orb.pulsePhase) * 0.2f;
+            // Periodic glow pulse: most of the time the firefly stays subtle, then glints.
+            float pulse = 0.68f + Mathf.Pow(Mathf.Clamp01((Mathf.Sin(time * orb.pulseSpeed + orb.pulsePhase) + 1f) * 0.5f), 3f) * 0.32f;
             float alpha = orb.baseAlpha * verticalFade * pulse;
             orb.element.style.opacity = Mathf.Clamp01(alpha);
 
-            // Subtle scale breathing
-            float scale = 1.0f + Mathf.Sin(time * orb.pulseSpeed * 0.8f + orb.pulsePhase) * 0.12f;
+            // The slight size change sells the glow without making the particles feel noisy.
+            float scale = 0.88f + pulse * 0.28f;
             orb.element.style.scale = new Scale(new Vector2(scale, scale));
 
             PositionOrb(orb);
 
-            // Wrap orb to top when it drifts past bottom of screen
-            if (orb.posY > 1.05f)
+            // Wrap the firefly back below the screen after it rises away.
+            if (orb.posY < -0.08f)
             {
-                orb.posY = -0.05f - Random.Range(0f, 0.05f);
+                orb.posY = 1.05f + Random.Range(0f, 0.08f);
                 orb.posX = Random.value;
-                orb.speedY = Random.Range(0.008f, 0.022f) * fallSpeedMultiplier;
+                orb.speedY = Random.Range(0.006f, 0.014f) * fallSpeedMultiplier;
                 orb.color = OrbColors[Random.Range(0, OrbColors.Length)];
                 orb.element.style.backgroundColor = orb.color;
             }

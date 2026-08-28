@@ -94,7 +94,7 @@ public class TutorialLevelBuilder : EditorWindow
         MakePlatform("Blob_Floor", 38f, -7.5f, 30f, 3f, new Color(0.25f, 0.2f, 0.3f), "Ground", sec2.transform);
 
         // Low Rock Overhang Ceiling (1.2 units height gap)
-        MakePlatform("Blob_CeilingOverhang", 38f, -4.8f, 24f, 3f, new Color(0.2f, 0.15f, 0.25f), "Ground", sec2.transform);
+        MakePlatform("Blob_CeilingOverhang", 38f, -3.3f, 24f, 3f, new Color(0.2f, 0.15f, 0.25f), "Ground", sec2.transform);
 
         // Tutorial Signboard for Blob Form
         GameObject signObj = new GameObject("Blob_TutorialSign");

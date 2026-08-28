@@ -48,7 +48,7 @@ public class Health : MonoBehaviour, IDamageable
         move playerMove = GetComponent<move>();
         if (playerMove != null && playerMove.IsInvulnerable)
         {
-            Debug.Log($"{name} is invulnerable during dash! Ignored damage.");
+            Debug.Log($"{name} is invulnerable (blob/dash)! Ignored damage.");
             return;
         }
 

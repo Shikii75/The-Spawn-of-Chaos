@@ -702,6 +702,8 @@ public class LightOrbCompanion : MonoBehaviour
 
     private void UpdateBouncyMovementAndSquash()
     {
+        if (playerTransform == null) return;
+
         float facingDirection = (playerTransform.localScale.x < 0) ? -1.0f : 1.0f;
 
         Vector3 targetOffset = followOffset;
@@ -718,48 +720,59 @@ public class LightOrbCompanion : MonoBehaviour
         float hover = (Mathf.Sin(Time.time * hoverFrequency1) * 0.7f + Mathf.Sin(Time.time * hoverFrequency2) * 0.3f) * hoverAmplitude;
         targetPos.y += hover;
 
-        Vector3 prevPos = transform.position;
-
         // Move Lumi to hover position (unless grappling or body attacking)
         if (!IsGrappling && !isBodyAttacking)
         {
             transform.position = Vector3.SmoothDamp(transform.position, targetPos, ref currentVelocity, smoothTime);
         }
 
+        // Velocity-based squash and stretch target calculation
         float speed = currentVelocity.magnitude;
         Vector3 targetScaleOffset = Vector3.zero;
 
         if (speed > 0.4f)
         {
-            float stretchFactor = Mathf.Clamp(speed * 0.08f, 0f, maxVelocityStretch);
+            float stretchFactor = Mathf.Clamp(speed * 0.04f, 0f, 0.15f);
             targetScaleOffset = new Vector3(-stretchFactor * 0.5f, stretchFactor, 0f);
         }
 
-        Vector3 springForce = -springStiffness * scaleSpringOffset - springDamping * scaleSpringVelocity;
-        scaleSpringVelocity += springForce * Time.deltaTime;
-        scaleSpringOffset += (scaleSpringVelocity + (targetScaleOffset - scaleSpringOffset) * 12f) * Time.deltaTime;
+        // Robust, unconditionally stable smooth damping for spring squash & stretch
+        float dt = Mathf.Min(Time.deltaTime, 0.033f);
+        scaleSpringOffset = Vector3.SmoothDamp(scaleSpringOffset, targetScaleOffset, ref scaleSpringVelocity, 0.08f, 10f, dt);
+        
+        // Safety clamp on spring offset
+        scaleSpringOffset.x = Mathf.Clamp(scaleSpringOffset.x, -0.2f, 0.2f);
+        scaleSpringOffset.y = Mathf.Clamp(scaleSpringOffset.y, -0.2f, 0.2f);
+        scaleSpringOffset.z = 0f;
 
-        // Enhanced breathing animation - smoother sine with subtle secondary harmonic
-        float breathe = 1.0f + Mathf.Sin(Time.time * 1.5f) * 0.05f + Mathf.Sin(Time.time * 2.7f) * 0.025f;
-        float corePulse = breathe * popBounceScale;
+        // Enhanced breathing animation - subtle and bounded
+        float breathe = 1.0f + Mathf.Sin(Time.time * 1.5f) * 0.04f + Mathf.Sin(Time.time * 2.7f) * 0.02f;
+        float corePulse = Mathf.Clamp(breathe * popBounceScale, 0.8f, 1.25f);
         Vector3 finalScale = Vector3.one * corePulse + scaleSpringOffset;
 
-        if (orbCoreRenderer != null)
-        {
-            orbCoreRenderer.transform.localScale = finalScale;
-        }
+        // Clamp final scale within strictly safe visual boundaries
+        finalScale.x = Mathf.Clamp(finalScale.x, 0.7f, 1.3f);
+        finalScale.y = Mathf.Clamp(finalScale.y, 0.7f, 1.3f);
+        finalScale.z = 1f;
+
+        // Apply scale to root transform
+        transform.localScale = finalScale;
+
+        // Child renderers maintain stable local scale proportions
         if (orbCoronaRenderer != null)
         {
-            float coronaPulse = 3.0f * (1.0f + Mathf.Sin(Time.time * 2.5f) * 0.05f + Mathf.Sin(Time.time * 4.2f) * 0.03f);
-            orbCoronaRenderer.transform.localScale = Vector3.one * coronaPulse + scaleSpringOffset * 1.5f;
+            float coronaPulse = 3.0f * (1.0f + Mathf.Sin(Time.time * 2.5f) * 0.04f);
+            coronaPulse = Mathf.Clamp(coronaPulse, 2.7f, 3.3f);
+            orbCoronaRenderer.transform.localScale = Vector3.one * coronaPulse;
         }
         if (orbNebulaRenderer != null)
         {
-            float nebulaPulse = 1.6f * (1.0f + Mathf.Sin(Time.time * 1.8f) * 0.04f);
-            orbNebulaRenderer.transform.localScale = Vector3.one * nebulaPulse + scaleSpringOffset * 0.8f;
+            float nebulaPulse = 1.6f * (1.0f + Mathf.Sin(Time.time * 1.8f) * 0.03f);
+            nebulaPulse = Mathf.Clamp(nebulaPulse, 1.4f, 1.8f);
+            orbNebulaRenderer.transform.localScale = Vector3.one * nebulaPulse;
         }
 
-        popBounceScale = Mathf.Lerp(popBounceScale, 1.0f, Time.deltaTime * 8f);
+        popBounceScale = Mathf.Lerp(popBounceScale, 1.0f, Time.deltaTime * 6f);
     }
 
     private void UpdateEyeLookAtTracking()
@@ -835,8 +848,8 @@ public class LightOrbCompanion : MonoBehaviour
 
     public void TriggerPopBounce(float scaleMultiplier)
     {
-        popBounceScale = scaleMultiplier;
-        scaleSpringVelocity = new Vector3(0.4f, -0.6f, 0f) * scaleMultiplier;
+        popBounceScale = Mathf.Clamp(scaleMultiplier, 0.85f, 1.25f);
+        scaleSpringVelocity = new Vector3(0.15f, -0.2f, 0f) * popBounceScale;
     }
 
     private void UpdateBlinkAnimation()

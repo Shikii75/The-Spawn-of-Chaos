@@ -212,6 +212,7 @@ MonoBehaviour:
   useTeleportJump: 0
   teleportJumpDistance: 4.2
   blobSpeedMultiplier: 1.5
+  blobColliderSize: {x: 0.9, y: 0.35}
   dashSpeed: 22
   dashDuration: 0.45
   dashCooldown: 0.4

@@ -36,10 +36,15 @@ public class PlayerSceneSpawner : MonoBehaviour
         // --- Step 2: Clean up duplicates ---
         CleanupDuplicatePlayers(ref player);
 
-        // --- Step 3: No spawn point and no respawn = editor play mode, leave player in place ---
-        if (string.IsNullOrEmpty(targetName) && !isRespawning && player != null)
+        // --- Step 3: If no explicit door transition spawn point, ALWAYS leave player at editor position! ---
+        if (string.IsNullOrEmpty(targetName) && player != null)
         {
-            Debug.Log("[PlayerSceneSpawner] No target spawn point set, not respawning, and Player exists. Leaving at editor position.");
+            Debug.Log($"[PlayerSceneSpawner] Preserving player editor position at {player.transform.position}");
+            if (isRespawning)
+            {
+                Health ph = player.GetComponent<Health>();
+                if (ph != null) ph.Resurrect();
+            }
             ActivateAndSetupPlayer(player);
             return;
         }
@@ -108,34 +113,41 @@ public class PlayerSceneSpawner : MonoBehaviour
     /// </summary>
     private GameObject FindPersistentPlayer()
     {
-        // Priority 1: move.Instance (set in move.Awake via DontDestroyOnLoad)
-        if (move.Instance != null)
+        // Priority 1: Direct search for real Player in the active scene with SpriteRenderer
+        GameObject realPlayerInScene = GameObject.Find("Player");
+        if (realPlayerInScene != null && realPlayerInScene.GetComponentInChildren<SpriteRenderer>(true) != null)
+        {
+            Debug.Log($"[PlayerSceneSpawner] Found scene player '{realPlayerInScene.name}' at {realPlayerInScene.transform.position}");
+            return realPlayerInScene;
+        }
+
+        // Priority 2: move.Instance if valid and has visual components
+        if (move.Instance != null && !move.Instance.gameObject.name.StartsWith("Test") && move.Instance.GetComponentInChildren<SpriteRenderer>(true) != null)
         {
             Debug.Log($"[PlayerSceneSpawner] Found player via move.Instance: '{move.Instance.gameObject.name}' active={move.Instance.gameObject.activeInHierarchy}");
             return move.Instance.gameObject;
         }
 
-        // Priority 2: PlayerPersistence.Instance
-        if (PlayerPersistence.Instance != null)
+        // Priority 3: Tag search
+        GameObject[] taggedPlayers = GameObject.FindGameObjectsWithTag("Player");
+        foreach (var p in taggedPlayers)
         {
-            Debug.Log($"[PlayerSceneSpawner] Found player via PlayerPersistence.Instance: '{PlayerPersistence.Instance.gameObject.name}'");
-            return PlayerPersistence.Instance.gameObject;
+            if (p != null && !p.name.StartsWith("Test") && p.GetComponentInChildren<SpriteRenderer>(true) != null)
+            {
+                Debug.Log($"[PlayerSceneSpawner] Found player via tag search: '{p.name}' at {p.transform.position}");
+                return p;
+            }
         }
 
-        // Priority 3: Tag search (finds any player including DontDestroyOnLoad objects)
-        GameObject taggedPlayer = GameObject.FindGameObjectWithTag("Player");
-        if (taggedPlayer != null)
+        // Priority 4: FindObjectsOfType<move>
+        move[] allMoves = FindObjectsOfType<move>(true);
+        foreach (var m in allMoves)
         {
-            Debug.Log($"[PlayerSceneSpawner] Found player via tag search: '{taggedPlayer.name}' active={taggedPlayer.activeInHierarchy}");
-            return taggedPlayer;
-        }
-
-        // Priority 4: FindObjectOfType on move component (searches inactive objects too)
-        move moveComponent = FindObjectOfType<move>(true);
-        if (moveComponent != null)
-        {
-            Debug.Log($"[PlayerSceneSpawner] Found player via FindObjectOfType<move>: '{moveComponent.gameObject.name}' active={moveComponent.gameObject.activeInHierarchy}");
-            return moveComponent.gameObject;
+            if (m != null && !m.gameObject.name.StartsWith("Test") && m.GetComponentInChildren<SpriteRenderer>(true) != null)
+            {
+                Debug.Log($"[PlayerSceneSpawner] Found player via move component: '{m.gameObject.name}' at {m.transform.position}");
+                return m.gameObject;
+            }
         }
 
         Debug.LogWarning("[PlayerSceneSpawner] No persistent player found by any method.");

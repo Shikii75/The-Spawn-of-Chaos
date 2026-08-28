@@ -13,7 +13,7 @@
         <ui:VisualElement class="corner-bracket corner--bl" />
         <ui:VisualElement class="corner-bracket corner--br" />
 
-        <!-- Atmospheric Purple Spirit Orbs / Fireflies Overlay Layer (Top to Bottom) -->
+        <!-- Gentle Fireflies Overlay Layer (Bottom to Top) -->
         <ui:VisualElement name="orbs-container" class="orbs-container" />
 
         <!-- Main Screen Layout (Centerpiece Logo + Horizontal Button Row) -->
@@ -32,7 +32,10 @@
                     <ui:VisualElement class="btn-top-accent" />
                     <ui:VisualElement class="btn-content-row">
                         <ui:Label text="✦" class="btn-rune btn-rune--left" />
-                        <ui:Label text="PLAY" class="btn-label" />
+                        <ui:VisualElement class="btn-copy">
+                            <ui:Label text="PLAY" class="btn-label" />
+                            <ui:Label text="ENTER THE REALM" class="btn-hint" />
+                        </ui:VisualElement>
                         <ui:Label text="✦" class="btn-rune btn-rune--right" />
                     </ui:VisualElement>
                     <ui:VisualElement class="btn-bottom-accent" />
@@ -43,7 +46,10 @@
                     <ui:VisualElement class="btn-top-accent" />
                     <ui:VisualElement class="btn-content-row">
                         <ui:Label text="⚙" class="btn-rune btn-rune--left" />
-                        <ui:Label text="OPTIONS" class="btn-label" />
+                        <ui:VisualElement class="btn-copy">
+                            <ui:Label text="OPTIONS" class="btn-label" />
+                            <ui:Label text="TUNE YOUR RITUAL" class="btn-hint" />
+                        </ui:VisualElement>
                         <ui:Label text="⚙" class="btn-rune btn-rune--right" />
                     </ui:VisualElement>
                     <ui:VisualElement class="btn-bottom-accent" />
@@ -54,7 +60,10 @@
                     <ui:VisualElement class="btn-top-accent" />
                     <ui:VisualElement class="btn-content-row">
                         <ui:Label text="✕" class="btn-rune btn-rune--left" />
-                        <ui:Label text="QUIT" class="btn-label" />
+                        <ui:VisualElement class="btn-copy">
+                            <ui:Label text="QUIT" class="btn-label" />
+                            <ui:Label text="LEAVE THE REALM" class="btn-hint" />
+                        </ui:VisualElement>
                         <ui:Label text="✕" class="btn-rune btn-rune--right" />
                     </ui:VisualElement>
                     <ui:VisualElement class="btn-bottom-accent" />

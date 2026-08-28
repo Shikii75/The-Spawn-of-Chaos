@@ -270,7 +270,7 @@ public class BasePlayerBuilder
         moveScript.jumpForce = 15.5f;
         moveScript.gravityScale = 2.8f;
         moveScript.useTeleportJump = false;
-        moveScript.enableOrbCompanion = false;
+        moveScript.blobColliderSize = new Vector2(1.2f, 0.9f);
 
         Health health = basePlayerGO.AddComponent<Health>();
         health.maxHealth = 1000;

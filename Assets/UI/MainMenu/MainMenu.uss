@@ -31,7 +31,7 @@
     opacity: 1.0;
 }
 
-/* ── Atmospheric Purple Spirit Orbs / Fireflies Overlay Layer ── */
+/* ── Gentle Fireflies Overlay Layer ── */
 .orbs-container {
     position: absolute;
     left: 0;
@@ -44,11 +44,11 @@
     pointer-events: none;
 }
 
-.purple-spirit-orb {
+.menu-firefly {
     position: absolute;
     border-radius: 50%;
     pointer-events: none;
-    box-shadow: 0 0 10px rgba(192, 132, 252, 0.7);
+    box-shadow: 0 0 4px rgba(255, 224, 120, 0.65), 0 0 10px rgba(116, 242, 177, 0.24);
 }
 
 /* ── Corner Framing Brackets ── */
@@ -131,14 +131,15 @@
 /* ── Procedural Cyber-Gothic Glassmorphic Buttons ── */
 .cyber-button {
     width: 220px;
-    height: 56px;
+    height: 72px;
     margin-left: 14px;
     margin-right: 14px;
-    padding: 0;
-    background-color: rgba(18, 19, 26, 0.94);
-    border-color: rgba(168, 85, 247, 0.45);
-    border-width: 1.5px;
-    border-radius: 10px;
+    padding-left: 14px;
+    padding-right: 14px;
+    background-color: rgba(18, 19, 26, 0.96);
+    border-color: rgba(168, 85, 247, 0.5);
+    border-width: 1px;
+    border-radius: 6px 18px 6px 18px;
     justify-content: space-between;
     align-items: stretch;
     overflow: hidden;
@@ -148,7 +149,7 @@
 }
 
 .btn-top-accent {
-    height: 2px;
+    height: 3px;
     width: 100%;
     background-color: rgba(168, 85, 247, 0.35);
     transition-property: background-color;
@@ -165,40 +166,84 @@
 
 .btn-content-row {
     flex-direction: row;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
     flex-grow: 1;
-    padding-left: 10px;
-    padding-right: 10px;
+    padding-left: 4px;
+    padding-right: 4px;
+}
+
+.btn-copy {
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-label {
-    font-size: 15px;
+    font-size: 16px;
     -unity-font-style: bold;
-    color: #e2e8f0;
-    letter-spacing: 5px;
-    margin-left: 8px;
-    margin-right: 8px;
+    color: #f1f5f9;
+    letter-spacing: 4px;
     transition-property: color;
     transition-duration: 0.22s;
 }
 
+.btn-hint {
+    margin-top: 3px;
+    font-size: 9px;
+    color: rgba(226, 232, 240, 0.55);
+    letter-spacing: 2px;
+}
+
 .btn-rune {
-    font-size: 11px;
+    width: 28px;
+    height: 28px;
+    font-size: 13px;
     color: #c084fc;
     opacity: 0.65;
+    border-radius: 14px;
+    border-width: 1px;
+    border-color: rgba(192, 132, 252, 0.4);
+    background-color: rgba(168, 85, 247, 0.1);
+    -unity-text-align: middle-center;
     transition-property: opacity, translate, color;
     transition-duration: 0.22s;
 }
 
+.cyber-button--play {
+    border-color: rgba(45, 212, 191, 0.55);
+}
+
+.cyber-button--play .btn-top-accent,
+.cyber-button--play .btn-rune {
+    background-color: rgba(45, 212, 191, 0.3);
+    color: #5eead4;
+    border-color: rgba(94, 234, 212, 0.55);
+}
+
+.cyber-button--options {
+    border-color: rgba(192, 132, 252, 0.55);
+}
+
+.cyber-button--quit {
+    border-color: rgba(251, 113, 133, 0.5);
+}
+
+.cyber-button--quit .btn-top-accent,
+.cyber-button--quit .btn-rune {
+    background-color: rgba(244, 63, 94, 0.22);
+    color: #fda4af;
+    border-color: rgba(253, 164, 175, 0.5);
+}
+
 /* Hover States */
 .cyber-button:hover {
-    scale: 1.05 1.05;
-    translate: 0px -5px;
+    scale: 1.04 1.04;
+    translate: 0px -4px;
     background-color: rgba(38, 20, 68, 0.98);
-    border-color: #f43f5e;
-    border-width: 1.5px;
-    box-shadow: 0 0 24px rgba(244, 63, 94, 0.55);
+    border-color: #fda4af;
+    border-width: 1px;
+    box-shadow: 0 0 26px rgba(192, 132, 252, 0.42);
 }
 
 .cyber-button:hover .btn-top-accent {
@@ -233,6 +278,11 @@
     translate: 0px -2px;
     background-color: rgba(225, 29, 72, 0.4);
     border-color: #fda4af;
+}
+
+.cyber-button:focus {
+    border-color: #ffffff;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2), 0 0 24px rgba(192, 132, 252, 0.5);
 }
 
 /* ── Modals (Settings & Options) ── */
