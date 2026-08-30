@@ -65,7 +65,7 @@ public class MageCombat : MonoBehaviour
     /// </summary>
     public bool IsAttacking
     {
-        get { return comboStep > 0 && (IsAttack1Playing() || IsSecondHitPlaying()); }
+        get { return comboStep == 1 && IsAttack1Playing(); }
     }
 
     void Awake()
@@ -209,18 +209,8 @@ public class MageCombat : MonoBehaviour
 
     private bool IsSecondHitPlaying()
     {
-        if (animator == null) return false;
         float elapsed = Time.time - secondHitStartTime;
-
-        // Primary check: has enough real time passed for the clip to have finished?
-        if (elapsed < followupClipDuration) return true;
-
-        // Secondary check: is the animator still in the followup/secondhit state?
-        AnimatorStateInfo state = animator.GetCurrentAnimatorStateInfo(0);
-        if ((state.shortNameHash == hashFollowupAttack || state.shortNameHash == hashSecondHit) && state.normalizedTime < 1.0f)
-            return true;
-
-        return false;
+        return comboStep == 2 && elapsed < 0.35f;
     }
 
     /// <summary>
@@ -302,7 +292,7 @@ public class MageCombat : MonoBehaviour
     {
         comboStep = 2;
         secondHitQueued = false;
-        comboTimer = comboWindowDuration;
+        comboTimer = 0.35f;
         secondHitStartTime = Time.time;
 
         if (move.Instance != null)
@@ -310,7 +300,21 @@ public class MageCombat : MonoBehaviour
             move.Instance.ResetPlayerScaleToNormal();
         }
 
-        // Execute the high-impact Spear Sonic Piercing Thrust!
+        // 1. Clear all attack triggers so no attack animation is played on the player
+        ResetAllAttackTriggers();
+
+        // 2. Ensure player returns cleanly to idle (no attack animation on the player)
+        if (animator != null)
+        {
+            var curState = animator.GetCurrentAnimatorStateInfo(0);
+            if (curState.IsName("Attack") || curState.IsName("attack") || 
+                curState.IsName("secondhit") || curState.IsName("followupAttack"))
+            {
+                animator.Play("idle", 0, 0f);
+            }
+        }
+
+        // 3. Execute the high-impact Spear Sonic Piercing Thrust!
         float facing = (transform.localScale.x < 0f) ? -1f : 1f;
         if (LumiSpearWeapon.Instance != null)
         {
