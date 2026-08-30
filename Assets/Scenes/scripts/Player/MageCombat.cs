@@ -310,17 +310,12 @@ public class MageCombat : MonoBehaviour
             move.Instance.ResetPlayerScaleToNormal();
         }
 
-        if (animator != null)
+        // Execute the high-impact Spear Sonic Piercing Thrust!
+        float facing = (transform.localScale.x < 0f) ? -1f : 1f;
+        if (LumiSpearWeapon.Instance != null)
         {
-            // 1. Clear ALL attack triggers to prevent queued trigger buildup
-            ResetAllAttackTriggers();
-
-            // 2. Force-play the followupAttack state at frame 0 with NO cross-fade blending.
-            animator.Play("followupAttack", 0, 0f);
+            LumiSpearWeapon.Instance.ExecuteMeleeSpearThrust(facing);
         }
-
-        if (shadowVFXCoroutine != null) StopCoroutine(shadowVFXCoroutine);
-        shadowVFXCoroutine = StartCoroutine(SecondHitShadowFXRoutine());
 
         EnableMeleeCollider(secondHitDamage);
     }

@@ -7,7 +7,8 @@ public enum SpearState
     CarriedByLumi,
     ThrownFlight,
     Embedded,
-    Recalling
+    Recalling,
+    MeleeThrusting
 }
 
 /// <summary>
@@ -596,5 +597,170 @@ public class LumiSpearWeapon : MonoBehaviour
 
         ps.Play();
         Destroy(burstGO, 0.8f);
+    }
+
+    [Header("Melee Combo Finisher")]
+    public int meleeThrustDamage = 75;
+    public float meleeThrustDistance = 6.5f;
+    public float meleeThrustDuration = 0.12f;
+    public float meleeThrustReturnDuration = 0.15f;
+    private Coroutine meleeThrustCoroutine;
+
+    /// <summary>
+    /// Executes the high-impact Sonic Piercing Thrust combo finisher when player double-taps J.
+    /// Auto-recalls spear if currently away, aligns horizontally, pierces forward dealing 75 damage
+    /// with pure white impact flash and screen shake, and returns smoothly to Lumi.
+    /// </summary>
+    public void ExecuteMeleeSpearThrust(float facingDirection)
+    {
+        FindReferences();
+        if (meleeThrustCoroutine != null) StopCoroutine(meleeThrustCoroutine);
+        meleeThrustCoroutine = StartCoroutine(MeleeSpearThrustRoutine(facingDirection));
+    }
+
+    private IEnumerator MeleeSpearThrustRoutine(float facingDirection)
+    {
+        // 1. If currently embedded or dragging, cancel attachment immediately
+        if (platformCollider != null) platformCollider.enabled = false;
+        if (platformEffector != null) platformEffector.enabled = false;
+        attachedSurface = null;
+        isAutoDragging = false;
+        if (tetherLineRenderer != null) tetherLineRenderer.enabled = false;
+
+        CurrentState = SpearState.MeleeThrusting;
+
+        // 2. Snap to launch position slightly in front of Lumi/Player
+        Vector3 startPos;
+        if (lumi != null)
+        {
+            startPos = lumi.transform.position + new Vector3(facingDirection * 0.4f, 0f, 0f);
+        }
+        else if (playerTransform != null)
+        {
+            startPos = playerTransform.position + new Vector3(facingDirection * 0.8f, 0.2f, 0f);
+        }
+        else
+        {
+            startPos = transform.position;
+        }
+        startPos.z = 0f;
+        transform.position = startPos;
+
+        // Align horizontally
+        float targetAngle = (facingDirection < 0f) ? 180f : 0f;
+        transform.rotation = Quaternion.Euler(0f, 0f, targetAngle);
+
+        if (trailRenderer != null)
+        {
+            trailRenderer.emitting = true;
+            trailRenderer.Clear();
+        }
+
+        SpawnSonicShockwave(startPos, facingDirection);
+
+        // 3. High-Velocity Piercing Thrust Phase
+        Vector3 targetPos = startPos + new Vector3(facingDirection * meleeThrustDistance, 0f, 0f);
+        float elapsed = 0f;
+        var hitTargets = new System.Collections.Generic.HashSet<GameObject>();
+
+        while (elapsed < meleeThrustDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / meleeThrustDuration);
+            // Snap forward with high acceleration curve
+            float curveT = Mathf.Sin(t * Mathf.PI * 0.5f);
+            Vector3 currentPos = Vector3.Lerp(startPos, targetPos, curveT);
+            transform.position = currentPos;
+
+            // Detect and pierce enemies along the thrust path
+            Collider2D[] hits = Physics2D.OverlapCircleAll(currentPos, 1.35f);
+            foreach (var col in hits)
+            {
+                if (col == null || col.isTrigger || col.CompareTag("Player")) continue;
+                GameObject rootTarget = col.transform.root.gameObject;
+                if (hitTargets.Contains(rootTarget) || hitTargets.Contains(col.gameObject)) continue;
+
+                var damageable = col.GetComponent<IDamageable>() ?? col.GetComponentInParent<IDamageable>();
+                var health = col.GetComponent<Health>() ?? col.GetComponentInParent<Health>();
+
+                if (damageable != null || health != null || col.CompareTag("enemy"))
+                {
+                    hitTargets.Add(rootTarget);
+                    hitTargets.Add(col.gameObject);
+
+                    // Deal 75 Heavy Damage!
+                    if (damageable != null) damageable.TakeDamage(meleeThrustDamage);
+                    else if (health != null) health.TakeDamage(meleeThrustDamage);
+
+                    // Trigger Pure White Impact Flash!
+                    SpawnOfChaos.Systems.ImpactFrameFX.Trigger(col.bounds.center, 0.07f, isNegativeInversion: false);
+
+                    // Directional Screen Shake & Hit Feedback
+                    HitFeedbackManager.TriggerHitFeedback(col.transform, col.bounds.center, meleeThrustDamage, true, EnemyHitType.PhysicalMelee);
+
+                    // Directional Knockback
+                    Rigidbody2D enemyRb = col.GetComponent<Rigidbody2D>() ?? col.GetComponentInParent<Rigidbody2D>();
+                    if (enemyRb != null && enemyRb.bodyType == RigidbodyType2D.Dynamic)
+                    {
+                        enemyRb.linearVelocity = new Vector2(facingDirection * 15f, 4.0f);
+                    }
+
+                    // Impact Magic Burst VFX
+                    SpawnBlueMagicBurst(col.bounds.center, 22, 1.2f);
+                }
+            }
+
+            yield return null;
+        }
+
+        // 4. Brief Apex Linger
+        yield return new WaitForSeconds(0.04f);
+
+        // 5. Smooth Retraction back to Lumi
+        elapsed = 0f;
+        Vector3 apexPos = transform.position;
+        while (elapsed < meleeThrustReturnDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / meleeThrustReturnDuration);
+            Vector3 returnTarget = (lumi != null) ? lumi.transform.position : (playerTransform != null ? playerTransform.position : startPos);
+            transform.position = Vector3.Lerp(apexPos, returnTarget, t * t);
+            yield return null;
+        }
+
+        if (trailRenderer != null)
+        {
+            trailRenderer.emitting = false;
+        }
+
+        CurrentState = SpearState.CarriedByLumi;
+        meleeThrustCoroutine = null;
+    }
+
+    private void SpawnSonicShockwave(Vector3 origin, float facingDirection)
+    {
+        GameObject waveGO = new GameObject("Spear_SonicShockwave");
+        waveGO.transform.position = origin;
+        waveGO.transform.rotation = Quaternion.Euler(0f, 0f, (facingDirection < 0f) ? 180f : 0f);
+
+        ParticleSystem ps = waveGO.AddComponent<ParticleSystem>();
+        var main = ps.main;
+        main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.2f, 0.95f, 1.0f, 0.95f), Color.white);
+        main.startSize = 0.45f;
+        main.startSpeed = 16f;
+        main.startLifetime = 0.22f;
+        main.duration = 0.22f;
+        main.loop = false;
+
+        var emission = ps.emission;
+        emission.SetBursts(new ParticleSystem.Burst[] { new ParticleSystem.Burst(0f, 26) });
+
+        var shape = ps.shape;
+        shape.shapeType = ParticleSystemShapeType.Cone;
+        shape.angle = 20f;
+        shape.radius = 0.15f;
+
+        ps.Play();
+        Destroy(waveGO, 0.5f);
     }
 }
