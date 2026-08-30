@@ -23,7 +23,10 @@ public class MageCombat : MonoBehaviour
     public int secondHitDamage = 28;
     public Collider2D meleeAttackCollider;
     public float meleeAttackDuration = 0.25f;
-    public float comboWindowDuration = 1.85f; // Window after Attack 1 during which 2nd hit can be chained
+    public float comboWindowDuration = 1.85f;
+    [Tooltip("Maximum delay between J taps to trigger the second attack (follow-up hit).")]
+    public float doubleTapThreshold = 0.35f;
+    private float lastJTapTime = -10f; // Window after Attack 1 during which 2nd hit can be chained
 
     [Header("Ranged Settings")]
     public GameObject projectilePrefab;
@@ -280,7 +283,7 @@ public class MageCombat : MonoBehaviour
             float dir = (transform.localScale.x < 0f) ? -1f : 1f;
             Vector3 fist1Pos = transform.position + new Vector3(dir * 1.15f, 0.2f, 0f);
             PlayerCombatJuice.Instance.SpawnShadowPunchVFX(fist1Pos, dir, isHeavy: false);
-            PlayerCombatJuice.Instance.TriggerSquashAndStretch(new Vector3(1.2f, 0.85f, 1f), 0.12f);
+            // Attack squash removed
         }
 
         // Punch 2 apex (Frames 9-10 @ 16 FPS = 0.56s from start, +0.31s delta)
@@ -290,7 +293,7 @@ public class MageCombat : MonoBehaviour
             float dir = (transform.localScale.x < 0f) ? -1f : 1f;
             Vector3 fist2Pos = transform.position + new Vector3(dir * 1.35f, 0.25f, 0f);
             PlayerCombatJuice.Instance.SpawnShadowPunchVFX(fist2Pos, dir, isHeavy: true);
-            PlayerCombatJuice.Instance.TriggerSquashAndStretch(new Vector3(1.3f, 0.78f, 1f), 0.15f);
+            // Attack squash removed
         }
         shadowVFXCoroutine = null;
     }
@@ -330,7 +333,7 @@ public class MageCombat : MonoBehaviour
             float dir = (transform.localScale.x < 0f) ? -1f : 1f;
             Vector3 fistPos = transform.position + new Vector3(dir * 1.4f, 0.3f, 0f);
             PlayerCombatJuice.Instance.SpawnShadowPunchVFX(fistPos, dir, isHeavy: true);
-            PlayerCombatJuice.Instance.TriggerSquashAndStretch(new Vector3(1.35f, 0.72f, 1.0f), 0.16f);
+            // Attack squash removed
         }
         shadowVFXCoroutine = null;
     }

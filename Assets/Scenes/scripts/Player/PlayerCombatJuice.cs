@@ -17,6 +17,8 @@ public class PlayerCombatJuice : MonoBehaviour
     public Vector3 landSquash = new Vector3(1.3f, 0.75f, 1.0f);
     public Vector3 dashStretch = new Vector3(1.4f, 0.7f, 1.0f);
     public float defaultJuiceDuration = 0.15f;
+    [Tooltip("Whether attack squash and stretch is enabled on player sprite.")]
+    public bool enableAttackSquash = false;
 
     [Header("Attack Lunge / Movement Impulse")]
     public float attack1LungeForce = 4.5f;

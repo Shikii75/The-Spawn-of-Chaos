@@ -38,7 +38,7 @@ public class Attack : MonoBehaviour
             {
                 float dir = Mathf.Sign(transform.localScale.x);
                 PlayerCombatJuice.Instance.ApplyAttackLunge(dir, false, true);
-                PlayerCombatJuice.Instance.TriggerSquashAndStretch(PlayerCombatJuice.Instance.attack1Squash);
+                // Attack squash removed
                 PlayerCombatJuice.Instance.SpawnSlashArc(transform.position, dir, false);
             }
 
