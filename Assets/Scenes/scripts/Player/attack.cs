@@ -14,7 +14,7 @@ public class Attack : MonoBehaviour
         }
 
         // If MageCombat handles combat on this player, disable this legacy script to avoid input conflicts
-        if (GetComponent<MageCombat>() != null)
+        if (GetComponent<MageCombat>() != null || GetComponentInParent<MageCombat>() != null)
         {
             enabled = false;
         }
@@ -37,7 +37,7 @@ public class Attack : MonoBehaviour
             if (PlayerCombatJuice.Instance != null)
             {
                 float dir = Mathf.Sign(transform.localScale.x);
-                PlayerCombatJuice.Instance.ApplyAttackLunge(dir, false, true);
+                // Lunge removed
                 // Attack squash removed
                 PlayerCombatJuice.Instance.SpawnSlashArc(transform.position, dir, false);
             }

@@ -136,7 +136,29 @@ public class MageCombat : MonoBehaviour
             return;
         }
 
-        // 2. Manage combo window expiration
+        // 2. When Attack 1 finishes and no second hit was queued:
+        // Make sword disappear immediately and prevent lingering movement in attack direction!
+        if (comboStep == 1 && !isAttack1Active && !secondHitQueued)
+        {
+            if (animator != null)
+            {
+                var cur = animator.GetCurrentAnimatorStateInfo(0);
+                if (cur.IsName("Attack") || cur.IsName("attack"))
+                {
+                    animator.Play("idle", 0, 0f);
+                }
+            }
+
+            var pRb = GetComponent<Rigidbody2D>();
+            if (pRb != null)
+            {
+                pRb.linearVelocity = new Vector2(0f, pRb.linearVelocity.y);
+            }
+
+            ResetCombo();
+        }
+
+        // 3. Manage combo window expiration
         if (comboStep > 0)
         {
             comboTimer -= Time.deltaTime;

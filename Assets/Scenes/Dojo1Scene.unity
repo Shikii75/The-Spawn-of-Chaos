@@ -578,6 +578,9 @@ MonoBehaviour:
   player: {fileID: 0}
   offset: {x: 0, y: 2, z: -10}
   smoothSpeed: 5
+  useBounds: 0
+  minBounds: {x: -10, y: -20}
+  maxBounds: {x: 300, y: 20}
 --- !u!1 &228174238
 GameObject:
   m_ObjectHideFlags: 0
@@ -5337,12 +5340,20 @@ PrefabInstance:
       value: -1
       objectReference: {fileID: 0}
     - target: {fileID: 7389095524563025229, guid: d41c874c2cdd5c340a7f455cff8efc2c, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.6419882
+      objectReference: {fileID: 0}
+    - target: {fileID: 7389095524563025229, guid: d41c874c2cdd5c340a7f455cff8efc2c, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.2025
+      objectReference: {fileID: 0}
+    - target: {fileID: 7389095524563025229, guid: d41c874c2cdd5c340a7f455cff8efc2c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 16.35
+      value: 16.5634
       objectReference: {fileID: 0}
     - target: {fileID: 7389095524563025229, guid: d41c874c2cdd5c340a7f455cff8efc2c, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -9.83
+      value: -9.3541
       objectReference: {fileID: 0}
     - target: {fileID: 7389095524563025229, guid: d41c874c2cdd5c340a7f455cff8efc2c, type: 3}
       propertyPath: m_LocalPosition.z

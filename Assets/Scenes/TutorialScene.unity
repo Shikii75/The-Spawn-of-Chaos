@@ -292,6 +292,7 @@ MonoBehaviour:
   targetSceneName: 
   targetSpawnPointName: 
   interactKey: 101
+  autoTriggerOnWalkIn: 0
 --- !u!1 &1000
 GameObject:
   m_ObjectHideFlags: 0
@@ -25141,7 +25142,7 @@ Transform:
   m_GameObject: {fileID: 371917460}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 11.83, y: 0.38, z: 0}
+  m_LocalPosition: {x: 11.59, y: 0.14, z: 0}
   m_LocalScale: {x: 2.0819, y: 2.0819, z: 2.0819}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -27999,11 +28000,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3893375594717907836, guid: e50b992c2de6d3e4984f529e6621c579, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -2560.6
+      value: -3375.9
       objectReference: {fileID: 0}
     - target: {fileID: 3893375594717907836, guid: e50b992c2de6d3e4984f529e6621c579, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 499.9
+      value: 520.9
       objectReference: {fileID: 0}
     - target: {fileID: 3893375594717907836, guid: e50b992c2de6d3e4984f529e6621c579, type: 3}
       propertyPath: m_LocalPosition.z
@@ -83973,6 +83974,9 @@ MonoBehaviour:
   player: {fileID: 0}
   offset: {x: 0, y: 2, z: -10}
   smoothSpeed: 6
+  useBounds: 0
+  minBounds: {x: -10, y: -20}
+  maxBounds: {x: 300, y: 20}
 --- !u!1 &1395915135
 GameObject:
   m_ObjectHideFlags: 0
@@ -127003,7 +127007,7 @@ Transform:
   m_GameObject: {fileID: 2135197891}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2.5, y: 2.3599627, z: 0}
+  m_LocalPosition: {x: 2.5, y: 2.336269, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

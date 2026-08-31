@@ -27,7 +27,7 @@ AnimationClip:
     - time: 0.1
       value: {fileID: 1399413676680894907, guid: f64f1f3db9b6e10418305953ed9f5e07, type: 3}
     - time: 0.15
-      value: {fileID: 6636361135747025162, guid: dea13670f223ffc42911fc2fed77cf9a, type: 3}
+      value: {fileID: -1974267942269126528, guid: d72b781cabc9477409efa6f1dd101783, type: 3}
     - time: 0.21666667
       value: {fileID: -3229540774608315921, guid: ed52cf7337e0ba24d9fd91b250f51db7, type: 3}
     - time: 0.26666668
@@ -81,7 +81,7 @@ AnimationClip:
     - {fileID: -1974267942269126528, guid: d72b781cabc9477409efa6f1dd101783, type: 3}
     - {fileID: 2536910936557558875, guid: e6787c8eb35e15147a0e90f77c705270, type: 3}
     - {fileID: 1399413676680894907, guid: f64f1f3db9b6e10418305953ed9f5e07, type: 3}
-    - {fileID: 6636361135747025162, guid: dea13670f223ffc42911fc2fed77cf9a, type: 3}
+    - {fileID: -1974267942269126528, guid: d72b781cabc9477409efa6f1dd101783, type: 3}
     - {fileID: -3229540774608315921, guid: ed52cf7337e0ba24d9fd91b250f51db7, type: 3}
     - {fileID: -8556153337439913670, guid: e535a016969f06647931f1dd81e24132, type: 3}
     - {fileID: 6806514638545688161, guid: 7024cfc4c639b9f41b9e91c08ecdfbf9, type: 3}

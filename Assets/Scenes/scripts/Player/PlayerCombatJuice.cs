@@ -21,8 +21,8 @@ public class PlayerCombatJuice : MonoBehaviour
     public bool enableAttackSquash = false;
 
     [Header("Attack Lunge / Movement Impulse")]
-    public float attack1LungeForce = 4.5f;
-    public float attack2LungeForce = 7.5f;
+    public float attack1LungeForce = 0f;
+    public float attack2LungeForce = 0f;
     public float airAttackForwardForce = 3.5f;
 
     private Transform visualTransform; // Child object or self with SpriteRenderer/Animator
