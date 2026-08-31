@@ -8,11 +8,11 @@ using TMPro;
 
 /// <summary>
 /// TouchControlsManager - Complete Cyber-Gothic On-Screen Mobile Touch Controller:
-/// 1. Virtual Analog Joystick (Left Thumb): Dynamic/Anchored directional thumbstick.
+/// 1. Virtual Analog Joystick (Left Thumb): Dynamic broad touch-capture zone for uninterrupted, continuous movement.
+///    Strictly controls horizontal movement (left/right) with zero blob or crouch interference.
 /// 2. Action Cluster (Right Thumb): Glassmorphic buttons for Attack, Jump, Dash, Blob, Magic, Spear.
 /// 3. Utility Buttons: Pause (top-right) & Contextual Interact (floating prompt).
-/// 4. Tactile Micro-Animations: Scale-punch (0.92x) and glow-flare on touch down.
-/// 5. Smart Platform Detection: Automatically active on Mobile and testable in Editor with mouse.
+/// 4. Tactile Micro-Animations: Scale-punch (0.90x) on touch down.
 /// </summary>
 public class TouchControlsManager : MonoBehaviour
 {
@@ -24,13 +24,14 @@ public class TouchControlsManager : MonoBehaviour
 
     [Header("Joystick Settings")]
     public float joystickRadius = 85f;
-    public float deadzone = 0.12f;
+    public float deadzone = 0.05f;
 
     // Runtime UI elements
     private Canvas touchCanvas;
     private GameObject joystickBaseObj;
     private RectTransform joystickBaseRT;
     private RectTransform joystickHandleRT;
+    private Vector2 defaultJoystickPos = new Vector2(250, 240);
 
     private static Sprite circleSprite;
     private static Sprite ringSprite;
@@ -81,11 +82,9 @@ public class TouchControlsManager : MonoBehaviour
 
     void Update()
     {
-        // Keep visibility synced with current platform/settings
         bool shouldBeVisible = (Application.isMobilePlatform || forceEnableInEditor) && 
                                SceneManager.GetActiveScene().name != "MainMenu";
 
-        // Hide during active pause menu to keep screen clear
         if (PauseMenu.Instance != null && PauseMenu.Instance.isPaused)
         {
             shouldBeVisible = false;
@@ -102,12 +101,12 @@ public class TouchControlsManager : MonoBehaviour
         EnsureEventSystem();
         GenerateProceduralSprites();
 
-        // 1. Create Canvas
+        // 1. Create Screen-Space Overlay Canvas
         GameObject canvasGO = new GameObject("TouchControlsCanvas");
         canvasGO.transform.SetParent(transform);
         touchCanvas = canvasGO.AddComponent<Canvas>();
         touchCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        touchCanvas.sortingOrder = 95; // Just below PauseMenu (100) and above gameplay HUD
+        touchCanvas.sortingOrder = 95;
 
         CanvasScaler scaler = canvasGO.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -116,7 +115,7 @@ public class TouchControlsManager : MonoBehaviour
 
         canvasGO.AddComponent<GraphicRaycaster>();
 
-        // 2. Build Virtual Joystick (Bottom Left)
+        // 2. Build Virtual Joystick with Broad Left-Side Touch Zone
         CreateVirtualJoystick(canvasGO.transform);
 
         // 3. Build Action Button Cluster (Bottom Right)
@@ -137,21 +136,40 @@ public class TouchControlsManager : MonoBehaviour
         }
     }
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 1. VIRTUAL JOYSTICK WITH FULL LEFT-HALF CAPTURE ZONE
+    // ─────────────────────────────────────────────────────────────────────────────
     void CreateVirtualJoystick(Transform parent)
     {
+        // Broad Left-Half Touch Zone to prevent touch drops during wide finger swipes
+        GameObject zoneObj = new GameObject("JoystickTouchZone");
+        zoneObj.transform.SetParent(parent, false);
+        RectTransform zoneRT = zoneObj.AddComponent<RectTransform>();
+        zoneRT.anchorMin = new Vector2(0f, 0f);
+        zoneRT.anchorMax = new Vector2(0.55f, 0.85f); // Covers entire left side
+        zoneRT.offsetMin = Vector2.zero;
+        zoneRT.offsetMax = Vector2.zero;
+
+        Image zoneImg = zoneObj.AddComponent<Image>();
+        zoneImg.color = Color.clear; // Invisible touch receiver
+        zoneImg.raycastTarget = true;
+
+        // Visual Outer Base Ring
         joystickBaseObj = new GameObject("VirtualJoystickBase");
-        joystickBaseObj.transform.SetParent(parent, false);
+        joystickBaseObj.transform.SetParent(zoneObj.transform, false);
         joystickBaseRT = joystickBaseObj.AddComponent<RectTransform>();
-        joystickBaseRT.anchorMin = new Vector2(0, 0);
-        joystickBaseRT.anchorMax = new Vector2(0, 0);
+        joystickBaseRT.anchorMin = Vector2.zero;
+        joystickBaseRT.anchorMax = Vector2.zero;
         joystickBaseRT.pivot = new Vector2(0.5f, 0.5f);
-        joystickBaseRT.anchoredPosition = new Vector2(250, 240);
+        joystickBaseRT.anchoredPosition = defaultJoystickPos;
         joystickBaseRT.sizeDelta = new Vector2(210, 210);
 
         Image baseImg = joystickBaseObj.AddComponent<Image>();
         baseImg.sprite = ringSprite;
-        baseImg.color = new Color(0.04f, 0.85f, 1.0f, 0.35f);
+        baseImg.color = new Color(0.04f, 0.85f, 1.0f, 0.40f);
+        baseImg.raycastTarget = false; // Let TouchZone handle all raycasts to prevent event bubbling issues
 
+        // Inner Thumb Handle
         GameObject handleObj = new GameObject("JoystickHandle");
         handleObj.transform.SetParent(joystickBaseObj.transform, false);
         joystickHandleRT = handleObj.AddComponent<RectTransform>();
@@ -163,26 +181,22 @@ public class TouchControlsManager : MonoBehaviour
 
         Image handleImg = handleObj.AddComponent<Image>();
         handleImg.sprite = circleSprite;
-        handleImg.color = new Color(0.1f, 0.95f, 1.0f, 0.75f);
+        handleImg.color = new Color(0.1f, 0.95f, 1.0f, 0.85f);
+        handleImg.raycastTarget = false; // NEVER intercept pointer rays
 
-        TouchJoystickHandler handler = joystickBaseObj.AddComponent<TouchJoystickHandler>();
-        handler.Init(this, joystickHandleRT, joystickRadius, deadzone);
+        // Attach reliable drag listener to TouchZone
+        TouchJoystickHandler handler = zoneObj.AddComponent<TouchJoystickHandler>();
+        handler.Init(this, zoneRT, joystickBaseRT, joystickHandleRT, defaultJoystickPos, joystickRadius, deadzone);
     }
 
-    public void OnJoystickDragged(Vector2 normalizedInput)
+    /// <summary>
+    /// Feeds strictly into horizontal movement. Zero blob or vertical interference.
+    /// </summary>
+    public void OnJoystickDragged(float horizontalInput)
     {
         if (move.Instance != null)
         {
-            move.Instance.virtualHorizontalInput = normalizedInput.x;
-
-            if (normalizedInput.y < -0.65f)
-            {
-                move.Instance.virtualBlobPressed = true;
-            }
-            else
-            {
-                move.Instance.virtualBlobPressed = false;
-            }
+            move.Instance.virtualHorizontalInput = horizontalInput;
         }
     }
 
@@ -191,13 +205,15 @@ public class TouchControlsManager : MonoBehaviour
         if (move.Instance != null)
         {
             move.Instance.virtualHorizontalInput = 0f;
-            move.Instance.virtualBlobPressed = false;
         }
     }
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 2. ACTION BUTTON CLUSTER
+    // ─────────────────────────────────────────────────────────────────────────────
     void CreateActionCluster(Transform parent)
     {
-        // 1. ATTACK (J)
+        // 1. ATTACK (J) - Large Combat Core (Neon Magenta)
         CreateTouchButton(parent, "TouchBtn_Attack", 
             new Vector2(-220, 240), new Vector2(130, 130), 
             new Color(1.0f, 0.05f, 0.45f, 0.85f), "⚔️\nATTACK", 22,
@@ -209,7 +225,7 @@ public class TouchControlsManager : MonoBehaviour
             }
         );
 
-        // 2. JUMP (Space)
+        // 2. JUMP (Space) - Large Primary Mobility (Neon Cyan)
         CreateTouchButton(parent, "TouchBtn_Jump", 
             new Vector2(-95, 130), new Vector2(120, 120), 
             new Color(0.0f, 0.92f, 1.0f, 0.85f), "▲\nJUMP", 22,
@@ -228,7 +244,7 @@ public class TouchControlsManager : MonoBehaviour
             }
         );
 
-        // 3. DASH (Shift)
+        // 3. DASH (Shift) - Electric Sky Blue
         CreateTouchButton(parent, "TouchBtn_Dash", 
             new Vector2(-350, 130), new Vector2(95, 95), 
             new Color(0.1f, 0.82f, 1.0f, 0.80f), "💨\nDASH", 18,
@@ -240,7 +256,7 @@ public class TouchControlsManager : MonoBehaviour
             }
         );
 
-        // 4. BLOB (B)
+        // 4. BLOB (B) - Dedicated Morph Button
         CreateTouchButton(parent, "TouchBtn_Blob", 
             new Vector2(-220, 395), new Vector2(90, 90), 
             new Color(0.72f, 0.25f, 1.0f, 0.80f), "💧\nBLOB", 18,
@@ -252,7 +268,7 @@ public class TouchControlsManager : MonoBehaviour
             }
         );
 
-        // 5. MAGIC (K)
+        // 5. MAGIC (K) - Solar Gold
         CreateTouchButton(parent, "TouchBtn_Magic", 
             new Vector2(-355, 265), new Vector2(90, 90), 
             new Color(1.0f, 0.68f, 0.1f, 0.80f), "✨\nMAGIC", 18,
@@ -264,7 +280,7 @@ public class TouchControlsManager : MonoBehaviour
             }
         );
 
-        // 6. SPEAR (Q / X)
+        // 6. SPEAR (Q / X) - Cyan Lightning
         CreateTouchButton(parent, "TouchBtn_Spear", 
             new Vector2(-95, 285), new Vector2(90, 90), 
             new Color(0.2f, 0.98f, 0.95f, 0.80f), "🔱\nSPEAR", 18,
@@ -277,9 +293,11 @@ public class TouchControlsManager : MonoBehaviour
         );
     }
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 3. UTILITY BUTTONS (PAUSE & INTERACT)
+    // ─────────────────────────────────────────────────────────────────────────────
     void CreateUtilityButtons(Transform parent)
     {
-        // 1. PAUSE
         CreateTouchButton(parent, "TouchBtn_Pause", 
             new Vector2(-70, -70), new Vector2(70, 70), 
             new Color(0.25f, 0.85f, 1.0f, 0.75f), "⏸", 28,
@@ -292,7 +310,6 @@ public class TouchControlsManager : MonoBehaviour
             }
         );
 
-        // 2. INTERACT
         CreatePillButton(parent, "TouchBtn_Interact",
             new Vector2(-220, 520), new Vector2(170, 55),
             new Color(1.0f, 0.82f, 0.2f, 0.85f), "💬 INTERACT (E)", 16,
@@ -336,6 +353,7 @@ public class TouchControlsManager : MonoBehaviour
         Image bgImg = btnObj.AddComponent<Image>();
         bgImg.sprite = circleSprite;
         bgImg.color = new Color(0.04f, 0.05f, 0.12f, 0.65f);
+        bgImg.raycastTarget = true;
 
         GameObject ringObj = new GameObject("AccentRing");
         ringObj.transform.SetParent(btnObj.transform, false);
@@ -346,6 +364,7 @@ public class TouchControlsManager : MonoBehaviour
         Image ringImg = ringObj.AddComponent<Image>();
         ringImg.sprite = ringSprite;
         ringImg.color = accentColor;
+        ringImg.raycastTarget = false;
 
         GameObject txtObj = new GameObject("Label");
         txtObj.transform.SetParent(btnObj.transform, false);
@@ -361,6 +380,7 @@ public class TouchControlsManager : MonoBehaviour
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color = Color.white;
         tmp.enableWordWrapping = false;
+        tmp.raycastTarget = false;
 
         TouchButtonTrigger trigger = btnObj.AddComponent<TouchButtonTrigger>();
         trigger.Init(accentColor, onDown, onUp);
@@ -383,6 +403,7 @@ public class TouchControlsManager : MonoBehaviour
 
         Image bgImg = btnObj.AddComponent<Image>();
         bgImg.color = new Color(0.06f, 0.08f, 0.15f, 0.85f);
+        bgImg.raycastTarget = true;
 
         Outline outline = btnObj.AddComponent<Outline>();
         outline.effectColor = accentColor;
@@ -401,6 +422,7 @@ public class TouchControlsManager : MonoBehaviour
         tmp.fontStyle = FontStyles.Bold;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color = Color.white;
+        tmp.raycastTarget = false;
 
         TouchButtonTrigger trigger = btnObj.AddComponent<TouchButtonTrigger>();
         trigger.Init(accentColor, onDown, null);
@@ -444,64 +466,100 @@ public class TouchControlsManager : MonoBehaviour
     }
 }
 
+/// <summary>
+/// TouchJoystickHandler - Captures pointer events across the broad touch zone and ensures
+/// unbroken, continuous dragging without premature stops or deadzone drops.
+/// </summary>
 public class TouchJoystickHandler : MonoBehaviour, IPointerDownHandler, IDragHandler, IPointerUpHandler
 {
     private TouchControlsManager manager;
-    private RectTransform handleRT;
+    private RectTransform zoneRT;
     private RectTransform baseRT;
+    private RectTransform handleRT;
+    private Vector2 defaultBasePos;
     private float radius;
     private float deadzone;
+    private Vector2 activeBaseScreenPos;
 
-    public void Init(TouchControlsManager mgr, RectTransform handle, float maxRadius, float deadzoneVal)
+    public void Init(TouchControlsManager mgr, RectTransform zone, RectTransform baseTransform, 
+                     RectTransform handle, Vector2 defaultPos, float maxRadius, float deadzoneVal)
     {
         manager = mgr;
+        zoneRT = zone;
+        baseRT = baseTransform;
         handleRT = handle;
-        baseRT = GetComponent<RectTransform>();
+        defaultBasePos = defaultPos;
         radius = maxRadius;
         deadzone = deadzoneVal;
     }
 
     public void OnPointerDown(PointerEventData eventData)
     {
-        UpdateHandle(eventData);
+        Vector2 localPoint;
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(zoneRT, eventData.position, eventData.pressEventCamera, out localPoint))
+        {
+            baseRT.anchoredPosition = localPoint;
+            activeBaseScreenPos = eventData.position;
+        }
+        else
+        {
+            activeBaseScreenPos = RectTransformUtility.WorldToScreenPoint(eventData.pressEventCamera, baseRT.position);
+        }
+
+        UpdateInput(eventData);
     }
 
     public void OnDrag(PointerEventData eventData)
     {
-        UpdateHandle(eventData);
+        UpdateInput(eventData);
     }
 
     public void OnPointerUp(PointerEventData eventData)
     {
         if (handleRT != null) handleRT.anchoredPosition = Vector2.zero;
+        if (baseRT != null) baseRT.anchoredPosition = defaultBasePos;
+
         if (manager != null) manager.OnJoystickReleased();
     }
 
-    private void UpdateHandle(PointerEventData eventData)
+    private void UpdateInput(PointerEventData eventData)
     {
-        Vector2 localPoint;
-        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(baseRT, eventData.position, eventData.pressEventCamera, out localPoint))
+        Vector2 screenDelta = eventData.position - activeBaseScreenPos;
+        float mag = screenDelta.magnitude;
+
+        Vector2 clampedOffset = screenDelta;
+        if (mag > radius)
         {
-            Vector2 offset = localPoint;
-            float mag = offset.magnitude;
-            if (mag > radius)
-            {
-                offset = offset.normalized * radius;
-            }
+            clampedOffset = screenDelta.normalized * radius;
+        }
 
-            if (handleRT != null) handleRT.anchoredPosition = offset;
+        if (handleRT != null)
+        {
+            handleRT.anchoredPosition = clampedOffset;
+        }
 
-            Vector2 norm = offset / radius;
-            if (norm.magnitude < deadzone)
-            {
-                norm = Vector2.zero;
-            }
+        // Calculate pure horizontal movement normalized from -1.0 to +1.0
+        float horizontalVal = clampedOffset.x / radius;
 
-            if (manager != null) manager.OnJoystickDragged(norm);
+        if (Mathf.Abs(horizontalVal) < deadzone)
+        {
+            horizontalVal = 0f;
+        }
+        else
+        {
+            horizontalVal = Mathf.Clamp(horizontalVal, -1.0f, 1.0f);
+        }
+
+        if (manager != null)
+        {
+            manager.OnJoystickDragged(horizontalVal);
         }
     }
 }
 
+/// <summary>
+/// TouchButtonTrigger - Handles tactile scale punch (0.90x) and triggers game action.
+/// </summary>
 public class TouchButtonTrigger : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
     private Color baseAccentColor;
@@ -519,7 +577,7 @@ public class TouchButtonTrigger : MonoBehaviour, IPointerDownHandler, IPointerUp
     public void OnPointerDown(PointerEventData eventData)
     {
         if (scaleCoroutine != null) StopCoroutine(scaleCoroutine);
-        scaleCoroutine = StartCoroutine(AnimateScale(0.90f, 0.06f));
+        scaleCoroutine = StartCoroutine(AnimateScale(0.90f, 0.05f));
 
         onDownAction?.Invoke();
     }
@@ -527,7 +585,7 @@ public class TouchButtonTrigger : MonoBehaviour, IPointerDownHandler, IPointerUp
     public void OnPointerUp(PointerEventData eventData)
     {
         if (scaleCoroutine != null) StopCoroutine(scaleCoroutine);
-        scaleCoroutine = StartCoroutine(AnimateScale(1.0f, 0.12f));
+        scaleCoroutine = StartCoroutine(AnimateScale(1.0f, 0.10f));
 
         onUpAction?.Invoke();
     }
