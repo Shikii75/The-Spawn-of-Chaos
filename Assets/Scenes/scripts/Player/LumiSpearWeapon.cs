@@ -263,10 +263,7 @@ public class LumiSpearWeapon : MonoBehaviour
         {
             if (CurrentState == SpearState.CarriedByLumi)
             {
-                Vector3 mouseWorld = Camera.main != null ? Camera.main.ScreenToWorldPoint(Input.mousePosition) : (transform.position + Vector3.right * 5f);
-                mouseWorld.z = 0f;
-                Vector2 aimDir = ((Vector2)mouseWorld - (Vector2)transform.position).normalized;
-                Throw(aimDir);
+                Throw(GetAimDirection());
             }
             else if (CurrentState == SpearState.ThrownFlight)
             {
@@ -297,10 +294,8 @@ public class LumiSpearWeapon : MonoBehaviour
         Vector3 targetPos = basePos + new Vector3(independentOffset.x * facing + bobX, independentOffset.y + bobY, 0f);
         transform.position = Vector3.Lerp(transform.position, targetPos, Time.deltaTime * 12f);
 
-        // Smoothly orient towards aim / mouse cursor
-        Vector3 mouseWorld = Camera.main != null ? Camera.main.ScreenToWorldPoint(Input.mousePosition) : (transform.position + Vector3.right * 5f);
-        mouseWorld.z = 0f;
-        Vector2 aimDir = ((Vector2)mouseWorld - (Vector2)transform.position).normalized;
+        // Smoothly orient towards aim direction (safe from inf/NaN on touch/simulator)
+        Vector2 aimDir = GetAimDirection();
         float targetAngle = Mathf.Atan2(aimDir.y, aimDir.x) * Mathf.Rad2Deg;
 
         transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(0, 0, targetAngle), Time.deltaTime * 10f);
@@ -782,5 +777,51 @@ public class LumiSpearWeapon : MonoBehaviour
         {
             Recall();
         }
+    }
+
+    private Vector2 GetAimDirection()
+    {
+        float defaultFacing = (playerTransform != null && playerTransform.localScale.x < 0f) ? -1f : 1f;
+        Vector2 defaultDir = new Vector2(defaultFacing, 0f);
+
+        if (Application.isMobilePlatform)
+        {
+            return defaultDir;
+        }
+
+        Vector3 mPos = Input.mousePosition;
+        if (float.IsInfinity(mPos.x) || float.IsInfinity(mPos.y) || float.IsNaN(mPos.x) || float.IsNaN(mPos.y))
+        {
+            return defaultDir;
+        }
+
+        if (mPos.x < 0f || mPos.x > Screen.width || mPos.y < 0f || mPos.y > Screen.height)
+        {
+            return defaultDir;
+        }
+
+        Camera cam = Camera.main;
+        if (cam == null) return defaultDir;
+
+        try
+        {
+            Vector3 worldPos = cam.ScreenToWorldPoint(new Vector3(mPos.x, mPos.y, -cam.transform.position.z));
+            if (float.IsNaN(worldPos.x) || float.IsInfinity(worldPos.x))
+            {
+                return defaultDir;
+            }
+            worldPos.z = 0f;
+            Vector2 delta = (Vector2)worldPos - (Vector2)transform.position;
+            if (delta.sqrMagnitude > 0.01f)
+            {
+                return delta.normalized;
+            }
+        }
+        catch (System.Exception)
+        {
+            return defaultDir;
+        }
+
+        return defaultDir;
     }
 }

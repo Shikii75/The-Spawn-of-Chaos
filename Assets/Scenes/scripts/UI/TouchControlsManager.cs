@@ -16,7 +16,15 @@ using TMPro;
 /// </summary>
 public class TouchControlsManager : MonoBehaviour
 {
-    public static TouchControlsManager Instance { get; private set; }
+    private static TouchControlsManager instance;
+    public static TouchControlsManager Instance
+    {
+        get
+        {
+            if (instance == null) instance = FindFirstObjectByType<TouchControlsManager>();
+            return instance;
+        }
+    }
 
     [Header("Visibility Settings")]
     [Tooltip("Enables touch controls inside the Unity Editor for instant mouse playtesting.")]
@@ -54,7 +62,7 @@ public class TouchControlsManager : MonoBehaviour
     {
         if (Instance == null)
         {
-            Instance = this;
+            instance = this;
             DontDestroyOnLoad(gameObject);
         }
         else if (Instance != this)
@@ -80,15 +88,38 @@ public class TouchControlsManager : MonoBehaviour
         }
     }
 
+    public static bool IsTitleScreenActive()
+    {
+        if (SceneManager.GetActiveScene().name == "MainMenu") return true;
+
+        if (!MainMenuUIToolkitController.isPlaying)
+        {
+            var menuController = FindFirstObjectByType<MainMenuUIToolkitController>();
+            if (menuController != null && menuController.gameObject.activeInHierarchy)
+            {
+                return true;
+            }
+
+            var titleObj = GameObject.Find("MainMenu_UIToolkit") ?? GameObject.Find("Mainmenu");
+            if (titleObj != null && titleObj.activeInHierarchy)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     void Update()
     {
-        bool shouldBeVisible = (Application.isMobilePlatform || forceEnableInEditor) && 
-                               SceneManager.GetActiveScene().name != "MainMenu";
+        bool isTitle = IsTitleScreenActive();
+        bool isPaused = PauseMenu.Instance != null && PauseMenu.Instance.isPaused;
 
-        if (PauseMenu.Instance != null && PauseMenu.Instance.isPaused)
-        {
-            shouldBeVisible = false;
-        }
+        // Strictly hide on Title Screen, during Pause, or when gameplay is not active
+        bool shouldBeVisible = (Application.isMobilePlatform || forceEnableInEditor) && 
+                               !isTitle && 
+                               !isPaused &&
+                               MainMenuUIToolkitController.isPlaying;
 
         if (touchCanvas != null && touchCanvas.gameObject.activeSelf != shouldBeVisible)
         {
@@ -123,6 +154,9 @@ public class TouchControlsManager : MonoBehaviour
 
         // 4. Build Utility Buttons (Top Right & Interact)
         CreateUtilityButtons(canvasGO.transform);
+
+        // Initially inactive by default until gameplay begins
+        touchCanvas.gameObject.SetActive(false);
     }
 
     void EnsureEventSystem()
