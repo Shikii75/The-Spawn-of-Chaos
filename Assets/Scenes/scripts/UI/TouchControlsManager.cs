@@ -576,10 +576,44 @@ public class TouchDPadButton : MonoBehaviour, IPointerDownHandler, IPointerUpHan
         scaleCoroutine = StartCoroutine(AnimateScale(1.0f, 0.10f));
     }
 
+    private RectTransform rectTransform;
+
+    void Awake()
+    {
+        rectTransform = GetComponent<RectTransform>();
+    }
+
     void Update()
     {
-        // Continuously refresh horizontal input every frame while held down
-        if (isHeld && move.Instance != null)
+        // Direct multi-touch hit-test fallback for Windows touchscreens & mobile:
+        // Even if Windows OS tries to drop or gesture-cancel the pointer event,
+        // we check if any active touch or mouse is physically inside this button's rect!
+        bool isTouchInside = false;
+
+        for (int i = 0; i < Input.touchCount; i++)
+        {
+            Touch t = Input.GetTouch(i);
+            if (t.phase != TouchPhase.Ended && t.phase != TouchPhase.Canceled)
+            {
+                if (rectTransform != null && RectTransformUtility.RectangleContainsScreenPoint(rectTransform, t.position, null))
+                {
+                    isTouchInside = true;
+                    break;
+                }
+            }
+        }
+
+        if (Input.GetMouseButton(0))
+        {
+            if (rectTransform != null && RectTransformUtility.RectangleContainsScreenPoint(rectTransform, Input.mousePosition, null))
+            {
+                isTouchInside = true;
+            }
+        }
+
+        bool activeHold = isHeld || isTouchInside;
+
+        if (activeHold && move.Instance != null)
         {
             move.Instance.virtualHorizontalInput = direction;
         }
