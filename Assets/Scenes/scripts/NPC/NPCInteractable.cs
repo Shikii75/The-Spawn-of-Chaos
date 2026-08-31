@@ -47,7 +47,7 @@ public class NPCInteractable : MonoBehaviour
         }
     }
 
-    private void Interact()
+    public void Interact()
     {
         // Hide interaction prompt while talking
         if (interactPrompt != null)

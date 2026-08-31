@@ -474,4 +474,63 @@ public class MageCombat : MonoBehaviour
             }
         }
     }
+
+    /// <summary>
+    /// Invoked by on-screen touch attack button. Performs Attack 1 or chains into Spear Finisher on double-tap.
+    /// </summary>
+    public void TriggerMeleeAttackFromTouch()
+    {
+        float currentTime = Time.time;
+        float tapDelta = currentTime - lastJTapTime;
+        lastJTapTime = currentTime;
+
+        bool isAttack1Active = IsAttack1Playing();
+        bool isSecondHitActive = IsSecondHitPlaying();
+
+        if (comboStep == 0 && !isAttack1Active && !isSecondHitActive)
+        {
+            PerformAttack1();
+        }
+        else if (comboStep == 1)
+        {
+            if (tapDelta <= doubleTapThreshold)
+            {
+                if (isAttack1Active)
+                {
+                    secondHitQueued = true;
+                    comboTimer = comboWindowDuration;
+                }
+                else
+                {
+                    PerformSecondHit();
+                }
+            }
+            else
+            {
+                if (!isAttack1Active)
+                {
+                    ResetCombo();
+                    PerformAttack1();
+                }
+            }
+        }
+        else if (comboStep == 2 && !isSecondHitActive)
+        {
+            PerformAttack1();
+        }
+    }
+
+    /// <summary>
+    /// Invoked by on-screen touch magic projectile button.
+    /// </summary>
+    public void TriggerRangedAttackFromTouch()
+    {
+        if (isProjectileUnlocked && Time.time >= nextRangedTime)
+        {
+            if (currentMana >= projectileManaCost)
+            {
+                PerformRangedAttack();
+            }
+        }
+    }
 }

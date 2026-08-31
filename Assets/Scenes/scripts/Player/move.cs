@@ -2,6 +2,12 @@ using UnityEngine;
 
 public class move : MonoBehaviour
 {
+    [Header("Virtual Touch Controls")]
+    public float virtualHorizontalInput = 0f;
+    public bool virtualJumpPressed = false;
+    public bool virtualJumpHeld = false;
+    public bool virtualDashPressed = false;
+    public bool virtualBlobPressed = false;
     public float moveSpeed = 6f;
     public float jumpForce = 15.5f;
     public float gravityScale = 2.8f;
@@ -280,6 +286,10 @@ public class move : MonoBehaviour
         }
 
         float horizontalInput = Input.GetAxisRaw("Horizontal");
+        if (Mathf.Abs(virtualHorizontalInput) > 0.05f)
+        {
+            horizontalInput = virtualHorizontalInput;
+        }
         if (horizontalInput != 0 && !isDashing)
         {
             lastFacingSign = Mathf.Sign(horizontalInput);
@@ -504,7 +514,7 @@ public class move : MonoBehaviour
         bool isWalking = isMoving && !isDoubleTapRunning && !isBlobForm;
 
         // 👇 Check if pressing M or S/DownArrow: morphs into flat puddle blob
-        bool blobInputHeld = (Input.GetKey(KeyCode.M) || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow));
+        bool blobInputHeld = (Input.GetKey(KeyCode.M) || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow) || virtualBlobPressed);
         
         // Auto-sustain blob form if inside a low ceiling / crawlspace (Metroid morph-ball rule)
         bool hasLowCeilingAbove = false;
@@ -532,7 +542,9 @@ public class move : MonoBehaviour
         }
 
         // Trigger Dash
-        if (Input.GetKeyDown(KeyCode.LeftShift) && dashCooldownTimer <= 0f && !isBlobForm)
+        bool dashTriggered = (Input.GetKeyDown(KeyCode.LeftShift) || virtualDashPressed) && dashCooldownTimer <= 0f && !isBlobForm;
+        virtualDashPressed = false;
+        if (dashTriggered)
         {
             isDashing = true;
             dashTimeLeft = dashDuration;
@@ -716,7 +728,9 @@ public class move : MonoBehaviour
         }
 
         // 👇 Jump logic (supports both standard jumps and bouncy Blob Leaps)
-        if ((Input.GetButtonDown("Jump") || Input.GetKeyDown(KeyCode.Space)) && isGrounded && !isDashing)
+        bool jumpTriggered = (Input.GetButtonDown("Jump") || Input.GetKeyDown(KeyCode.Space) || virtualJumpPressed) && isGrounded && !isDashing;
+        virtualJumpPressed = false;
+        if (jumpTriggered)
         {
             jumpLockoutTimer = jumpLockoutDuration; // Lockout ground checks for initial launch phase so full animation plays
             groundedGraceTimer = 0f; // Reset grace timer on jump
@@ -897,7 +911,7 @@ public class move : MonoBehaviour
             {
                 rb.gravityScale = gravityScale * fallGravityMultiplier;
             }
-            else if (rb.linearVelocity.y > 0f && !Input.GetButton("Jump"))
+            else if (rb.linearVelocity.y > 0f && !Input.GetButton("Jump") && !Input.GetKey(KeyCode.Space) && !virtualJumpHeld)
             {
                 rb.gravityScale = gravityScale * lowJumpMultiplier;
             }

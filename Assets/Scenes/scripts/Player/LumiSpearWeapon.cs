@@ -763,4 +763,24 @@ public class LumiSpearWeapon : MonoBehaviour
         ps.Play();
         Destroy(waveGO, 0.5f);
     }
+
+    /// <summary>
+    /// Invoked by on-screen touch spear button. Throws spear, recalls, or super-launches.
+    /// </summary>
+    public void TriggerSpearActionFromTouch()
+    {
+        if (CurrentState == SpearState.CarriedByLumi)
+        {
+            float facing = (playerTransform != null && playerTransform.localScale.x < 0) ? -1f : 1f;
+            Throw(new Vector2(facing, 0f));
+        }
+        else if (CurrentState == SpearState.Embedded)
+        {
+            ExplodeAndSuperLaunch();
+        }
+        else if (CurrentState == SpearState.ThrownFlight)
+        {
+            Recall();
+        }
+    }
 }
