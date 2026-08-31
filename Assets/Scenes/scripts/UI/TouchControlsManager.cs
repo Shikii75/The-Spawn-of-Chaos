@@ -8,7 +8,8 @@ using TMPro;
 
 /// <summary>
 /// TouchControlsManager - Complete Cyber-Gothic On-Screen Mobile Touch Controller:
-/// 1. D-Pad (Left Thumb): Dedicated Left (◀) and Right (▶) buttons supporting Hold to Move and Double-Tap to Dash.
+/// 1. D-Pad (Left Thumb): Dedicated Left (◀) and Right (▶) buttons with continuous frame-by-frame
+///    input holding, IDragHandler pointer locking, and double-tap dash trigger.
 /// 2. Action Cluster (Right Thumb): Glassmorphic buttons for Attack, Jump, Dash, Blob, Magic, Spear.
 /// 3. Utility Buttons: Pause (top-right) & Contextual Interact (floating prompt).
 /// 4. Tactile Micro-Animations: Scale-punch (0.90x) on touch down.
@@ -162,7 +163,7 @@ public class TouchControlsManager : MonoBehaviour
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // 1. HORIZONTAL D-PAD (LEFT & RIGHT) WITH HOLD & DOUBLE-TAP TO DASH
+    // 1. HORIZONTAL D-PAD (LEFT & RIGHT) WITH CONTINUOUS FRAME-HOLD & DOUBLE-TAP DASH
     // ─────────────────────────────────────────────────────────────────────────────
     void CreateDPad(Transform parent)
     {
@@ -174,54 +175,78 @@ public class TouchControlsManager : MonoBehaviour
         housingRT.anchorMax = new Vector2(0, 0);
         housingRT.pivot = new Vector2(0.5f, 0.5f);
         housingRT.anchoredPosition = new Vector2(210, 190);
-        housingRT.sizeDelta = new Vector2(270, 135);
+        housingRT.sizeDelta = new Vector2(275, 135);
 
         Image housingImg = housingObj.AddComponent<Image>();
         housingImg.color = new Color(0.02f, 0.04f, 0.08f, 0.55f);
+        housingImg.raycastTarget = false; // Don't block button clicks
 
         Outline outline = housingObj.AddComponent<Outline>();
         outline.effectColor = new Color(0.04f, 0.85f, 1.0f, 0.35f);
         outline.effectDistance = new Vector2(1.5f, 1.5f);
 
-        // 2. D-PAD LEFT BUTTON (◀)
-        CreateTouchButton(parent, "TouchBtn_DPadLeft",
-            new Vector2(140, 190), new Vector2(115, 115),
-            new Color(0.04f, 0.85f, 1.0f, 0.85f), "◀", 40,
-            anchorMin: new Vector2(0, 0), anchorMax: new Vector2(0, 0),
-            onDown: () => {
-                if (move.Instance != null)
-                {
-                    move.Instance.virtualLeftDown = true;
-                    move.Instance.virtualHorizontalInput = -1f;
-                }
-            },
-            onUp: () => {
-                if (move.Instance != null && move.Instance.virtualHorizontalInput < 0f)
-                {
-                    move.Instance.virtualHorizontalInput = 0f;
-                }
-            }
+        // 2. D-PAD LEFT BUTTON (◀) - Direction = -1
+        CreateDPadButton(parent, "TouchBtn_DPadLeft",
+            new Vector2(145, 190), new Vector2(115, 115),
+            new Color(0.04f, 0.85f, 1.0f, 0.85f), "◀", 40, -1f
         );
 
-        // 3. D-PAD RIGHT BUTTON (▶)
-        CreateTouchButton(parent, "TouchBtn_DPadRight",
-            new Vector2(280, 190), new Vector2(115, 115),
-            new Color(0.04f, 0.85f, 1.0f, 0.85f), "▶", 40,
-            anchorMin: new Vector2(0, 0), anchorMax: new Vector2(0, 0),
-            onDown: () => {
-                if (move.Instance != null)
-                {
-                    move.Instance.virtualRightDown = true;
-                    move.Instance.virtualHorizontalInput = 1f;
-                }
-            },
-            onUp: () => {
-                if (move.Instance != null && move.Instance.virtualHorizontalInput > 0f)
-                {
-                    move.Instance.virtualHorizontalInput = 0f;
-                }
-            }
+        // 3. D-PAD RIGHT BUTTON (▶) - Direction = +1
+        CreateDPadButton(parent, "TouchBtn_DPadRight",
+            new Vector2(275, 190), new Vector2(115, 115),
+            new Color(0.04f, 0.85f, 1.0f, 0.85f), "▶", 40, 1f
         );
+    }
+
+    RectTransform CreateDPadButton(Transform parent, string name, Vector2 anchoredPos, Vector2 size, 
+        Color accentColor, string labelText, int fontSize, float direction)
+    {
+        GameObject btnObj = new GameObject(name);
+        btnObj.transform.SetParent(parent, false);
+
+        RectTransform rt = btnObj.AddComponent<RectTransform>();
+        rt.anchorMin = new Vector2(0, 0);
+        rt.anchorMax = new Vector2(0, 0);
+        rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.anchoredPosition = anchoredPos;
+        rt.sizeDelta = size;
+
+        Image bgImg = btnObj.AddComponent<Image>();
+        bgImg.sprite = circleSprite;
+        bgImg.color = new Color(0.04f, 0.05f, 0.12f, 0.70f);
+        bgImg.raycastTarget = true;
+
+        GameObject ringObj = new GameObject("AccentRing");
+        ringObj.transform.SetParent(btnObj.transform, false);
+        RectTransform ringRT = ringObj.AddComponent<RectTransform>();
+        ringRT.anchorMin = Vector2.zero;
+        ringRT.anchorMax = Vector2.one;
+        ringRT.sizeDelta = Vector2.zero;
+        Image ringImg = ringObj.AddComponent<Image>();
+        ringImg.sprite = ringSprite;
+        ringImg.color = accentColor;
+        ringImg.raycastTarget = false;
+
+        GameObject txtObj = new GameObject("Label");
+        txtObj.transform.SetParent(btnObj.transform, false);
+        RectTransform txtRT = txtObj.AddComponent<RectTransform>();
+        txtRT.anchorMin = Vector2.zero;
+        txtRT.anchorMax = Vector2.one;
+        txtRT.sizeDelta = Vector2.zero;
+
+        TextMeshProUGUI tmp = txtObj.AddComponent<TextMeshProUGUI>();
+        tmp.text = labelText;
+        tmp.fontSize = fontSize;
+        tmp.fontStyle = FontStyles.Bold;
+        tmp.alignment = TextAlignmentOptions.Center;
+        tmp.color = Color.white;
+        tmp.enableWordWrapping = false;
+        tmp.raycastTarget = false;
+
+        TouchDPadButton dpad = btnObj.AddComponent<TouchDPadButton>();
+        dpad.Init(direction);
+
+        return rt;
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
@@ -483,9 +508,106 @@ public class TouchControlsManager : MonoBehaviour
 }
 
 /// <summary>
-/// TouchButtonTrigger - Handles tactile scale punch (0.90x) and triggers game action.
+/// TouchDPadButton - Dedicated Left/Right directional button:
+/// 1. Continuously asserts virtualHorizontalInput every single frame while held.
+/// 2. Implements IDragHandler to lock pointer capture so finger micro-drifts never drop input.
+/// 3. Detects double-tap natively to trigger the Dash Run.
+/// 4. Provides tactile scale punch on press/release.
 /// </summary>
-public class TouchButtonTrigger : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
+public class TouchDPadButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDragHandler
+{
+    private float direction; // -1 for Left, +1 for Right
+    private bool isHeld = false;
+    private float lastTapTime = -10f;
+    private const float doubleTapThreshold = 0.35f;
+    private Coroutine scaleCoroutine;
+
+    public void Init(float dir)
+    {
+        direction = dir;
+    }
+
+    public void OnPointerDown(PointerEventData eventData)
+    {
+        isHeld = true;
+
+        float timeSinceLast = Time.unscaledTime - lastTapTime;
+        bool isDoubleTap = timeSinceLast <= doubleTapThreshold;
+        lastTapTime = Time.unscaledTime;
+
+        if (move.Instance != null)
+        {
+            if (direction < 0f)
+            {
+                move.Instance.virtualLeftDown = true;
+            }
+            else
+            {
+                move.Instance.virtualRightDown = true;
+            }
+
+            move.Instance.virtualHorizontalInput = direction;
+        }
+
+        if (scaleCoroutine != null) StopCoroutine(scaleCoroutine);
+        scaleCoroutine = StartCoroutine(AnimateScale(0.88f, 0.05f));
+    }
+
+    public void OnDrag(PointerEventData eventData)
+    {
+        // Maintains unbroken pointer capture on touchscreens even with finger drift
+    }
+
+    public void OnPointerUp(PointerEventData eventData)
+    {
+        isHeld = false;
+
+        if (move.Instance != null)
+        {
+            // Reset horizontal input if this button was active
+            if ((direction < 0f && move.Instance.virtualHorizontalInput < 0f) ||
+                (direction > 0f && move.Instance.virtualHorizontalInput > 0f))
+            {
+                move.Instance.virtualHorizontalInput = 0f;
+            }
+        }
+
+        if (scaleCoroutine != null) StopCoroutine(scaleCoroutine);
+        scaleCoroutine = StartCoroutine(AnimateScale(1.0f, 0.10f));
+    }
+
+    void Update()
+    {
+        // Continuously refresh horizontal input every frame while held down
+        if (isHeld && move.Instance != null)
+        {
+            move.Instance.virtualHorizontalInput = direction;
+        }
+    }
+
+    private IEnumerator AnimateScale(float targetScale, float duration)
+    {
+        Vector3 start = transform.localScale;
+        Vector3 end = Vector3.one * targetScale;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            transform.localScale = Vector3.Lerp(start, end, elapsed / duration);
+            yield return null;
+        }
+
+        transform.localScale = end;
+        scaleCoroutine = null;
+    }
+}
+
+/// <summary>
+/// TouchButtonTrigger - Handles tactile scale punch (0.90x) and triggers game action.
+/// Implements IDragHandler to prevent finger micro-drift from breaking hold.
+/// </summary>
+public class TouchButtonTrigger : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDragHandler
 {
     private Color baseAccentColor;
     private System.Action onDownAction;
@@ -505,6 +627,11 @@ public class TouchButtonTrigger : MonoBehaviour, IPointerDownHandler, IPointerUp
         scaleCoroutine = StartCoroutine(AnimateScale(0.90f, 0.05f));
 
         onDownAction?.Invoke();
+    }
+
+    public void OnDrag(PointerEventData eventData)
+    {
+        // Maintains unbroken pointer capture
     }
 
     public void OnPointerUp(PointerEventData eventData)
