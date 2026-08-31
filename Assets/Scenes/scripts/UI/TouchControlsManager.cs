@@ -8,8 +8,7 @@ using TMPro;
 
 /// <summary>
 /// TouchControlsManager - Complete Cyber-Gothic On-Screen Mobile Touch Controller:
-/// 1. Virtual Analog Joystick (Left Thumb): Dynamic broad touch-capture zone for uninterrupted, continuous movement.
-///    Strictly controls horizontal movement (left/right) with zero blob or crouch interference.
+/// 1. D-Pad (Left Thumb): Dedicated Left (◀) and Right (▶) buttons supporting Hold to Move and Double-Tap to Dash.
 /// 2. Action Cluster (Right Thumb): Glassmorphic buttons for Attack, Jump, Dash, Blob, Magic, Spear.
 /// 3. Utility Buttons: Pause (top-right) & Contextual Interact (floating prompt).
 /// 4. Tactile Micro-Animations: Scale-punch (0.90x) on touch down.
@@ -30,16 +29,8 @@ public class TouchControlsManager : MonoBehaviour
     [Tooltip("Enables touch controls inside the Unity Editor for instant mouse playtesting.")]
     public bool forceEnableInEditor = true;
 
-    [Header("Joystick Settings")]
-    public float joystickRadius = 85f;
-    public float deadzone = 0.05f;
-
     // Runtime UI elements
     private Canvas touchCanvas;
-    private GameObject joystickBaseObj;
-    private RectTransform joystickBaseRT;
-    private RectTransform joystickHandleRT;
-    private Vector2 defaultJoystickPos = new Vector2(250, 240);
 
     private static Sprite circleSprite;
     private static Sprite ringSprite;
@@ -60,12 +51,12 @@ public class TouchControlsManager : MonoBehaviour
 
     void Awake()
     {
-        if (Instance == null)
+        if (instance == null)
         {
             instance = this;
             DontDestroyOnLoad(gameObject);
         }
-        else if (Instance != this)
+        else if (instance != this)
         {
             Destroy(gameObject);
             return;
@@ -84,7 +75,7 @@ public class TouchControlsManager : MonoBehaviour
     {
         if (touchCanvas != null)
         {
-            touchCanvas.gameObject.SetActive(scene.name != "MainMenu");
+            touchCanvas.gameObject.SetActive(false);
         }
     }
 
@@ -146,10 +137,10 @@ public class TouchControlsManager : MonoBehaviour
 
         canvasGO.AddComponent<GraphicRaycaster>();
 
-        // 2. Build Virtual Joystick with Broad Left-Side Touch Zone
-        CreateVirtualJoystick(canvasGO.transform);
+        // 2. Build Horizontal D-Pad (Left Thumb: ◀ and ▶)
+        CreateDPad(canvasGO.transform);
 
-        // 3. Build Action Button Cluster (Bottom Right)
+        // 3. Build Action Button Cluster (Right Thumb)
         CreateActionCluster(canvasGO.transform);
 
         // 4. Build Utility Buttons (Top Right & Interact)
@@ -171,75 +162,66 @@ public class TouchControlsManager : MonoBehaviour
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // 1. VIRTUAL JOYSTICK WITH FULL LEFT-HALF CAPTURE ZONE
+    // 1. HORIZONTAL D-PAD (LEFT & RIGHT) WITH HOLD & DOUBLE-TAP TO DASH
     // ─────────────────────────────────────────────────────────────────────────────
-    void CreateVirtualJoystick(Transform parent)
+    void CreateDPad(Transform parent)
     {
-        // Broad Left-Half Touch Zone to prevent touch drops during wide finger swipes
-        GameObject zoneObj = new GameObject("JoystickTouchZone");
-        zoneObj.transform.SetParent(parent, false);
-        RectTransform zoneRT = zoneObj.AddComponent<RectTransform>();
-        zoneRT.anchorMin = new Vector2(0f, 0f);
-        zoneRT.anchorMax = new Vector2(0.55f, 0.85f); // Covers entire left side
-        zoneRT.offsetMin = Vector2.zero;
-        zoneRT.offsetMax = Vector2.zero;
+        // 1. Base Housing Glass Pill
+        GameObject housingObj = new GameObject("DPadHousing");
+        housingObj.transform.SetParent(parent, false);
+        RectTransform housingRT = housingObj.AddComponent<RectTransform>();
+        housingRT.anchorMin = new Vector2(0, 0);
+        housingRT.anchorMax = new Vector2(0, 0);
+        housingRT.pivot = new Vector2(0.5f, 0.5f);
+        housingRT.anchoredPosition = new Vector2(210, 190);
+        housingRT.sizeDelta = new Vector2(270, 135);
 
-        Image zoneImg = zoneObj.AddComponent<Image>();
-        zoneImg.color = Color.clear; // Invisible touch receiver
-        zoneImg.raycastTarget = true;
+        Image housingImg = housingObj.AddComponent<Image>();
+        housingImg.color = new Color(0.02f, 0.04f, 0.08f, 0.55f);
 
-        // Visual Outer Base Ring
-        joystickBaseObj = new GameObject("VirtualJoystickBase");
-        joystickBaseObj.transform.SetParent(zoneObj.transform, false);
-        joystickBaseRT = joystickBaseObj.AddComponent<RectTransform>();
-        joystickBaseRT.anchorMin = Vector2.zero;
-        joystickBaseRT.anchorMax = Vector2.zero;
-        joystickBaseRT.pivot = new Vector2(0.5f, 0.5f);
-        joystickBaseRT.anchoredPosition = defaultJoystickPos;
-        joystickBaseRT.sizeDelta = new Vector2(210, 210);
+        Outline outline = housingObj.AddComponent<Outline>();
+        outline.effectColor = new Color(0.04f, 0.85f, 1.0f, 0.35f);
+        outline.effectDistance = new Vector2(1.5f, 1.5f);
 
-        Image baseImg = joystickBaseObj.AddComponent<Image>();
-        baseImg.sprite = ringSprite;
-        baseImg.color = new Color(0.04f, 0.85f, 1.0f, 0.40f);
-        baseImg.raycastTarget = false; // Let TouchZone handle all raycasts to prevent event bubbling issues
+        // 2. D-PAD LEFT BUTTON (◀)
+        CreateTouchButton(parent, "TouchBtn_DPadLeft",
+            new Vector2(140, 190), new Vector2(115, 115),
+            new Color(0.04f, 0.85f, 1.0f, 0.85f), "◀", 40,
+            anchorMin: new Vector2(0, 0), anchorMax: new Vector2(0, 0),
+            onDown: () => {
+                if (move.Instance != null)
+                {
+                    move.Instance.virtualLeftDown = true;
+                    move.Instance.virtualHorizontalInput = -1f;
+                }
+            },
+            onUp: () => {
+                if (move.Instance != null && move.Instance.virtualHorizontalInput < 0f)
+                {
+                    move.Instance.virtualHorizontalInput = 0f;
+                }
+            }
+        );
 
-        // Inner Thumb Handle
-        GameObject handleObj = new GameObject("JoystickHandle");
-        handleObj.transform.SetParent(joystickBaseObj.transform, false);
-        joystickHandleRT = handleObj.AddComponent<RectTransform>();
-        joystickHandleRT.anchorMin = new Vector2(0.5f, 0.5f);
-        joystickHandleRT.anchorMax = new Vector2(0.5f, 0.5f);
-        joystickHandleRT.pivot = new Vector2(0.5f, 0.5f);
-        joystickHandleRT.anchoredPosition = Vector2.zero;
-        joystickHandleRT.sizeDelta = new Vector2(90, 90);
-
-        Image handleImg = handleObj.AddComponent<Image>();
-        handleImg.sprite = circleSprite;
-        handleImg.color = new Color(0.1f, 0.95f, 1.0f, 0.85f);
-        handleImg.raycastTarget = false; // NEVER intercept pointer rays
-
-        // Attach reliable drag listener to TouchZone
-        TouchJoystickHandler handler = zoneObj.AddComponent<TouchJoystickHandler>();
-        handler.Init(this, zoneRT, joystickBaseRT, joystickHandleRT, defaultJoystickPos, joystickRadius, deadzone);
-    }
-
-    /// <summary>
-    /// Feeds strictly into horizontal movement. Zero blob or vertical interference.
-    /// </summary>
-    public void OnJoystickDragged(float horizontalInput)
-    {
-        if (move.Instance != null)
-        {
-            move.Instance.virtualHorizontalInput = horizontalInput;
-        }
-    }
-
-    public void OnJoystickReleased()
-    {
-        if (move.Instance != null)
-        {
-            move.Instance.virtualHorizontalInput = 0f;
-        }
+        // 3. D-PAD RIGHT BUTTON (▶)
+        CreateTouchButton(parent, "TouchBtn_DPadRight",
+            new Vector2(280, 190), new Vector2(115, 115),
+            new Color(0.04f, 0.85f, 1.0f, 0.85f), "▶", 40,
+            anchorMin: new Vector2(0, 0), anchorMax: new Vector2(0, 0),
+            onDown: () => {
+                if (move.Instance != null)
+                {
+                    move.Instance.virtualRightDown = true;
+                    move.Instance.virtualHorizontalInput = 1f;
+                }
+            },
+            onUp: () => {
+                if (move.Instance != null && move.Instance.virtualHorizontalInput > 0f)
+                {
+                    move.Instance.virtualHorizontalInput = 0f;
+                }
+            }
+        );
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
@@ -497,97 +479,6 @@ public class TouchControlsManager : MonoBehaviour
 
         circleSprite = Sprite.Create(circleTex, new Rect(0, 0, res, res), new Vector2(0.5f, 0.5f));
         ringSprite = Sprite.Create(ringTex, new Rect(0, 0, res, res), new Vector2(0.5f, 0.5f));
-    }
-}
-
-/// <summary>
-/// TouchJoystickHandler - Captures pointer events across the broad touch zone and ensures
-/// unbroken, continuous dragging without premature stops or deadzone drops.
-/// </summary>
-public class TouchJoystickHandler : MonoBehaviour, IPointerDownHandler, IDragHandler, IPointerUpHandler
-{
-    private TouchControlsManager manager;
-    private RectTransform zoneRT;
-    private RectTransform baseRT;
-    private RectTransform handleRT;
-    private Vector2 defaultBasePos;
-    private float radius;
-    private float deadzone;
-    private Vector2 activeBaseScreenPos;
-
-    public void Init(TouchControlsManager mgr, RectTransform zone, RectTransform baseTransform, 
-                     RectTransform handle, Vector2 defaultPos, float maxRadius, float deadzoneVal)
-    {
-        manager = mgr;
-        zoneRT = zone;
-        baseRT = baseTransform;
-        handleRT = handle;
-        defaultBasePos = defaultPos;
-        radius = maxRadius;
-        deadzone = deadzoneVal;
-    }
-
-    public void OnPointerDown(PointerEventData eventData)
-    {
-        Vector2 localPoint;
-        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(zoneRT, eventData.position, eventData.pressEventCamera, out localPoint))
-        {
-            baseRT.anchoredPosition = localPoint;
-            activeBaseScreenPos = eventData.position;
-        }
-        else
-        {
-            activeBaseScreenPos = RectTransformUtility.WorldToScreenPoint(eventData.pressEventCamera, baseRT.position);
-        }
-
-        UpdateInput(eventData);
-    }
-
-    public void OnDrag(PointerEventData eventData)
-    {
-        UpdateInput(eventData);
-    }
-
-    public void OnPointerUp(PointerEventData eventData)
-    {
-        if (handleRT != null) handleRT.anchoredPosition = Vector2.zero;
-        if (baseRT != null) baseRT.anchoredPosition = defaultBasePos;
-
-        if (manager != null) manager.OnJoystickReleased();
-    }
-
-    private void UpdateInput(PointerEventData eventData)
-    {
-        Vector2 screenDelta = eventData.position - activeBaseScreenPos;
-        float mag = screenDelta.magnitude;
-
-        Vector2 clampedOffset = screenDelta;
-        if (mag > radius)
-        {
-            clampedOffset = screenDelta.normalized * radius;
-        }
-
-        if (handleRT != null)
-        {
-            handleRT.anchoredPosition = clampedOffset;
-        }
-
-        // Calculate pure horizontal movement normalized from -1.0 to +1.0
-        float horizontalVal = clampedOffset.x / radius;
-
-        if (Mathf.Abs(horizontalVal) < deadzone)
-        {
-            horizontalVal = 0f;
-        }
-        else
-        {
-            horizontalVal = Mathf.Clamp(horizontalVal, -1.0f, 1.0f);
-        }
-
-        if (manager != null)
-        {
-            manager.OnJoystickDragged(horizontalVal);
-        }
     }
 }
 

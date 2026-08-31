@@ -8,6 +8,8 @@ public class move : MonoBehaviour
     public bool virtualJumpHeld = false;
     public bool virtualDashPressed = false;
     public bool virtualBlobPressed = false;
+    public bool virtualLeftDown = false;
+    public bool virtualRightDown = false;
     public float moveSpeed = 6f;
     public float jumpForce = 15.5f;
     public float gravityScale = 2.8f;
@@ -430,8 +432,10 @@ public class move : MonoBehaviour
         }
 
                 // Handle double-tap detection: Double-tap initiates explosive Start Dash Run; holding sustains continuous Run
-        bool leftKeyDown = Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A);
-        bool rightKeyDown = Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D);
+        bool leftKeyDown = Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A) || virtualLeftDown;
+        bool rightKeyDown = Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D) || virtualRightDown;
+        virtualLeftDown = false;
+        virtualRightDown = false;
 
         if (leftKeyDown)
         {
