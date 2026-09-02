@@ -194,12 +194,24 @@ public class Health : MonoBehaviour, IDamageable
             Collider2D col = GetComponent<Collider2D>();
             if (col != null) col.enabled = false;
 
-            StartCoroutine(ReloadSceneRoutine(2.0f));
+            if (RevivalPromptUI.Instance != null)
+            {
+                RevivalPromptUI.Instance.PromptRevival(this, () => ExecuteStandardDeathRespawn());
+            }
+            else
+            {
+                ExecuteStandardDeathRespawn();
+            }
         }
         else
         {
             Destroy(gameObject);
         }
+    }
+
+    public void ExecuteStandardDeathRespawn()
+    {
+        StartCoroutine(ReloadSceneRoutine(1.5f));
     }
 
     private System.Collections.IEnumerator ReloadSceneRoutine(float delay)

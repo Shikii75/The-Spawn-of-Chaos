@@ -409,6 +409,12 @@ public class NyxarisManager : MonoBehaviour
 
         if (currentTypewriterCoroutine != null) StopCoroutine(currentTypewriterCoroutine);
         currentTypewriterCoroutine = StartCoroutine(TypeText(response.response));
+
+        // Track casual conversation exchanges with Nyxaris (prompts ad communion after 4 messages, never in cutscenes)
+        if (AdManager.Instance != null && mode != "story")
+        {
+            AdManager.Instance.RecordNyxarisCasualExchange();
+        }
     }
 
     private IEnumerator TryPostRequest(string url, string json, System.Action<NyxarisResponse> onParsed)

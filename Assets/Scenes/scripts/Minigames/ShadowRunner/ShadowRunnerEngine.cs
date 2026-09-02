@@ -13,6 +13,8 @@ namespace SpawnOfChaos.Minigames
     /// </summary>
     public class ShadowRunnerEngine : MonoBehaviour
     {
+        public static bool virtualJump = false;
+        public static bool virtualDuck = false;
         [HideInInspector] public RawImage displayImage;
         [HideInInspector] public TextMeshProUGUI distanceText;
         [HideInInspector] public TextMeshProUGUI highScoreText;
@@ -132,8 +134,9 @@ namespace SpawnOfChaos.Minigames
 
         void Update()
         {
-            bool jumpKey = Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.Space);
-            bool duckKey = Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow);
+            bool jumpKey = Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.Space) || virtualJump;
+            virtualJump = false;
+            bool duckKey = Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow) || virtualDuck;
 
             if (jumpKey && playing) HandleJump();
             if (!playing) { RenderFrame(); return; }
@@ -307,6 +310,7 @@ namespace SpawnOfChaos.Minigames
                 PlayerPrefs.SetFloat("ShadowRunner_HighScore", best);
                 PlayerPrefs.Save();
             }
+            if (AdManager.Instance != null) { AdManager.Instance.RecordMinigameLoss(); }
 
             if (gameOverPanel != null)
             {

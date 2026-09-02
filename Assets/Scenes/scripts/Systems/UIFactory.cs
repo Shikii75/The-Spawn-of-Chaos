@@ -376,4 +376,18 @@ public static class UIFactory
         roundedSpriteCache = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, border);
         return roundedSpriteCache;
     }
+
+    private static Material _arcadeCRTMaterial;
+    public static Material GetArcadeCRTMaterial()
+    {
+        if (_arcadeCRTMaterial == null)
+        {
+            Shader s = Shader.Find("SpawnOfChaos/ArcadeCRTNeonBloom");
+            if (s != null)
+            {
+                _arcadeCRTMaterial = new Material(s);
+            }
+        }
+        return _arcadeCRTMaterial;
+    }
 }

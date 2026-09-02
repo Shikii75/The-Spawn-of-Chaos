@@ -11,6 +11,12 @@ namespace SpawnOfChaos.Minigames
     /// </summary>
     public class VoidSurgeEngine : MonoBehaviour
     {
+        public static bool virtualLeft = false;
+        public static bool virtualRight = false;
+        public static bool virtualUp = false;
+        public static bool virtualDown = false;
+        public static bool virtualFire = false;
+        public static bool virtualBomb = false;
         [HideInInspector] public RawImage displayImage;
         [HideInInspector] public TextMeshProUGUI scoreText;
         [HideInInspector] public TextMeshProUGUI highScoreText;
@@ -154,12 +160,13 @@ namespace SpawnOfChaos.Minigames
 
         void Update()
         {
-            bool left = Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow);
-            bool right = Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow);
-            bool up = Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow);
-            bool down = Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow);
-            bool fire = Input.GetKey(KeyCode.Space) || Input.GetKey(KeyCode.J) || Input.GetMouseButton(0);
-            bool bombKey = Input.GetKeyDown(KeyCode.K) || Input.GetKeyDown(KeyCode.LeftShift);
+            bool left = Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow) || virtualLeft;
+            bool right = Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow) || virtualRight;
+            bool up = Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow) || virtualUp;
+            bool down = Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow) || virtualDown;
+            bool fire = Input.GetKey(KeyCode.Space) || Input.GetKey(KeyCode.J) || virtualFire || Input.GetMouseButton(0);
+            bool bombKey = Input.GetKeyDown(KeyCode.K) || Input.GetKeyDown(KeyCode.LeftShift) || virtualBomb;
+            virtualBomb = false;
 
             if (bombKey && playing) TriggerNovaBomb();
             if (!playing) { RenderFrame(); return; }
@@ -586,6 +593,7 @@ namespace SpawnOfChaos.Minigames
                 PlayerPrefs.SetInt("VoidSurge_HighScore", best);
                 PlayerPrefs.Save();
             }
+            if (AdManager.Instance != null) { AdManager.Instance.RecordMinigameLoss(); }
 
             if (gameOverPanel != null)
             {

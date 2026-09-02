@@ -48,6 +48,7 @@ namespace SpawnOfChaos.Minigames
 
         public void Open()
         {
+            OrientationManager.SetPortrait();
             if (modal == null) BuildUI();
             modal.SetActive(true);
             if (startPanel != null) startPanel.SetActive(true);
@@ -56,6 +57,7 @@ namespace SpawnOfChaos.Minigames
 
         public void Close()
         {
+            OrientationManager.SetLandscape();
             if (modal != null) modal.SetActive(false);
         }
 
@@ -100,6 +102,7 @@ namespace SpawnOfChaos.Minigames
             rawRT.anchoredPosition = new Vector2(0f, -10f);
             RawImage rawImg = rawGO.GetComponent<RawImage>();
             rawImg.color = Color.white;
+            rawImg.material = UIFactory.GetArcadeCRTMaterial();
 
             // ── HUD Top Bar ──
             RectTransform hudBar = UIFactory.CreatePanel(frame, "HUD",
@@ -148,6 +151,27 @@ namespace SpawnOfChaos.Minigames
                 new Color(0.15f, 0.05f, 0.05f, 0.9f), new Color(0.4f, 0.1f, 0.1f, 1f), () => Close());
 
             // ── Engine attachment ──
+            // ── Mobile Controls Bar ──
+            GameObject controlsBar = new GameObject("MobileControlsBar", typeof(RectTransform));
+            controlsBar.transform.SetParent(frame, false);
+            RectTransform barRT = controlsBar.GetComponent<RectTransform>();
+            barRT.anchorMin = new Vector2(0.5f, 0f);
+            barRT.anchorMax = new Vector2(0.5f, 0f);
+            barRT.sizeDelta = new Vector2(600f, 75f);
+            barRT.anchoredPosition = new Vector2(0f, 42f);
+
+            ArcadeTouchButton.Create(controlsBar.transform, "BtnLeft", "◀", new Vector2(-220f, 0f), new Vector2(85f, 55f), 
+                new Color(0f, 0.94f, 1f, 1f), (held) => VoidSurgeEngine.virtualLeft = held);
+
+            ArcadeTouchButton.Create(controlsBar.transform, "BtnRight", "▶", new Vector2(-120f, 0f), new Vector2(85f, 55f), 
+                new Color(0f, 0.94f, 1f, 1f), (held) => VoidSurgeEngine.virtualRight = held);
+
+            ArcadeTouchButton.Create(controlsBar.transform, "BtnFire", "⚡ FIRE", new Vector2(100f, 0f), new Vector2(120f, 55f), 
+                new Color(0.2f, 1f, 0.6f, 1f), (held) => VoidSurgeEngine.virtualFire = held);
+
+            ArcadeTouchButton.Create(controlsBar.transform, "BtnBomb", "💥 BOMB", new Vector2(230f, 0f), new Vector2(100f, 55f), 
+                new Color(1f, 0f, 0.67f, 1f), null, () => VoidSurgeEngine.virtualBomb = true);
+
             engine = rawGO.AddComponent<VoidSurgeEngine>();
             engine.displayImage = rawImg;
             engine.scoreText = scoreVal;

@@ -47,6 +47,7 @@ namespace SpawnOfChaos.Minigames
 
         public void Open()
         {
+            OrientationManager.SetPortrait();
             if (modal == null) BuildUI();
             modal.SetActive(true);
             if (startPanel != null) startPanel.SetActive(true);
@@ -55,6 +56,7 @@ namespace SpawnOfChaos.Minigames
 
         public void Close()
         {
+            OrientationManager.SetLandscape();
             if (modal != null) modal.SetActive(false);
         }
 
@@ -94,6 +96,7 @@ namespace SpawnOfChaos.Minigames
             rawRT.anchoredPosition = new Vector2(0f, -20f);
             RawImage rawImg = rawGO.GetComponent<RawImage>();
             rawImg.color = Color.white;
+            rawImg.material = UIFactory.GetArcadeCRTMaterial();
 
             // ── HUD bar at top of frame ──
             RectTransform hudBar = UIFactory.CreatePanel(frame, "HUD",
@@ -127,6 +130,24 @@ namespace SpawnOfChaos.Minigames
             Button closeBtn = MakeBtn(frame, "CloseBtn", "✕ CLOSE", new Vector2(110f, 34f), new Vector2(205f, 355f), () => Close());
 
             // ── Attach engine to the RawImage GO ──
+            // ── Mobile Controls Bar ──
+            GameObject controlsBar = new GameObject("MobileControlsBar", typeof(RectTransform));
+            controlsBar.transform.SetParent(frame, false);
+            RectTransform barRT = controlsBar.GetComponent<RectTransform>();
+            barRT.anchorMin = new Vector2(0.5f, 0f);
+            barRT.anchorMax = new Vector2(0.5f, 0f);
+            barRT.sizeDelta = new Vector2(500f, 75f);
+            barRT.anchoredPosition = new Vector2(0f, 42f);
+
+            ArcadeTouchButton.Create(controlsBar.transform, "BtnLeft", "◀", new Vector2(-150f, 0f), new Vector2(100f, 60f), 
+                new Color(0f, 0.94f, 1f, 1f), (held) => SkyboundBoxEngine.virtualLeft = held);
+
+            ArcadeTouchButton.Create(controlsBar.transform, "BtnJump", "▲ JUMP", new Vector2(0f, 0f), new Vector2(140f, 60f), 
+                new Color(0.2f, 1f, 0.6f, 1f), null, () => SkyboundBoxEngine.virtualJump = true);
+
+            ArcadeTouchButton.Create(controlsBar.transform, "BtnRight", "▶", new Vector2(150f, 0f), new Vector2(100f, 60f), 
+                new Color(0f, 0.94f, 1f, 1f), (held) => SkyboundBoxEngine.virtualRight = held);
+
             engine = rawGO.AddComponent<SkyboundBoxEngine>();
             engine.displayImage = rawImg;
             engine.timerText = timeVal;

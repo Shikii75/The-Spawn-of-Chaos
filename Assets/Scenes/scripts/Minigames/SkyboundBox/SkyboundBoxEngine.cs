@@ -13,6 +13,9 @@ namespace SpawnOfChaos.Minigames
     /// </summary>
     public class SkyboundBoxEngine : MonoBehaviour
     {
+        public static bool virtualLeft = false;
+        public static bool virtualRight = false;
+        public static bool virtualJump = false;
         // ── Public References (set by SkyboundArcadeUI) ────────────
         [HideInInspector] public RawImage displayImage;
         [HideInInspector] public TextMeshProUGUI timerText;
@@ -195,9 +198,10 @@ namespace SpawnOfChaos.Minigames
 
         void Update()
         {
-            bool kl = Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow);
-            bool kr = Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow);
-            bool jmp = Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.Space);
+            bool kl = Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow) || virtualLeft;
+            bool kr = Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow) || virtualRight;
+            bool jmp = Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.Space) || virtualJump;
+            virtualJump = false;
 
             if (jmp && playing) Jump();
             if (!playing) { RenderFrame(); return; }
@@ -381,6 +385,7 @@ namespace SpawnOfChaos.Minigames
             Boom(bx + bw / 2f, by + bh / 2f, 0, 240, 255, bw);
 
             if (elapsed > best) { best = elapsed; PlayerPrefs.SetFloat("Skybound_HighScore", best); PlayerPrefs.Save(); }
+            if (AdManager.Instance != null) { AdManager.Instance.RecordMinigameLoss(); }
 
             if (gameOverPanel != null)
             {
