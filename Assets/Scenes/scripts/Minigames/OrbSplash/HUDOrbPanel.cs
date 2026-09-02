@@ -14,6 +14,7 @@ namespace SpawnOfChaos.Minigames
     /// Dynamically binds to player stats, auto-updates fill ratios, triggers liquid splashes when world orbs are collected or damage is taken,
     /// hides when on the main menu / title screen, and persists across scene transitions (e.g., Dojo screen).
     /// </summary>
+    [ExecuteAlways]
     public class HUDOrbPanel : MonoBehaviour
     {
         public static HUDOrbPanel Instance { get; private set; }
@@ -234,7 +235,7 @@ namespace SpawnOfChaos.Minigames
         {
             if (this == null || gameObject == null) return;
 
-            bool shouldShowHUD = HUDManager.IsGameplayActive();
+            bool shouldShowHUD = !Application.isPlaying || HUDManager.IsGameplayActive();
 
             if (panelGO != null && panelGO.activeSelf != shouldShowHUD)
             {

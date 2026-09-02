@@ -7,6 +7,7 @@ namespace SpawnOfChaos.Minigames
     /// Unity MonoBehaviour UI component for displaying procedural splash Orbs on any Canvas or Minigame UI.
     /// Supports real-time fluid rendering, fill ratio animation, and splash particle triggers.
     /// </summary>
+    [ExecuteAlways]
     [RequireComponent(typeof(RawImage))]
     public class ProceduralOrbUI : MonoBehaviour
     {

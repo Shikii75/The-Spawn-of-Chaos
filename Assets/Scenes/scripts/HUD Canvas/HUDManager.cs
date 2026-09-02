@@ -234,6 +234,9 @@ public class HUDManager : MonoBehaviour
 
     public static bool IsGameplayActive()
     {
+        // In the Unity Editor when not playing, always show HUD so it's visible in Scene View!
+        if (!Application.isPlaying) return true;
+
         // Hide during Main Menu / Title Screen
         if (IsInMainMenu()) return false;
 

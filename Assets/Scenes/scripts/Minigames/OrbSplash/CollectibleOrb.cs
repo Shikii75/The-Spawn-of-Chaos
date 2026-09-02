@@ -15,6 +15,7 @@ namespace SpawnOfChaos.Entities
     /// - Distinct procedural 2D shapes (Heart, Arcane Tear, Diamond Coin, Cosmic Crystal) and scale variations.
     /// - Real-time stat restoration & HUD liquid splash synchronization.
     /// </summary>
+    [ExecuteAlways]
     [RequireComponent(typeof(SpriteRenderer), typeof(CircleCollider2D))]
     public class CollectibleOrb : MonoBehaviour
     {
