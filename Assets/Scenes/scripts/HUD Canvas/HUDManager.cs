@@ -107,7 +107,7 @@ public class HUDManager : MonoBehaviour
             }
             else
             {
-                canvas = UIFactory.CreateCanvas("HUDCanvas", -10);
+                canvas = UIFactory.CreateCanvas("HUDCanvas", 50);
                 canvas.transform.SetParent(null, false);
                 DontDestroyOnLoad(canvas.gameObject);
             }
