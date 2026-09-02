@@ -14,8 +14,15 @@ public class PlayerSceneSpawner : MonoBehaviour
 
     private void Start()
     {
-        // Guarantee game time is unpaused upon scene load
-        Time.timeScale = 1f;
+        // Keep game frozen if title menu is active, otherwise unpause
+        if (HUDManager.IsInMainMenu())
+        {
+            Time.timeScale = 0f;
+        }
+        else
+        {
+            Time.timeScale = 1f;
+        }
 
         string sceneName = SceneManager.GetActiveScene().name;
         Debug.Log($"[PlayerSceneSpawner] ===== START in scene '{sceneName}' =====");

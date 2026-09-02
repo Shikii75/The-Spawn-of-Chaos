@@ -82,6 +82,8 @@ namespace SpawnOfChaos.Entities
 
         void Update()
         {
+            if (HUDManager.IsInMainMenu()) return;
+
             if (playerTransform == null)
             {
                 FindPlayer();
@@ -137,6 +139,7 @@ namespace SpawnOfChaos.Entities
 
         void OnTriggerEnter2D(Collider2D other)
         {
+            if (HUDManager.IsInMainMenu()) return;
             if (isBeingCollected) return;
 
             if (other.CompareTag("Player") || other.name.Contains("Player") || other.GetComponent<Health>() != null || other.GetComponent<PlayerCurrency>() != null)

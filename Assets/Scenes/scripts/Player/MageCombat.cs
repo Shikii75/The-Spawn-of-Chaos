@@ -116,6 +116,8 @@ public class MageCombat : MonoBehaviour
 
     void Update()
     {
+        if (HUDManager.IsInMainMenu()) return;
+
         // Regenerate Mana
         currentMana = Mathf.Min(maxMana, currentMana + manaRegenRate * Time.deltaTime);
 

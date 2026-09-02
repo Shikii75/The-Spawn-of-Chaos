@@ -215,15 +215,14 @@ public class HUDManager : MonoBehaviour
 
     public static bool IsInMainMenu()
     {
-        // If an active player character is in the scene, we are definitively in gameplay!
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
-        if (player == null) player = GameObject.Find("Player");
-        if (player == null) player = GameObject.Find("BasePlayer");
-        if (player != null && player.activeInHierarchy)
+        // 1. Check if the UI Toolkit main menu controller is active and the game has not been started yet
+        MainMenuUIToolkitController menu = FindFirstObjectByType<MainMenuUIToolkitController>();
+        if (menu != null && menu.gameObject.activeInHierarchy && !MainMenuUIToolkitController.isPlaying)
         {
-            return false;
+            return true;
         }
 
+        // 2. Dedicated MainMenu scene
         string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
         if (sceneName.Equals("MainMenu", System.StringComparison.OrdinalIgnoreCase))
         {
@@ -258,11 +257,18 @@ public class HUDManager : MonoBehaviour
 
     public void UpdateVisibility()
     {
-        bool shouldShowHUD = IsGameplayActive();
+        bool inMenu = IsInMainMenu();
+        bool shouldShowHUD = !inMenu;
 
-        if (canvas != null && canvas.gameObject.activeSelf != shouldShowHUD)
+        if (canvas != null)
         {
-            canvas.gameObject.SetActive(shouldShowHUD);
+            if (canvas.enabled != shouldShowHUD) canvas.enabled = shouldShowHUD;
+            if (canvas.gameObject.activeSelf != shouldShowHUD) canvas.gameObject.SetActive(shouldShowHUD);
+        }
+
+        if (SpawnOfChaos.Minigames.HUDOrbPanel.Instance != null)
+        {
+            SpawnOfChaos.Minigames.HUDOrbPanel.Instance.UpdateVisibility();
         }
     }
 

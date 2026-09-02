@@ -276,6 +276,12 @@ public class move : MonoBehaviour
 
     void Update()
     {
+        if (HUDManager.IsInMainMenu())
+        {
+            if (rb != null) rb.linearVelocity = Vector2.zero;
+            return;
+        }
+
         // Update debuff timer
         if (debuffTimer > 0f)
         {

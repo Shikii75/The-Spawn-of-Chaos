@@ -126,7 +126,44 @@ public class MainMenuUIToolkitController : MonoBehaviour
 
     private void Start()
     {
+        if (!isPlaying)
+        {
+            Time.timeScale = 0f;
+            EnablePlayerGameplay(false);
+            if (HUDManager.Instance != null) HUDManager.Instance.UpdateVisibility();
+            if (SpawnOfChaos.Minigames.HUDOrbPanel.Instance != null) SpawnOfChaos.Minigames.HUDOrbPanel.Instance.UpdateVisibility();
+        }
         PlayTitleMusic();
+    }
+
+    private void EnablePlayerGameplay(bool enable)
+    {
+        GameObject p = GameObject.FindGameObjectWithTag("Player");
+        if (p == null) p = GameObject.Find("Player");
+        if (p == null) p = GameObject.Find("BasePlayer");
+
+        if (p != null)
+        {
+            move m = p.GetComponent<move>();
+            if (m != null) m.enabled = enable;
+
+            MageCombat mc = p.GetComponent<MageCombat>();
+            if (mc != null) mc.enabled = enable;
+
+            Rigidbody2D rb = p.GetComponent<Rigidbody2D>();
+            if (rb != null)
+            {
+                if (!enable)
+                {
+                    rb.linearVelocity = Vector2.zero;
+                    rb.simulated = false;
+                }
+                else
+                {
+                    rb.simulated = true;
+                }
+            }
+        }
     }
 
     private void OnEnable()
@@ -146,6 +183,9 @@ public class MainMenuUIToolkitController : MonoBehaviour
 
         isPlaying = false;
         Time.timeScale = 0f; // Freeze game background when Main Menu is up
+        EnablePlayerGameplay(false);
+        if (HUDManager.Instance != null) HUDManager.Instance.UpdateVisibility();
+        if (SpawnOfChaos.Minigames.HUDOrbPanel.Instance != null) SpawnOfChaos.Minigames.HUDOrbPanel.Instance.UpdateVisibility();
 
         if (uiDocument == null)
             uiDocument = GetComponent<UIDocument>();
@@ -189,6 +229,13 @@ public class MainMenuUIToolkitController : MonoBehaviour
 
     private void Update()
     {
+        // Continuously ensure game background is frozen while in title screen
+        if (!isPlaying)
+        {
+            if (Time.timeScale != 0f) Time.timeScale = 0f;
+            EnablePlayerGameplay(false);
+        }
+
         // ESC key closes modal
         if (Input.GetKeyDown(KeyCode.Escape))
         {
@@ -567,6 +614,16 @@ public class MainMenuUIToolkitController : MonoBehaviour
         PlaySFX(clickClip);
         isPlaying = true;
         Time.timeScale = 1f; // Unpause game on play
+        EnablePlayerGameplay(true);
+
+        if (HUDManager.Instance != null)
+        {
+            HUDManager.Instance.UpdateVisibility();
+        }
+        if (SpawnOfChaos.Minigames.HUDOrbPanel.Instance != null)
+        {
+            SpawnOfChaos.Minigames.HUDOrbPanel.Instance.UpdateVisibility();
+        }
 
         // Trigger Level Gameplay Background Music
         LevelMusicPlayer lmp = FindFirstObjectByType<LevelMusicPlayer>();

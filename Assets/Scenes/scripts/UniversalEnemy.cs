@@ -187,6 +187,7 @@ public class UniversalEnemy : MonoBehaviour, IDamageable
 
     void Update()
     {
+        if (HUDManager.IsInMainMenu()) return;
         if (currentState == EnemyState.Dead || currentState == EnemyState.HitStun) return;
 
         // Don't interrupt active dash or melee strike coroutines
