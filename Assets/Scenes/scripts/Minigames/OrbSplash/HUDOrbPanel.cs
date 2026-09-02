@@ -42,6 +42,7 @@ namespace SpawnOfChaos.Minigames
             if (Instance == null)
             {
                 Instance = this;
+                DontDestroyOnLoad(gameObject);
             }
             else if (Instance != this)
             {
@@ -73,6 +74,16 @@ namespace SpawnOfChaos.Minigames
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
+            // Clean up any stray duplicate HUDOrbPanel components in the loaded scene
+            var allPanels = FindObjectsByType<HUDOrbPanel>(FindObjectsSortMode.None);
+            foreach (var p in allPanels)
+            {
+                if (p != null && p != this && p != Instance)
+                {
+                    Destroy(p.gameObject);
+                }
+            }
+
             FindPlayer();
             SubscribeEvents();
             UpdateVisibility();
@@ -83,6 +94,21 @@ namespace SpawnOfChaos.Minigames
             UnsubscribeEvents();
 
             GameObject p = GameObject.FindGameObjectWithTag("Player");
+            if (p == null) p = GameObject.Find("Player");
+            if (p == null) p = GameObject.Find("BasePlayer");
+            if (p == null)
+            {
+                var allMoves = FindObjectsByType<move>(FindObjectsSortMode.None);
+                foreach (var m in allMoves)
+                {
+                    if (m != null && m.gameObject.activeInHierarchy)
+                    {
+                        p = m.gameObject;
+                        break;
+                    }
+                }
+            }
+
             if (p != null)
             {
                 playerHealth = p.GetComponent<Health>();
@@ -317,10 +343,17 @@ namespace SpawnOfChaos.Minigames
             hlg.childControlHeight = false;
             hlg.childAlignment = TextAnchor.MiddleCenter;
 
-            healthOrbUI = CreateOrbItem(panelRT, OrbType.Health, "HEALTH", new Color(1f, 0.35f, 0.45f, 1f), out healthValueText);
-            manaOrbUI = CreateOrbItem(panelRT, OrbType.Mana, "MANA", new Color(0.35f, 0.85f, 1f, 1f), out manaValueText);
-            currencyOrbUI = CreateOrbItem(panelRT, OrbType.Currency, "COINS", new Color(1f, 0.85f, 0.25f, 1f), out currencyValueText);
-            epOrbUI = CreateOrbItem(panelRT, OrbType.EP, "EXP", new Color(0.85f, 0.5f, 1f, 1f), out epValueText);
+            // Dark Obsidian Backing Frame for the 4 containers
+            Image panelBg = panelGO.AddComponent<Image>();
+            panelBg.color = new Color(0.02f, 0.02f, 0.05f, 0.70f);
+            Outline panelOutline = panelGO.AddComponent<Outline>();
+            panelOutline.effectColor = new Color(0.10f, 0.14f, 0.25f, 0.55f);
+            panelOutline.effectDistance = new Vector2(2f, 2f);
+
+            healthOrbUI = CreateOrbItem(panelRT, OrbType.Health, "HEALTH", new Color(0.95f, 0.2f, 0.35f, 1f), out healthValueText);
+            manaOrbUI = CreateOrbItem(panelRT, OrbType.Mana, "MANA", new Color(0f, 0.85f, 1f, 1f), out manaValueText);
+            currencyOrbUI = CreateOrbItem(panelRT, OrbType.Currency, "COINS", new Color(0.92f, 0.15f, 0.22f, 1f), out currencyValueText);
+            epOrbUI = CreateOrbItem(panelRT, OrbType.EP, "EXP", new Color(0.85f, 0.4f, 1f, 1f), out epValueText);
 
             // Level Up Banner (Center Screen)
             if (levelUpBanner == null)

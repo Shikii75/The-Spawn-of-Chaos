@@ -187,17 +187,19 @@ namespace SpawnOfChaos.Minigames
                     float dy = y - cy;
                     float distSq = dx * dx + dy * dy;
 
-                    // Outer Metallic / Shadow Frame Ring
+                    // Outer Obsidian Bevel & Neon Rim Glow
                     if (distSq <= glassRadius * glassRadius && distSq >= radius * radius)
                     {
                         float norm = (Mathf.Sqrt(distSq) - radius) / (glassRadius - radius);
-                        byte alpha = (byte)((1f - norm) * 160 + 40);
-                        pixelBuffer[row + x] = new Color32(25, 30, 42, alpha);
+                        byte alpha = (byte)((1f - norm) * 190 + 55);
+                        Color32 rimColor = highlightCol;
+                        Color32 obsidianBevel = Color32.Lerp(new Color32(12, 14, 24, alpha), rimColor, (1f - norm) * 0.35f);
+                        pixelBuffer[row + x] = obsidianBevel;
                     }
-                    // Inner Dark Shadow base
+                    // Inner Abyssal Cavity base
                     else if (distSq < radius * radius)
                     {
-                        pixelBuffer[row + x] = new Color32(10, 12, 18, 180);
+                        pixelBuffer[row + x] = new Color32(6, 7, 12, 210);
                     }
                 }
             }
@@ -463,10 +465,10 @@ namespace SpawnOfChaos.Minigames
         {
             switch (type)
             {
-                case OrbType.Health: return new Color32(220, 20, 60, 235);  // Crimson Red
-                case OrbType.Mana: return new Color32(0, 140, 240, 235);    // Azure Blue
-                case OrbType.Currency: return new Color32(245, 175, 20, 235);// Liquid Gold
-                case OrbType.EP: return new Color32(160, 40, 220, 235);     // Cosmic Violet
+                case OrbType.Health: return new Color32(18, 14, 22, 250);   // Void Black Liquid
+                case OrbType.Mana: return new Color32(0, 180, 255, 250);     // Electric Neon Blue
+                case OrbType.Currency: return new Color32(145, 10, 25, 250); // Dark Blood Red
+                case OrbType.EP: return new Color32(65, 12, 105, 250);      // Dark Mystic Purple
                 default: return new Color32(255, 255, 255, 255);
             }
         }
@@ -475,10 +477,10 @@ namespace SpawnOfChaos.Minigames
         {
             switch (type)
             {
-                case OrbType.Health: return new Color32(130, 0, 30, 240);
-                case OrbType.Mana: return new Color32(0, 70, 160, 240);
-                case OrbType.Currency: return new Color32(180, 100, 0, 240);
-                case OrbType.EP: return new Color32(80, 10, 140, 240);
+                case OrbType.Health: return new Color32(8, 6, 12, 255);     // Abyssal Deep Black
+                case OrbType.Mana: return new Color32(0, 70, 160, 255);     // Deep Oceanic Blue
+                case OrbType.Currency: return new Color32(65, 0, 12, 255);  // Deep Abyssal Crimson
+                case OrbType.EP: return new Color32(28, 4, 50, 255);       // Deep Abyssal Violet
                 default: return new Color32(100, 100, 100, 255);
             }
         }
@@ -487,10 +489,10 @@ namespace SpawnOfChaos.Minigames
         {
             switch (type)
             {
-                case OrbType.Health: return new Color32(255, 100, 140, 240);
-                case OrbType.Mana: return new Color32(80, 220, 255, 240);
-                case OrbType.Currency: return new Color32(255, 230, 110, 240);
-                case OrbType.EP: return new Color32(40, 240, 160, 240);     // Emerald splash accent
+                case OrbType.Health: return new Color32(65, 18, 30, 240);   // Obsidian Crimson Sheen
+                case OrbType.Mana: return new Color32(80, 240, 255, 250);   // Ultra Neon Azure
+                case OrbType.Currency: return new Color32(235, 40, 60, 240); // Ruby Flame Highlight
+                case OrbType.EP: return new Color32(165, 45, 245, 240);     // Luminous Cosmic Violet
                 default: return new Color32(255, 255, 255, 255);
             }
         }
@@ -499,10 +501,10 @@ namespace SpawnOfChaos.Minigames
         {
             switch (type)
             {
-                case OrbType.Health: return new Color32(255, 210, 225, 255);
-                case OrbType.Mana: return new Color32(210, 245, 255, 255);
-                case OrbType.Currency: return new Color32(255, 250, 200, 255);
-                case OrbType.EP: return new Color32(220, 255, 235, 255);
+                case OrbType.Health: return new Color32(120, 25, 45, 255);  // Eerie Crimson Foam Mist
+                case OrbType.Mana: return new Color32(200, 250, 255, 255);  // Neon Frost White
+                case OrbType.Currency: return new Color32(255, 130, 100, 255);// Amber-Red Crest Foam
+                case OrbType.EP: return new Color32(210, 140, 255, 255);    // Lavender Cosmic Foam
                 default: return new Color32(255, 255, 255, 255);
             }
         }

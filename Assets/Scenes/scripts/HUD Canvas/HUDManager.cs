@@ -58,6 +58,7 @@ public class HUDManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
+            DontDestroyOnLoad(gameObject);
         }
         else
         {
@@ -77,9 +78,14 @@ public class HUDManager : MonoBehaviour
         // Add real-time Procedural Orbs HUD Panel to the Canvas
         if (SpawnOfChaos.Minigames.HUDOrbPanel.Instance == null && canvas != null)
         {
-            GameObject orbPanelGO = new GameObject("HUDOrbPanelManager");
-            orbPanelGO.transform.SetParent(canvas.transform, false);
-            orbPanelGO.AddComponent<SpawnOfChaos.Minigames.HUDOrbPanel>();
+            var existing = canvas.GetComponentInChildren<SpawnOfChaos.Minigames.HUDOrbPanel>(true) 
+                        ?? FindFirstObjectByType<SpawnOfChaos.Minigames.HUDOrbPanel>();
+            if (existing == null)
+            {
+                GameObject orbPanelGO = new GameObject("HUDOrbPanelManager");
+                orbPanelGO.transform.SetParent(canvas.transform, false);
+                orbPanelGO.AddComponent<SpawnOfChaos.Minigames.HUDOrbPanel>();
+            }
         }
 
         UpdateVisibility();
@@ -92,9 +98,20 @@ public class HUDManager : MonoBehaviour
     private void BuildUI()
     {
         // ── Canvas (sort order -10, layered below menus & overlays) ──
-        canvas = UIFactory.CreateCanvas("HUDCanvas", -10);
-        canvas.transform.SetParent(null, false);
-        DontDestroyOnLoad(canvas.gameObject);
+        if (canvas == null)
+        {
+            GameObject existingCanvas = GameObject.Find("HUDCanvas");
+            if (existingCanvas != null)
+            {
+                canvas = existingCanvas.GetComponent<Canvas>();
+            }
+            else
+            {
+                canvas = UIFactory.CreateCanvas("HUDCanvas", -10);
+                canvas.transform.SetParent(null, false);
+                DontDestroyOnLoad(canvas.gameObject);
+            }
+        }
 
         // Calculate scaled dimensions and positions to keep alignment clean at any scale
         float leftMargin = 30f * Mathf.Min(hudScale, 2f);
