@@ -38,19 +38,21 @@ namespace SpawnOfChaos.Minigames
 
         private GameObject panelGO;
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStaticState()
+        {
+            Instance = null;
+        }
+
         void Awake()
         {
-            if (Instance == null)
-            {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
-            }
-            else if (Instance != this)
+            if (Instance != null && Instance != this && Instance.gameObject != null)
             {
                 Destroy(gameObject);
                 return;
             }
 
+            Instance = this;
             BuildHUDWidget();
         }
 
@@ -70,6 +72,7 @@ namespace SpawnOfChaos.Minigames
         {
             FindPlayer();
             SubscribeEvents();
+            if (panelGO == null) BuildHUDWidget();
             UpdateVisibility();
         }
 
@@ -235,7 +238,7 @@ namespace SpawnOfChaos.Minigames
         {
             if (this == null || gameObject == null) return;
 
-            bool shouldShowHUD = !Application.isPlaying || HUDManager.IsGameplayActive();
+            bool shouldShowHUD = !HUDManager.IsInMainMenu();
 
             if (panelGO != null && panelGO.activeSelf != shouldShowHUD)
             {
@@ -314,9 +317,9 @@ namespace SpawnOfChaos.Minigames
 
         private void BuildHUDWidget()
         {
-            // Prefer the active HUDCanvas created by HUDManager
-            Canvas canvas = null;
-            if (HUDManager.Instance != null && HUDManager.Instance.Canvas != null)
+            // Strictly resolve HUDCanvas (never attach to ad or foreign canvases)
+            Canvas canvas = GetComponentInParent<Canvas>();
+            if (canvas == null && HUDManager.Instance != null)
             {
                 canvas = HUDManager.Instance.Canvas;
             }
@@ -327,19 +330,7 @@ namespace SpawnOfChaos.Minigames
             }
             if (canvas == null)
             {
-                var allCanvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
-                foreach (var c in allCanvases)
-                {
-                    if (c.gameObject.activeInHierarchy && c.gameObject.name != "Canvas")
-                    {
-                        canvas = c;
-                        break;
-                    }
-                }
-            }
-            if (canvas == null)
-            {
-                canvas = UIFactory.CreateCanvas("HUDCanvas", -10);
+                canvas = UIFactory.CreateCanvas("HUDCanvas", 50);
                 DontDestroyOnLoad(canvas.gameObject);
             }
 

@@ -50,6 +50,12 @@ public class HUDManager : MonoBehaviour
     private List<GameObject> manaNotches = new List<GameObject>();
     private float lastMaxMana = -1f;
 
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStaticState()
+    {
+        Instance = null;
+    }
+
     void Awake()
     {
         // Force the scale multiplier to a compact size of 2.0f to prevent covering the screen
@@ -75,18 +81,7 @@ public class HUDManager : MonoBehaviour
             levelSysGO.AddComponent<SpawnOfChaos.Systems.PlayerLevelSystem>();
         }
 
-        // Add real-time Procedural Orbs HUD Panel to the Canvas
-        if (SpawnOfChaos.Minigames.HUDOrbPanel.Instance == null && canvas != null)
-        {
-            var existing = canvas.GetComponentInChildren<SpawnOfChaos.Minigames.HUDOrbPanel>(true) 
-                        ?? FindFirstObjectByType<SpawnOfChaos.Minigames.HUDOrbPanel>();
-            if (existing == null)
-            {
-                GameObject orbPanelGO = new GameObject("HUDOrbPanelManager");
-                orbPanelGO.transform.SetParent(canvas.transform, false);
-                orbPanelGO.AddComponent<SpawnOfChaos.Minigames.HUDOrbPanel>();
-            }
-        }
+        // HUDOrbPanel is created directly in BuildUI() under canvas
 
         UpdateVisibility();
     }
@@ -111,6 +106,7 @@ public class HUDManager : MonoBehaviour
                 canvas.transform.SetParent(null, false);
                 DontDestroyOnLoad(canvas.gameObject);
             }
+            if (canvas != null) canvas.sortingOrder = 50;
         }
 
         // Calculate scaled dimensions and positions to keep alignment clean at any scale
@@ -153,6 +149,11 @@ public class HUDManager : MonoBehaviour
         potionsText.rectTransform.sizeDelta = new Vector2(220f, 32f);
         potionsText.enableWordWrapping = false;
         potionsText.fontStyle = FontStyles.Bold;
+
+        // Directly spawn HUDOrbPanel under this canvas
+        GameObject orbPanelGO = new GameObject("HUDOrbPanelManager");
+        orbPanelGO.transform.SetParent(canvas.transform, false);
+        orbPanelGO.AddComponent<SpawnOfChaos.Minigames.HUDOrbPanel>();
     }
 
     // ══════════════════════════════════════════════════════════════════
@@ -214,17 +215,17 @@ public class HUDManager : MonoBehaviour
 
     public static bool IsInMainMenu()
     {
-        MainMenuUIToolkitController menu = FindFirstObjectByType<MainMenuUIToolkitController>();
-        if (menu != null)
+        // If an active player character is in the scene, we are definitively in gameplay!
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player == null) player = GameObject.Find("Player");
+        if (player == null) player = GameObject.Find("BasePlayer");
+        if (player != null && player.activeInHierarchy)
         {
-            if (!MainMenuUIToolkitController.isPlaying || menu.gameObject.activeInHierarchy)
-            {
-                return true;
-            }
+            return false;
         }
 
         string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
-        if (!MainMenuUIToolkitController.isPlaying && (sceneName.Equals("SampleScene", System.StringComparison.OrdinalIgnoreCase) || sceneName.Equals("MainMenu", System.StringComparison.OrdinalIgnoreCase)))
+        if (sceneName.Equals("MainMenu", System.StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }

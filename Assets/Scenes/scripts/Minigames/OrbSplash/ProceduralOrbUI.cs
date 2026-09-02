@@ -114,7 +114,7 @@ namespace SpawnOfChaos.Minigames
                 InitializeRenderer();
             }
 
-            bool isGameplay = !Application.isPlaying || HUDManager.IsGameplayActive();
+            bool isGameplay = !HUDManager.IsInMainMenu();
 
             if (rawImage != null && rawImage.enabled != isGameplay)
             {
