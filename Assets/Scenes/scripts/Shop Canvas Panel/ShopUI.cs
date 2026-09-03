@@ -1,3 +1,4 @@
+using SpawnOfChaos.Weapons;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -69,7 +70,7 @@ public class ShopUI : MonoBehaviour
             canvas.transform, "ShopPanel", UIFactory.PanelBackground,
             new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
         UIFactory.SetRectFixed(panelRT, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-            Vector2.zero, new Vector2(600f, 500f));
+            Vector2.zero, new Vector2(660f, 580f));
         shopPanel = panelRT.gameObject;
 
         // Vertical layout on the panel content
@@ -97,7 +98,7 @@ public class ShopUI : MonoBehaviour
         RectTransform listContainerRT = UIFactory.CreatePanel(
             panelRT, "ItemListContainer", Color.clear,
             Vector2.zero, Vector2.one);
-        UIFactory.AddLayoutElement(listContainerRT.gameObject, preferredHeight: 320f);
+        UIFactory.AddLayoutElement(listContainerRT.gameObject, preferredHeight: 410f);
         UIFactory.AddVerticalLayout(listContainerRT.gameObject, 4f,
             new RectOffset(5, 5, 5, 5), TextAnchor.UpperCenter);
         itemListContainer = listContainerRT;
@@ -223,6 +224,108 @@ public class ShopUI : MonoBehaviour
                 Button buyBtn = UIFactory.CreateButton(rowRT, "BuyBtn_" + i, "BUY", 16f,
                     () => BuyItemFromUI(index));
                 UIFactory.AddLayoutElement(buyBtn.gameObject, preferredWidth: 90f, preferredHeight: 35f);
+            }
+        }
+
+        // ── WEAPON ARSENAL & MASTERY SECTION ──
+        if (WeaponManager.Instance != null)
+        {
+            RectTransform wepDivider = UIFactory.CreateDivider(itemListContainer, "WeaponDivider");
+            UIFactory.AddLayoutElement(wepDivider.gameObject, preferredHeight: 2f);
+
+            TextMeshProUGUI wepHeader = UIFactory.CreateText(
+                itemListContainer, "WeaponHeader", "WEAPONS & MASTERY",
+                20f, UIFactory.Accent, TextAlignmentOptions.Center);
+            UIFactory.AddLayoutElement(wepHeader.gameObject, preferredHeight: 30f);
+
+            foreach (var wep in WeaponManager.Instance.AllWeapons)
+            {
+                var capturedWep = wep;
+                bool isUnlocked = WeaponManager.Instance.IsUnlocked(capturedWep.id);
+                bool isEquipped = (WeaponManager.Instance.ActiveWeapon == capturedWep.id);
+                int tier = WeaponManager.Instance.GetTier(capturedWep.id);
+
+                RectTransform wRowRT = UIFactory.CreatePanel(
+                    itemListContainer, "WepRow_" + capturedWep.id, UIFactory.ButtonNormal,
+                    Vector2.zero, Vector2.one);
+                UIFactory.AddLayoutElement(wRowRT.gameObject, preferredHeight: 50f);
+                HorizontalLayoutGroup wHlg = UIFactory.AddHorizontalLayout(
+                    wRowRT.gameObject, 8f, new RectOffset(10, 10, 5, 5), TextAnchor.MiddleLeft);
+                wHlg.childControlWidth = false;
+                wHlg.childForceExpandWidth = false;
+
+                // Weapon Name + Archetype
+                string tierLabel = isUnlocked ? $" [T{tier}]" : "";
+                TextMeshProUGUI wName = UIFactory.CreateText(
+                    wRowRT, "WName", $"{capturedWep.displayName}{tierLabel}",
+                    16f, UIFactory.TextWhite, TextAlignmentOptions.Left);
+                UIFactory.AddLayoutElement(wName.gameObject, preferredWidth: 260f, preferredHeight: 35f);
+
+                if (!isUnlocked)
+                {
+                    // Cost & Buy button
+                    TextMeshProUGUI wCost = UIFactory.CreateText(
+                        wRowRT, "WCost", $"{capturedWep.unlockCost} coins",
+                        15f, UIFactory.TextMuted, TextAlignmentOptions.Right);
+                    UIFactory.AddLayoutElement(wCost.gameObject, preferredWidth: 90f, preferredHeight: 35f);
+
+                    Button buyBtn = UIFactory.CreateButton(wRowRT, "BuyWepBtn", "UNLOCK", 15f, () =>
+                    {
+                        if (PlayerCurrency.Instance != null && PlayerCurrency.Instance.Coins >= capturedWep.unlockCost)
+                        {
+                            PlayerCurrency.Instance.SpendCoins(capturedWep.unlockCost);
+                            WeaponManager.Instance.UnlockWeapon(capturedWep.id);
+                            WeaponManager.Instance.EquipWeapon(capturedWep.id);
+                            UpdateCurrencyUI();
+                            RefreshShopItems();
+                        }
+                    });
+                    UIFactory.AddLayoutElement(buyBtn.gameObject, preferredWidth: 90f, preferredHeight: 35f);
+                }
+                else
+                {
+                    // Equip button / status
+                    if (isEquipped)
+                    {
+                        TextMeshProUGUI eqLabel = UIFactory.CreateText(
+                            wRowRT, "EqLabel", "EQUIPPED",
+                            15f, new Color(0.15f, 0.9f, 1f), TextAlignmentOptions.Center);
+                        UIFactory.AddLayoutElement(eqLabel.gameObject, preferredWidth: 90f, preferredHeight: 35f);
+                    }
+                    else
+                    {
+                        Button eqBtn = UIFactory.CreateButton(wRowRT, "EqBtn", "EQUIP", 15f, () =>
+                        {
+                            WeaponManager.Instance.EquipWeapon(capturedWep.id);
+                            RefreshShopItems();
+                        });
+                        UIFactory.AddLayoutElement(eqBtn.gameObject, preferredWidth: 90f, preferredHeight: 35f);
+                    }
+
+                    // Upgrade Mastery button
+                    if (tier < 3)
+                    {
+                        int upgradeCost = tier == 1 ? capturedWep.tier2Cost : capturedWep.tier3Cost;
+                        Button upgBtn = UIFactory.CreateButton(wRowRT, "UpgBtn", $"UPG ({upgradeCost}c)", 13f, () =>
+                        {
+                            if (PlayerCurrency.Instance != null && PlayerCurrency.Instance.Coins >= upgradeCost)
+                            {
+                                PlayerCurrency.Instance.SpendCoins(upgradeCost);
+                                WeaponManager.Instance.UpgradeWeapon(capturedWep.id);
+                                UpdateCurrencyUI();
+                                RefreshShopItems();
+                            }
+                        });
+                        UIFactory.AddLayoutElement(upgBtn.gameObject, preferredWidth: 95f, preferredHeight: 35f);
+                    }
+                    else
+                    {
+                        TextMeshProUGUI maxLabel = UIFactory.CreateText(
+                            wRowRT, "MaxLabel", "MAX TIER",
+                            14f, new Color(1f, 0.85f, 0.2f), TextAlignmentOptions.Center);
+                        UIFactory.AddLayoutElement(maxLabel.gameObject, preferredWidth: 95f, preferredHeight: 35f);
+                    }
+                }
             }
         }
     }

@@ -1,3 +1,4 @@
+using SpawnOfChaos.Weapons;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -97,9 +98,77 @@ public class LumiSpearWeapon : MonoBehaviour
         SetupComponents();
     }
 
+    [Header("Weapon Arsenal Integration")]
+    private WeaponID currentWeaponID = WeaponID.LumiSpear;
+    private readonly List<GameObject> orbitingDaggerDuplicates = new List<GameObject>();
+    private float orbitAngle = 0f;
+    private bool isAutonomousSlashing = false;
+
     void Start()
     {
         FindReferences();
+        WeaponManager.EnsureExists();
+        if (WeaponManager.Instance != null)
+        {
+            WeaponManager.Instance.OnWeaponEquipped += HandleWeaponEquipped;
+            ApplyWeaponConfiguration(WeaponManager.Instance.ActiveWeaponInfo);
+        }
+    }
+
+    void OnDestroy()
+    {
+        if (WeaponManager.Instance != null)
+        {
+            WeaponManager.Instance.OnWeaponEquipped -= HandleWeaponEquipped;
+        }
+        ClearOrbitingDuplicates();
+    }
+
+    private void HandleWeaponEquipped(WeaponID newWeapon)
+    {
+        if (WeaponManager.Instance != null)
+        {
+            ApplyWeaponConfiguration(WeaponManager.Instance.GetWeaponInfo(newWeapon));
+        }
+    }
+
+    public void ApplyWeaponConfiguration(WeaponInfo info)
+    {
+        if (info == null) return;
+        currentWeaponID = info.id;
+
+        int tier = WeaponManager.Instance != null ? WeaponManager.Instance.GetTier(info.id) : 1;
+        pierceDamage = info.GetDamageForTier(tier);
+        explosionDamage = info.GetExplosionDamageForTier(tier);
+        throwSpeed = info.throwSpeed;
+        recallSpeed = info.recallSpeed;
+
+        magicAuraColor = info.auraColor;
+        magicTrailColor = info.trailColor;
+
+        Sprite s = info.GetSprite();
+        if (spearRenderer != null && s != null)
+        {
+            spearRenderer.sprite = s;
+        }
+
+        if (trailRenderer != null)
+        {
+            trailRenderer.startColor = magicTrailColor;
+            trailRenderer.endColor = new Color(magicTrailColor.r, magicTrailColor.g, magicTrailColor.b, 0f);
+        }
+
+        // Setup Duplication Orbiters if DarkDag
+        if (currentWeaponID == WeaponID.DarkDag)
+        {
+            SetupOrbitingDuplicates(s, tier >= 3 ? 4 : 2);
+        }
+        else
+        {
+            ClearOrbitingDuplicates();
+        }
+
+        Debug.Log($"[LumiSpearWeapon] Applied Weapon '{info.displayName}' (Tier {tier}, Dmg {pierceDamage})");
     }
 
     void FindReferences()
@@ -229,6 +298,8 @@ public class LumiSpearWeapon : MonoBehaviour
 
         HandleInput();
 
+        UpdateOrbitingDuplicates();
+
         switch (CurrentState)
         {
             case SpearState.CarriedByLumi:
@@ -271,12 +342,22 @@ public class LumiSpearWeapon : MonoBehaviour
             }
         }
 
-        // 'X' Key: Explode Spear & Super Launch Player
+        // 'X' Key or Spear Action:
         if (Input.GetKeyDown(KeyCode.X))
         {
             if (CurrentState == SpearState.Embedded)
             {
-                ExplodeAndSuperLaunch();
+                // DarkSpear Ground Anchor Emergency Dodge Teleport:
+                // If the player is NOT standing on the spear, emergency-teleport directly back to it!
+                bool isStandingOnSpear = (playerTransform != null && Vector2.Distance(playerTransform.position, transform.position) < 1.4f);
+                if (currentWeaponID == WeaponID.DarkSpear && !isStandingOnSpear)
+                {
+                    ExecuteGroundAnchorTeleport();
+                }
+                else
+                {
+                    ExplodeAndSuperLaunch();
+                }
             }
         }
     }
@@ -396,6 +477,7 @@ public class LumiSpearWeapon : MonoBehaviour
     void EmbedInWall(RaycastHit2D hit)
     {
         CurrentState = SpearState.Embedded;
+        if (currentWeaponID == WeaponID.DarkAxe) TriggerSeismicShockwave(transform.position);
 
         // Embed horizontally or along normal
         transform.position = hit.point + (throwDirection * 0.3f);
@@ -824,4 +906,192 @@ public class LumiSpearWeapon : MonoBehaviour
 
         return defaultDir;
     }
+
+    #region Specialized Weapon Abilities
+
+    private void ExecuteGroundAnchorTeleport()
+    {
+        if (playerTransform == null) return;
+
+        Vector3 targetBlinkPos = transform.position + Vector3.up * 0.9f;
+        playerTransform.position = targetBlinkPos;
+
+        if (playerRb != null)
+        {
+            playerRb.linearVelocity = Vector2.zero;
+        }
+
+        // Apply brief i-frames (0.5s) to guarantee dodge
+        if (playerMove != null)
+        {
+            StartCoroutine(TemporaryDodgeInvulnerability(0.5f));
+        }
+
+        // Visual Dark Decoy & Smoke
+        HitFeedbackManager.TriggerHitFeedback(transform, transform.position, 0, false, EnemyHitType.PhysicalMelee);
+
+        // Recall spear back to player hands immediately
+        Recall();
+        Debug.Log("[LumiSpearWeapon] GROUND ANCHOR EMERGENCY DODGE EXECUTED! Teleported to spear with i-frames.");
+    }
+
+    private IEnumerator TemporaryDodgeInvulnerability(float duration)
+    {
+        if (playerMove == null) yield break;
+        SpriteRenderer sr = playerMove.GetComponent<SpriteRenderer>();
+        Color orig = sr != null ? sr.color : Color.white;
+
+        float t = 0f;
+        while (t < duration)
+        {
+            t += Time.deltaTime;
+            if (sr != null) sr.color = new Color(0.7f, 0.2f, 1f, 0.5f);
+            yield return null;
+        }
+
+        if (sr != null) sr.color = orig;
+    }
+
+    // Blood Blade Autonomous Slashing (Zero Player Freeze)
+    public void PerformBloodBladeAutonomousSlash(Vector2 aimDir)
+    {
+        if (isAutonomousSlashing || CurrentState != SpearState.CarriedByLumi) return;
+        StartCoroutine(BloodBladeSlashRoutine(aimDir));
+    }
+
+    private IEnumerator BloodBladeSlashRoutine(Vector2 aimDir)
+    {
+        isAutonomousSlashing = true;
+        Vector3 originPos = transform.position;
+        Vector3 targetSlashPos = originPos + (Vector3)(aimDir.normalized * 4.2f);
+
+        if (trailRenderer != null) trailRenderer.emitting = true;
+
+        float t = 0f;
+        float slashOutDuration = 0.12f;
+        while (t < slashOutDuration)
+        {
+            t += Time.deltaTime;
+            transform.position = Vector3.Lerp(originPos, targetSlashPos, t / slashOutDuration);
+            yield return null;
+        }
+
+        // Damage enemies in slash arc
+        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(targetSlashPos, 2.5f);
+        foreach (var col in hitEnemies)
+        {
+            if (col.CompareTag("Enemy") || col.GetComponent<UniversalEnemy>() != null)
+            {
+                var health = col.GetComponent<Health>() ?? col.GetComponentInParent<Health>();
+                if (health != null)
+                {
+                    health.TakeDamage(Mathf.RoundToInt(pierceDamage * 1.25f));
+                    HitFeedbackManager.TriggerHitFeedback(col.transform, col.transform.position, pierceDamage, true, EnemyHitType.PhysicalMelee);
+                }
+            }
+        }
+
+        // Slash return
+        t = 0f;
+        float slashReturnDuration = 0.14f;
+        while (t < slashReturnDuration)
+        {
+            t += Time.deltaTime;
+            Vector3 currentOrigin = (lumi != null) ? lumi.transform.position : (playerTransform != null ? playerTransform.position : originPos);
+            transform.position = Vector3.Lerp(targetSlashPos, currentOrigin, t / slashReturnDuration);
+            yield return null;
+        }
+
+        if (trailRenderer != null) trailRenderer.emitting = false;
+        isAutonomousSlashing = false;
+    }
+
+    // DarkDag Duplication Orbiters
+    private void SetupOrbitingDuplicates(Sprite daggerSprite, int count)
+    {
+        ClearOrbitingDuplicates();
+        for (int i = 0; i < count; i++)
+        {
+            GameObject dup = new GameObject($"DarkDag_Orbiter_{i}");
+            dup.transform.SetParent(transform.parent, false);
+
+            SpriteRenderer sr = dup.AddComponent<SpriteRenderer>();
+            sr.sprite = daggerSprite;
+            sr.sortingLayerName = spearRenderer.sortingLayerName;
+            sr.sortingOrder = spearRenderer.sortingOrder;
+
+            CircleCollider2D col = dup.AddComponent<CircleCollider2D>();
+            col.isTrigger = true;
+            col.radius = 0.5f;
+
+            orbitingDaggerDuplicates.Add(dup);
+        }
+    }
+
+    private void ClearOrbitingDuplicates()
+    {
+        foreach (var dup in orbitingDaggerDuplicates)
+        {
+            if (dup != null) Destroy(dup);
+        }
+        orbitingDaggerDuplicates.Clear();
+    }
+
+    private void UpdateOrbitingDuplicates()
+    {
+        if (currentWeaponID != WeaponID.DarkDag || orbitingDaggerDuplicates.Count == 0 || playerTransform == null) return;
+
+        orbitAngle += Time.deltaTime * 180f; // 180 deg/sec
+        float radius = 1.4f;
+
+        for (int i = 0; i < orbitingDaggerDuplicates.Count; i++)
+        {
+            GameObject dup = orbitingDaggerDuplicates[i];
+            if (dup == null) continue;
+
+            float angle = (orbitAngle + (i * (360f / (orbitingDaggerDuplicates.Count + 1)))) * Mathf.Deg2Rad;
+            Vector3 offset = new Vector3(Mathf.Cos(angle) * radius, Mathf.Sin(angle) * radius + 0.6f, 0f);
+            dup.transform.position = playerTransform.position + offset;
+            dup.transform.rotation = Quaternion.Euler(0, 0, (orbitAngle + (i * (360f / (orbitingDaggerDuplicates.Count + 1)))) + 90f);
+
+            // Orbit contact damage
+            Collider2D[] hits = Physics2D.OverlapCircleAll(dup.transform.position, 0.6f);
+            foreach (var hit in hits)
+            {
+                if (hit.CompareTag("Enemy") || hit.GetComponent<UniversalEnemy>() != null)
+                {
+                    var h = hit.GetComponent<Health>() ?? hit.GetComponentInParent<Health>();
+                    if (h != null)
+                    {
+                        h.TakeDamage(12);
+                    }
+                }
+            }
+        }
+    }
+
+    // Seismic Shockwave for DarkAxe
+    private void TriggerSeismicShockwave(Vector3 impactPos)
+    {
+        if (currentWeaponID != WeaponID.DarkAxe) return;
+
+        float radius = 4.5f;
+        Collider2D[] hits = Physics2D.OverlapCircleAll(impactPos, radius);
+        foreach (var hit in hits)
+        {
+            if (hit.CompareTag("Enemy") || hit.GetComponent<UniversalEnemy>() != null)
+            {
+                var h = hit.GetComponent<Health>() ?? hit.GetComponentInParent<Health>();
+                if (h != null)
+                {
+                    h.TakeDamage(Mathf.RoundToInt(explosionDamage * 0.8f));
+                    HitFeedbackManager.TriggerHitFeedback(hit.transform, hit.transform.position, explosionDamage, true, EnemyHitType.PhysicalMelee);
+                }
+            }
+        }
+
+        Debug.Log("[LumiSpearWeapon] SEISMIC SHOCKWAVE DETONATED!");
+    }
+
+    #endregion
 }

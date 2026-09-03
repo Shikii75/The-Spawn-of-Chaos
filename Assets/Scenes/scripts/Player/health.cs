@@ -86,6 +86,12 @@ public class Health : MonoBehaviour, IDamageable
 
         if (currentHealth <= 0)
         {
+            // 1-in-3 Luck Cheat-Death (DarkBladeSmall)
+            if (CompareTag("Player") && SpawnOfChaos.Weapons.WeaponManager.Instance != null && SpawnOfChaos.Weapons.WeaponManager.Instance.TryTriggerLuckCheatDeath(this))
+            {
+                return;
+            }
+
             Die();
         }
     }

@@ -56,7 +56,7 @@ namespace SpawnOfChaos.Entities
             GameObject textGO = new GameObject("PromptText", typeof(RectTransform));
             textGO.transform.SetParent(promptCanvasGO.transform, false);
             promptText = textGO.AddComponent<TextMeshProUGUI>();
-            promptText.text = "[E] Sever Life & Anchor Time";
+            promptText.text = "[E] Sever Life & Save   |   [R] Switch Weapon";
             promptText.fontSize = 24f;
             promptText.alignment = TextAlignmentOptions.Center;
             promptText.color = new Color(0.95f, 0.85f, 1f, 1f); // Mystic lavender-white glow
@@ -94,6 +94,12 @@ namespace SpawnOfChaos.Entities
                 {
                     TriggerSaveRitual();
                 }
+
+                // Open Weapon Armory / Quick-Equip on 'R' keypress
+                if (Input.GetKeyDown(KeyCode.R))
+                {
+                    CycleNextUnlockedWeapon();
+                }
             }
         }
 
@@ -109,6 +115,30 @@ namespace SpawnOfChaos.Entities
         {
             GameObject p = GameObject.FindGameObjectWithTag("Player") ?? GameObject.Find("Player");
             if (p != null) playerTransform = p.transform;
+        }
+
+        public void CycleNextUnlockedWeapon()
+        {
+            if (SpawnOfChaos.Weapons.WeaponManager.Instance == null) return;
+
+            var wm = SpawnOfChaos.Weapons.WeaponManager.Instance;
+            int total = System.Enum.GetValues(typeof(SpawnOfChaos.Weapons.WeaponID)).Length;
+            int current = (int)wm.ActiveWeapon;
+
+            for (int step = 1; step <= total; step++)
+            {
+                int next = (current + step) % total;
+                var nextWep = (SpawnOfChaos.Weapons.WeaponID)next;
+                if (wm.IsUnlocked(nextWep))
+                {
+                    wm.EquipWeapon(nextWep);
+                    if (promptText != null)
+                    {
+                        promptText.text = $"Equipped: {wm.ActiveWeaponInfo.displayName}\n[E] Sever Life & Save   |   [R] Next Weapon";
+                    }
+                    break;
+                }
+            }
         }
 
         private void OnDrawGizmosSelected()
