@@ -27,6 +27,10 @@ public class PlayerSceneSpawner : MonoBehaviour
         string sceneName = SceneManager.GetActiveScene().name;
         Debug.Log($"[PlayerSceneSpawner] ===== START in scene '{sceneName}' =====");
 
+        // Ensure Drifter Voluntary Death Checkpoint & Overlay exist
+        SpawnOfChaos.Systems.DrifterSaveManager.EnsureExists();
+        SpawnOfChaos.Systems.DrifterFlashOverlay.EnsureExists();
+
         string targetName = PlayerSpawnPointManager.targetSpawnPointName;
         bool isRespawning = PlayerSpawnPointManager.isRespawning;
 

@@ -211,7 +211,14 @@ public class Health : MonoBehaviour, IDamageable
 
     public void ExecuteStandardDeathRespawn()
     {
-        StartCoroutine(ReloadSceneRoutine(1.5f));
+        if (SpawnOfChaos.Systems.DrifterSaveManager.Instance != null && SpawnOfChaos.Systems.DrifterSaveManager.Instance.HasCheckpoint())
+        {
+            SpawnOfChaos.Systems.DrifterSaveManager.Instance.RespawnAtDeathAnchor();
+        }
+        else
+        {
+            StartCoroutine(ReloadSceneRoutine(1.5f));
+        }
     }
 
     private System.Collections.IEnumerator ReloadSceneRoutine(float delay)
