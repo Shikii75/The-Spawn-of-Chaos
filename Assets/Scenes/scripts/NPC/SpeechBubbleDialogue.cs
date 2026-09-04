@@ -228,7 +228,12 @@ public class SpeechBubbleDialogue : MonoBehaviour
 
     private void OpenDialogue()
     {
-        if (dialogueLines == null || dialogueLines.Length == 0) return;
+        if (dialogueLines == null || dialogueLines.Length == 0)
+        {
+            dialogueLines = new string[] { isShopKeeper 
+                ? "Greetings, traveler! Seeking remedies, relics, or specialized weapons for the battles ahead?" 
+                : "..." };
+        }
 
         _lineIndex   = 0;
         _openedFrame = Time.frameCount;
@@ -370,10 +375,10 @@ public class SpeechBubbleDialogue : MonoBehaviour
         canvasRt.localPosition = new Vector3(0f, heightAboveNPC, -0.1f);
 
         // ── Bubble panel ──────────────────────────────────────────────────────
-        var panelGo = new GameObject("BubblePanel");
+        var panelGo = new GameObject("BubblePanel", typeof(RectTransform));
         panelGo.transform.SetParent(canvasGo.transform, false);
 
-        _bubbleRt = panelGo.AddComponent<RectTransform>();
+        _bubbleRt = panelGo.GetComponent<RectTransform>();
         _bubbleRt.anchorMin        = new Vector2(0.5f, 0.5f);
         _bubbleRt.anchorMax        = new Vector2(0.5f, 0.5f);
         _bubbleRt.pivot            = new Vector2(0.5f, 0.5f);
@@ -388,7 +393,7 @@ public class SpeechBubbleDialogue : MonoBehaviour
         // ── Bubble tail (rotated square – bottom-left area) ───────────────────
         //    Overlapping the panel edge creates the classic speech-bubble pointer.
         var tailGo = MakeChild("Tail", panelGo.transform);
-        var tailRt = tailGo.AddComponent<RectTransform>();
+        var tailRt = tailGo.GetComponent<RectTransform>();
         tailRt.anchorMin        = new Vector2(0.18f, 0f);
         tailRt.anchorMax        = new Vector2(0.18f, 0f);
         tailRt.pivot            = new Vector2(0.5f, 0.5f);
@@ -402,7 +407,7 @@ public class SpeechBubbleDialogue : MonoBehaviour
         if (!string.IsNullOrEmpty(characterName))
         {
             var nameLGo = MakeChild("NameLabel", panelGo.transform);
-            var nrt = nameLGo.AddComponent<RectTransform>();
+            var nrt = nameLGo.GetComponent<RectTransform>();
             nrt.anchorMin        = new Vector2(0f, 1f);
             nrt.anchorMax        = new Vector2(1f, 1f);
             nrt.pivot            = new Vector2(0f, 1f);
@@ -422,7 +427,7 @@ public class SpeechBubbleDialogue : MonoBehaviour
 
         // ── Body text ─────────────────────────────────────────────────────────
         var bodyGo = MakeChild("BodyText", panelGo.transform);
-        var brt = bodyGo.AddComponent<RectTransform>();
+        var brt = bodyGo.GetComponent<RectTransform>();
         brt.anchorMin = Vector2.zero;
         brt.anchorMax = Vector2.one;
         brt.offsetMin = new Vector2(28f, 32f);          // left, bottom padding
@@ -438,7 +443,7 @@ public class SpeechBubbleDialogue : MonoBehaviour
 
         // ── Advance button (circle, bottom-right of panel) ────────────────────
         _advanceBtn = MakeChild("AdvanceBtn", panelGo.transform);
-        var art = _advanceBtn.AddComponent<RectTransform>();
+        var art = _advanceBtn.GetComponent<RectTransform>();
         art.anchorMin        = new Vector2(1f, 0f);
         art.anchorMax        = new Vector2(1f, 0f);
         art.pivot            = new Vector2(1f, 0f);
@@ -451,7 +456,7 @@ public class SpeechBubbleDialogue : MonoBehaviour
 
         // Arrow label inside button
         var arrowGo = MakeChild("Arrow", _advanceBtn.transform);
-        var arrRt   = arrowGo.AddComponent<RectTransform>();
+        var arrRt   = arrowGo.GetComponent<RectTransform>();
         arrRt.anchorMin        = Vector2.zero;
         arrRt.anchorMax        = Vector2.one;
         arrRt.sizeDelta        = Vector2.zero;
@@ -469,7 +474,7 @@ public class SpeechBubbleDialogue : MonoBehaviour
         // ── "Press E to talk" prompt ──────────────────────────────────────────
         //    Appears below centre of the canvas when player is in range.
         _promptGo = MakeChild("Prompt", canvasGo.transform);
-        var prt = _promptGo.AddComponent<RectTransform>();
+        var prt = _promptGo.GetComponent<RectTransform>();
         prt.anchorMin        = new Vector2(0.5f, 0f);
         prt.anchorMax        = new Vector2(0.5f, 0f);
         prt.pivot            = new Vector2(0.5f, 0.5f);
@@ -482,7 +487,7 @@ public class SpeechBubbleDialogue : MonoBehaviour
         promptImg.type   = Image.Type.Sliced;
 
         var ptxtGo = MakeChild("PromptText", _promptGo.transform);
-        var ptrt   = ptxtGo.AddComponent<RectTransform>();
+        var ptrt   = ptxtGo.GetComponent<RectTransform>();
         ptrt.anchorMin = Vector2.zero;
         ptrt.anchorMax = Vector2.one;
         ptrt.sizeDelta = Vector2.zero;
@@ -503,7 +508,7 @@ public class SpeechBubbleDialogue : MonoBehaviour
         if (isShopKeeper)
         {
             var shopBtnGo = MakeChild("ShopBtn", panelGo.transform);
-            var srt = shopBtnGo.GetComponent<RectTransform>() ?? shopBtnGo.AddComponent<RectTransform>();
+            var srt = shopBtnGo.GetComponent<RectTransform>();
             srt.anchorMin = new Vector2(1f, 0f);
             srt.anchorMax = new Vector2(1f, 0f);
             srt.pivot = new Vector2(1f, 0f);
@@ -519,7 +524,7 @@ public class SpeechBubbleDialogue : MonoBehaviour
             sbtn.onClick.AddListener(OpenShopDirectly);
 
             var stxtGo = MakeChild("ShopBtnText", shopBtnGo.transform);
-            var strt = stxtGo.GetComponent<RectTransform>() ?? stxtGo.AddComponent<RectTransform>();
+            var strt = stxtGo.GetComponent<RectTransform>();
             strt.anchorMin = Vector2.zero;
             strt.anchorMax = Vector2.one;
             strt.sizeDelta = Vector2.zero;
@@ -554,7 +559,7 @@ public class SpeechBubbleDialogue : MonoBehaviour
     /// <summary>Creates a named, empty child GameObject.</summary>
     private static GameObject MakeChild(string name, Transform parent)
     {
-        var go = new GameObject(name);
+        var go = new GameObject(name, typeof(RectTransform));
         go.transform.SetParent(parent, false);
         return go;
     }

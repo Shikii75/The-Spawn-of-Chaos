@@ -84,16 +84,15 @@ public class TouchControlsManager : MonoBehaviour
     {
         if (SceneManager.GetActiveScene().name == "MainMenu") return true;
 
-        if (!MainMenuUIToolkitController.isPlaying)
+        var menuController = FindFirstObjectByType<MainMenuUIToolkitController>();
+        if (menuController != null && menuController.gameObject.activeInHierarchy)
         {
-            var menuController = FindFirstObjectByType<MainMenuUIToolkitController>();
-            if (menuController != null && menuController.gameObject.activeInHierarchy)
+            var doc = menuController.GetComponent<UnityEngine.UIElements.UIDocument>();
+            if (doc != null && doc.rootVisualElement != null && doc.rootVisualElement.style.display != UnityEngine.UIElements.DisplayStyle.None)
             {
                 return true;
             }
-
-            var titleObj = GameObject.Find("MainMenu_UIToolkit") ?? GameObject.Find("Mainmenu");
-            if (titleObj != null && titleObj.activeInHierarchy)
+            if (!MainMenuUIToolkitController.isPlaying)
             {
                 return true;
             }
@@ -107,11 +106,13 @@ public class TouchControlsManager : MonoBehaviour
         bool isTitle = IsTitleScreenActive();
         bool isPaused = PauseMenu.Instance != null && PauseMenu.Instance.isPaused;
 
-        // Strictly hide on Title Screen, during Pause, or when gameplay is not active
+        bool isShop = ShopUI.Instance != null && ShopUI.Instance.IsShopActive;
+
+        // Strictly hide on Title Screen, during Pause, or when shop is active
         bool shouldBeVisible = (Application.isMobilePlatform || forceEnableInEditor) && 
                                !isTitle && 
-                               !isPaused &&
-                               MainMenuUIToolkitController.isPlaying;
+                               !isPaused && 
+                               !isShop;
 
         if (touchCanvas != null && touchCanvas.gameObject.activeSelf != shouldBeVisible)
         {
@@ -269,7 +270,7 @@ public class TouchControlsManager : MonoBehaviour
         // 2. JUMP (Space) - Large Primary Mobility (Neon Cyan)
         CreateTouchButton(parent, "TouchBtn_Jump", 
             new Vector2(-95, 130), new Vector2(120, 120), 
-            new Color(0.0f, 0.92f, 1.0f, 0.85f), "▲\nJUMP", 22,
+            new Color(0.0f, 0.92f, 1.0f, 0.85f), "JUMP", 22,
             onDown: () => {
                 if (move.Instance != null)
                 {
@@ -288,7 +289,7 @@ public class TouchControlsManager : MonoBehaviour
         // 3. DASH (Shift) - Electric Sky Blue
         CreateTouchButton(parent, "TouchBtn_Dash", 
             new Vector2(-350, 130), new Vector2(95, 95), 
-            new Color(0.1f, 0.82f, 1.0f, 0.80f), "💨\nDASH", 18,
+            new Color(0.1f, 0.82f, 1.0f, 0.80f), "DASH", 18,
             onDown: () => {
                 if (move.Instance != null)
                 {
@@ -300,7 +301,7 @@ public class TouchControlsManager : MonoBehaviour
         // 4. BLOB (B) - Dedicated Morph Button
         CreateTouchButton(parent, "TouchBtn_Blob", 
             new Vector2(-220, 395), new Vector2(90, 90), 
-            new Color(0.72f, 0.25f, 1.0f, 0.80f), "💧\nBLOB", 18,
+            new Color(0.72f, 0.25f, 1.0f, 0.80f), "BLOB", 18,
             onDown: () => {
                 if (move.Instance != null)
                 {
@@ -312,7 +313,7 @@ public class TouchControlsManager : MonoBehaviour
         // 5. MAGIC (K) - Solar Gold
         CreateTouchButton(parent, "TouchBtn_Magic", 
             new Vector2(-355, 265), new Vector2(90, 90), 
-            new Color(1.0f, 0.68f, 0.1f, 0.80f), "✨\nMAGIC", 18,
+            new Color(1.0f, 0.68f, 0.1f, 0.80f), "MAGIC", 18,
             onDown: () => {
                 if (MageCombat.Instance != null)
                 {
@@ -324,7 +325,7 @@ public class TouchControlsManager : MonoBehaviour
         // 6. SPEAR (Q / X) - Cyan Lightning
         CreateTouchButton(parent, "TouchBtn_Spear", 
             new Vector2(-95, 285), new Vector2(90, 90), 
-            new Color(0.2f, 0.98f, 0.95f, 0.80f), "🔱\nSPEAR", 18,
+            new Color(0.2f, 0.98f, 0.95f, 0.80f), "SPEAR", 18,
             onDown: () => {
                 if (LumiSpearWeapon.Instance != null)
                 {
@@ -341,7 +342,7 @@ public class TouchControlsManager : MonoBehaviour
     {
         CreateTouchButton(parent, "TouchBtn_Pause", 
             new Vector2(-70, -70), new Vector2(70, 70), 
-            new Color(0.25f, 0.85f, 1.0f, 0.75f), "⏸", 28,
+            new Color(0.25f, 0.85f, 1.0f, 0.75f), "II", 28,
             anchorMin: new Vector2(1, 1), anchorMax: new Vector2(1, 1),
             onDown: () => {
                 if (PauseMenu.Instance != null)
@@ -353,7 +354,7 @@ public class TouchControlsManager : MonoBehaviour
 
         CreatePillButton(parent, "TouchBtn_Interact",
             new Vector2(-220, 520), new Vector2(170, 55),
-            new Color(1.0f, 0.82f, 0.2f, 0.85f), "💬 INTERACT (E)", 16,
+            new Color(1.0f, 0.82f, 0.2f, 0.85f), "INTERACT (E)", 16,
             onDown: () => {
                 TriggerNearbyInteraction();
             }
