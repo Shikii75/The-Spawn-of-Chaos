@@ -38,9 +38,14 @@ public class ShopUI : MonoBehaviour
 
     void Start()
     {
+        if (shopPanel != null)
+        {
+            shopPanel.SetActive(false);
+        }
+
         if (shopSystem == null)
         {
-            shopSystem = FindFirstObjectByType<ShopSystem>();
+            shopSystem = FindFirstObjectByType<ShopSystem>() ?? GetComponent<ShopSystem>() ?? gameObject.AddComponent<ShopSystem>();
         }
     }
 
@@ -93,15 +98,49 @@ public class ShopUI : MonoBehaviour
             20f, UIFactory.TextWhite, TextAlignmentOptions.Center);
         UIFactory.AddLayoutElement(currencyText.gameObject, preferredHeight: 30f);
 
-        // ── Scrollable item list area ──
-        // Create a container that will hold dynamically generated item rows
-        RectTransform listContainerRT = UIFactory.CreatePanel(
-            panelRT, "ItemListContainer", Color.clear,
-            Vector2.zero, Vector2.one);
-        UIFactory.AddLayoutElement(listContainerRT.gameObject, preferredHeight: 410f);
-        UIFactory.AddVerticalLayout(listContainerRT.gameObject, 4f,
-            new RectOffset(5, 5, 5, 5), TextAnchor.UpperCenter);
-        itemListContainer = listContainerRT;
+        // ── Scrollable item list area (True ScrollRect) ──
+        GameObject scrollGo = new GameObject("ShopScrollView", typeof(RectTransform));
+        scrollGo.transform.SetParent(panelRT, false);
+        UIFactory.AddLayoutElement(scrollGo, preferredHeight: 440f, flexibleWidth: true);
+        RectTransform scrollRT = scrollGo.GetComponent<RectTransform>();
+        scrollRT.anchorMin = Vector2.zero;
+        scrollRT.anchorMax = Vector2.one;
+        scrollRT.sizeDelta = Vector2.zero;
+
+        ScrollRect sr = scrollGo.AddComponent<ScrollRect>();
+        sr.horizontal = false;
+        sr.vertical = true;
+        sr.scrollSensitivity = 28f;
+        sr.movementType = ScrollRect.MovementType.Clamped;
+
+        // Viewport with RectMask2D
+        GameObject viewportGo = new GameObject("Viewport", typeof(RectTransform));
+        viewportGo.transform.SetParent(scrollGo.transform, false);
+        RectTransform viewRT = viewportGo.GetComponent<RectTransform>();
+        viewRT.anchorMin = Vector2.zero;
+        viewRT.anchorMax = Vector2.one;
+        viewRT.sizeDelta = Vector2.zero;
+        viewRT.pivot = new Vector2(0.5f, 0.5f);
+        viewportGo.AddComponent<RectMask2D>();
+        sr.viewport = viewRT;
+
+        // Scroll Content
+        GameObject contentGo = new GameObject("Content", typeof(RectTransform));
+        contentGo.transform.SetParent(viewportGo.transform, false);
+        RectTransform contentRT = contentGo.GetComponent<RectTransform>();
+        contentRT.anchorMin = new Vector2(0f, 1f);
+        contentRT.anchorMax = new Vector2(1f, 1f);
+        contentRT.pivot = new Vector2(0.5f, 1f);
+        contentRT.sizeDelta = new Vector2(0f, 300f);
+        contentRT.anchoredPosition = Vector2.zero;
+        sr.content = contentRT;
+
+        UIFactory.AddVerticalLayout(contentGo, 5f, new RectOffset(6, 6, 6, 6), TextAnchor.UpperCenter);
+        ContentSizeFitter csf = contentGo.AddComponent<ContentSizeFitter>();
+        csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        csf.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+
+        itemListContainer = contentRT;
 
         // ── Close button (✕) in top-right ──
         UIFactory.CreateCloseButton(panelRT, () => CloseShop());
@@ -117,6 +156,12 @@ public class ShopUI : MonoBehaviour
         if (shopPanel != null)
         {
             shopPanel.SetActive(true);
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
+            if (shopSystem == null)
+            {
+                shopSystem = FindFirstObjectByType<ShopSystem>() ?? GetComponent<ShopSystem>() ?? gameObject.AddComponent<ShopSystem>();
+            }
             UpdateCurrencyUI();
             RefreshShopItems();
             HUDManager.Instance?.UpdateVisibility();
@@ -171,10 +216,16 @@ public class ShopUI : MonoBehaviour
     {
         if (itemListContainer == null || shopSystem == null) return;
 
-        // Clear existing rows
-        for (int i = itemListContainer.childCount - 1; i >= 0; i--)
+        // Clear existing rows cleanly (unparenting prevents layout ghosting in the same frame)
+        var toDestroy = new System.Collections.Generic.List<GameObject>();
+        for (int i = 0; i < itemListContainer.childCount; i++)
         {
-            Destroy(itemListContainer.GetChild(i).gameObject);
+            toDestroy.Add(itemListContainer.GetChild(i).gameObject);
+        }
+        foreach (var child in toDestroy)
+        {
+            child.transform.SetParent(null, false);
+            Destroy(child);
         }
 
         // Build a row for each shop item

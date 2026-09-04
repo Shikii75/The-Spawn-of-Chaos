@@ -43,6 +43,13 @@ public class SpeechBubbleDialogue : MonoBehaviour
     [Tooltip("Colour for the name label.")]
     public Color nameColor = new Color(0.74f, 0.52f, 1f, 1f);
 
+    [Header("── Shopkeeper Integration ────────────────────────────────────")]
+    [Tooltip("If true, this NPC functions as a shopkeeper. Approaching shows '[E] Shop' and finishing/pressing trade opens the Shop UI.")]
+    public bool isShopKeeper = false;
+
+    [Tooltip("Optional custom text for prompt (e.g. 'Shop', 'Trade', 'Talk'). Defaults to 'Shop' if isShopKeeper, else 'Talk'.")]
+    public string promptActionText = "";
+
     [Header("── Interaction ──────────────────────────────────────────────")]
     [Tooltip("Distance the player must be within before the prompt appears.")]
     public float interactRange = 3f;
@@ -113,6 +120,10 @@ public class SpeechBubbleDialogue : MonoBehaviour
 
     private void Awake()
     {
+        if (GetComponent<ShopUI>() != null)
+        {
+            isShopKeeper = true;
+        }
         BuildUI();
     }
 
@@ -153,19 +164,30 @@ public class SpeechBubbleDialogue : MonoBehaviour
             return;
         }
 
-        if (_playerTf == null) return;
+        if (ShopUI.Instance != null && ShopUI.Instance.IsShopActive)
+        {
+            SetPromptActive(false);
+            if (_isOpen) SetBubbleActive(false);
+            return;
+        }
+
+        if (_playerTf == null)
+        {
+            var pGo = GameObject.FindGameObjectWithTag("Player");
+            if (pGo != null) _playerTf = pGo.transform;
+            if (_playerTf == null) return;
+        }
 
         float dist = Vector2.Distance(transform.position, _playerTf.position);
         bool near = dist <= interactRange;
-        if (near == _playerNear) return;
-
-        _playerNear = near;
 
         if (!near && _isOpen)
-            CloseDialogue();
+        {
+            CloseDialogue(false);
+        }
 
-        if (!_isOpen)
-            SetPromptActive(near);
+        _playerNear = near;
+        SetPromptActive(near && !_isOpen);
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -176,6 +198,7 @@ public class SpeechBubbleDialogue : MonoBehaviour
     {
         if (interactionDisabled || (DojoWaveManager.Instance != null && DojoWaveManager.Instance.IsChallengeStarted)) return;
         if (NyxarisManager.IsTyping || NyxarisManager.IsChatActive) return;
+        if (ShopUI.Instance != null && ShopUI.Instance.IsShopActive) return;
 
         // Open
         if (_playerNear && !_isOpen && Input.GetKeyDown(interactKey))
@@ -196,7 +219,7 @@ public class SpeechBubbleDialogue : MonoBehaviour
 
         // Close
         if (Input.GetKeyDown(KeyCode.Escape))
-            CloseDialogue();
+            CloseDialogue(false);
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -228,18 +251,37 @@ public class SpeechBubbleDialogue : MonoBehaviour
             OnPageChanged?.Invoke(_lineIndex);
         }
         else
-            CloseDialogue();
+            CloseDialogue(true);
     }
 
-    private void CloseDialogue()
+    public void CloseDialogue(bool openShopIfShopKeeper = true)
     {
         if (_typeRoutine != null) StopCoroutine(_typeRoutine);
         _isOpen = false;
         _typing = false;
         SetBubbleActive(false);
-        if (_playerNear) SetPromptActive(true);
+        if (_playerNear && !(ShopUI.Instance != null && ShopUI.Instance.IsShopActive))
+            SetPromptActive(true);
 
         OnDialogueComplete?.Invoke();
+
+        if (openShopIfShopKeeper && isShopKeeper && ShopUI.Instance != null)
+        {
+            ShopUI.Instance.OpenShop();
+        }
+    }
+
+    public void OpenShopDirectly()
+    {
+        if (_typeRoutine != null) StopCoroutine(_typeRoutine);
+        _isOpen = false;
+        _typing = false;
+        SetBubbleActive(false);
+        SetPromptActive(false);
+        if (ShopUI.Instance != null)
+        {
+            ShopUI.Instance.OpenShop();
+        }
     }
 
     private void TypeLine(string line)
@@ -448,11 +490,49 @@ public class SpeechBubbleDialogue : MonoBehaviour
 
         var ptxt = ptxtGo.AddComponent<TextMeshProUGUI>();
         ApplyTMPDefaults(ptxt);
-        ptxt.text      = $"[{interactKey}]  Talk";
-        ptxt.color     = new Color(0.74f, 0.52f, 1f, 1f);   // lilac purple
+        string actionText = !string.IsNullOrEmpty(promptActionText) 
+            ? promptActionText 
+            : (isShopKeeper ? "Shop" : "Talk");
+        ptxt.text      = $"[{interactKey}]  {actionText}";
+        ptxt.color     = isShopKeeper ? new Color(1.0f, 0.85f, 0.35f, 1f) : new Color(0.74f, 0.52f, 1f, 1f);
         ptxt.fontSize  = 20f;
         ptxt.alignment = TextAlignmentOptions.Center;
         ptxt.fontStyle = FontStyles.Bold;
+
+        // If shopkeeper, add an instant [TRADE / SHOP] button inside the bubble
+        if (isShopKeeper)
+        {
+            var shopBtnGo = MakeChild("ShopBtn", panelGo.transform);
+            var srt = shopBtnGo.GetComponent<RectTransform>() ?? shopBtnGo.AddComponent<RectTransform>();
+            srt.anchorMin = new Vector2(1f, 0f);
+            srt.anchorMax = new Vector2(1f, 0f);
+            srt.pivot = new Vector2(1f, 0f);
+            srt.sizeDelta = new Vector2(140f, 44f);
+            srt.anchoredPosition = new Vector2(-76f, 14f);
+
+            var sbtnImg = shopBtnGo.AddComponent<Image>();
+            sbtnImg.color = new Color(0.20f, 0.14f, 0.38f, 0.95f);
+            sbtnImg.sprite = GetRoundedSprite();
+            sbtnImg.type = Image.Type.Sliced;
+
+            var sbtn = shopBtnGo.AddComponent<Button>();
+            sbtn.onClick.AddListener(OpenShopDirectly);
+
+            var stxtGo = MakeChild("ShopBtnText", shopBtnGo.transform);
+            var strt = stxtGo.GetComponent<RectTransform>() ?? stxtGo.AddComponent<RectTransform>();
+            strt.anchorMin = Vector2.zero;
+            strt.anchorMax = Vector2.one;
+            strt.sizeDelta = Vector2.zero;
+            strt.anchoredPosition = Vector2.zero;
+
+            var stxt = stxtGo.AddComponent<TextMeshProUGUI>();
+            ApplyTMPDefaults(stxt);
+            stxt.text = "SHOP ▶";
+            stxt.color = new Color(1.0f, 0.88f, 0.35f, 1f);
+            stxt.fontSize = 18f;
+            stxt.alignment = TextAlignmentOptions.Center;
+            stxt.fontStyle = FontStyles.Bold;
+        }
 
         _promptGo.SetActive(false);
     }

@@ -374,6 +374,20 @@ public class TouchControlsManager : MonoBehaviour
                 interactable.Interact();
                 return;
             }
+
+            var speechBubble = col.GetComponent<SpeechBubbleDialogue>() ?? col.GetComponentInParent<SpeechBubbleDialogue>();
+            if (speechBubble != null)
+            {
+                speechBubble.OpenDialogueExternally();
+                return;
+            }
+
+            var shopUi = col.GetComponent<ShopUI>() ?? col.GetComponentInParent<ShopUI>();
+            if (shopUi != null)
+            {
+                shopUi.OpenShop();
+                return;
+            }
         }
     }
 

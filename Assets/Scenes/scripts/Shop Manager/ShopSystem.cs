@@ -4,6 +4,21 @@ public class ShopSystem : MonoBehaviour
 {
     public ShopItem[] shopItems;
 
+    void Awake()
+    {
+        // Auto-populate default consumables & stat upgrades if empty so shop is always fully stocked
+        if (shopItems == null || shopItems.Length == 0)
+        {
+            shopItems = new ShopItem[]
+            {
+                new ShopItem { itemName = "Healing Potion", type = ShopItemType.HealingPotion, cost = 100, purchased = false },
+                new ShopItem { itemName = "Vitality Elixir (+2 Max HP)", type = ShopItemType.HealthBoost, cost = 250, purchased = false },
+                new ShopItem { itemName = "Shadow Dash Mastery", type = ShopItemType.DashUpgrade, cost = 300, purchased = false },
+                new ShopItem { itemName = "Void Projectile Arcana", type = ShopItemType.ProjectileUnlock, cost = 350, purchased = false }
+            };
+        }
+    }
+
     // Keep this field for fallback, but redirect to PlayerCurrency if available
     public int playerCurrency
     {
