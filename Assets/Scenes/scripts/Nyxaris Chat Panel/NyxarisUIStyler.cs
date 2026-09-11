@@ -715,6 +715,7 @@ public class NyxarisUIStyler : MonoBehaviour
     public void AnimateClose()
     {
         if (!gameObject.activeInHierarchy) return;
+        if (NyxarisManager.Instance != null && NyxarisManager.Instance.IsCinematicPlaying) return;
 
         if (openCloseCoroutine != null) StopCoroutine(openCloseCoroutine);
         openCloseCoroutine = StartCoroutine(DoCloseAnimation());
@@ -745,6 +746,7 @@ public class NyxarisUIStyler : MonoBehaviour
 
     private IEnumerator DoCloseAnimation()
     {
+        if (NyxarisManager.Instance != null && NyxarisManager.Instance.IsCinematicPlaying) yield break;
         float duration = 0.15f;
         float elapsed = 0f;
         Vector3 startScale = transform.localScale;

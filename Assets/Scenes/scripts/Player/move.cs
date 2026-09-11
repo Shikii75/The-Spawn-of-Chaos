@@ -8,6 +8,7 @@ public class move : MonoBehaviour
     public bool virtualJumpHeld = false;
     public bool virtualDashPressed = false;
     public bool virtualBlobPressed = false;
+   public static bool forceBlobIntro = false;
     public bool virtualLeftDown = false;
     public bool virtualRightDown = false;
     public float moveSpeed = 6f;
@@ -107,6 +108,7 @@ public class move : MonoBehaviour
             return;
         }
         Instance = this;
+        ExternalMovementLock = false;
 
         // DontDestroyOnLoad only works on root GameObjects.
         // The Player may be parented under a holder object (e.g. "playerholder") in the scene.
@@ -218,44 +220,55 @@ public class move : MonoBehaviour
     {
         bool isTutorial = string.Equals(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name, "TutorialScene", System.StringComparison.OrdinalIgnoreCase);
 
-        // 1. Initialize Nyxaris Tutorial Guide in TutorialScene
-        if (isTutorial && enableNyxarisTutorialOrb && NyxarisOrbGuide.Instance == null)
+        // 1. Initialize Nyxaris Tutorial Guide in TutorialScene (Strict single instance check)
+        if (isTutorial)
         {
-            GameObject existingLocations = GameObject.Find("Nyxaris Guide Locations");
-            if (existingLocations == null) existingLocations = GameObject.Find("Nyxaris Guide locations");
-            if (existingLocations != null)
+            NyxarisSealSequence.EnsureInstanceInScene();
+        }
+
+        if (isTutorial && enableNyxarisTutorialOrb)
+        {
+            if (NyxarisOrbGuide.Instance == null && Object.FindFirstObjectByType<NyxarisOrbGuide>() == null)
             {
-                if (existingLocations.GetComponent<NyxarisOrbGuide>() == null)
-                    existingLocations.AddComponent<NyxarisOrbGuide>();
-                Debug.Log("[move] Bound Nyxaris Orb Guide to existing 'Nyxaris Guide Locations' hierarchy.");
+                GameObject existingLocations = GameObject.Find("Nyxaris Guide Locations");
+                if (existingLocations == null) existingLocations = GameObject.Find("Nyxaris Guide locations");
+                if (existingLocations != null)
+                {
+                    if (existingLocations.GetComponent<NyxarisOrbGuide>() == null)
+                        existingLocations.AddComponent<NyxarisOrbGuide>();
+                    Debug.Log("[move] Bound Nyxaris Orb Guide to existing 'Nyxaris Guide Locations' hierarchy.");
+                }
+                else
+                {
+                    GameObject nyxarisGO = new GameObject("Nyxaris_Guide_Master");
+                    nyxarisGO.AddComponent<NyxarisOrbGuide>();
+                    Debug.Log("[move] Initialized Nyxaris Orb Guide Master for Tutorial.");
+                }
             }
-            else
+        }
+
+        // 2. In non-tutorial scenes, initialize Lumi companion if enabled (Inventory removed)
+        if (isTutorial)
+        {
+            // Lumi must NEVER exist in TutorialScene
+            if (LightOrbCompanion.Instance != null)
             {
-                GameObject nyxarisGO = new GameObject("Nyxaris_Guide_Master");
-                nyxarisGO.AddComponent<NyxarisOrbGuide>();
-                Debug.Log("[move] Initialized Nyxaris Orb Guide Master for Tutorial.");
+                Destroy(LightOrbCompanion.Instance.gameObject);
             }
+            var existingLumi = Object.FindObjectsByType<LightOrbCompanion>(FindObjectsSortMode.None);
+            foreach (var l in existingLumi)
+            {
+                if (l != null) Destroy(l.gameObject);
+            }
+            return;
         }
 
-        // 2. In non-tutorial scenes, initialize Lumi companion if enabled
-        if (!enableOrbCompanion || isTutorial) return;
+        if (!enableOrbCompanion) return;
 
-        if (OrbInventorySystem.Instance == null)
-        {
-            GameObject invGO = new GameObject("OrbInventorySystem");
-            invGO.AddComponent<OrbInventorySystem>();
-        }
-
-        if (OrbInventoryUI.Instance == null)
-        {
-            GameObject uiGO = new GameObject("OrbInventoryUI");
-            uiGO.AddComponent<OrbInventoryUI>();
-        }
-
-        if (LightOrbCompanion.Instance == null)
+        if (LightOrbCompanion.Instance == null && Object.FindFirstObjectByType<LightOrbCompanion>() == null)
         {
             GameObject orbGO = new GameObject("Lumi_LightOrbCompanion");
-            orbGO.transform.position = transform.position + new Vector3(-1.2f, 1.4f, 0f);
+            orbGO.transform.position = transform.position + new Vector3(-2.4f, 2.2f, 0f);
             orbGO.AddComponent<LightOrbCompanion>();
         }
     }
@@ -524,9 +537,9 @@ public class move : MonoBehaviour
         bool isWalking = isMoving && !isDoubleTapRunning && !isBlobForm;
 
         // 👇 Check if pressing M or S/DownArrow: morphs into flat puddle blob
-        bool blobInputHeld = (Input.GetKey(KeyCode.M) || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow) || virtualBlobPressed);
+        bool blobInputHeld = forceBlobIntro || (Input.GetKey(KeyCode.M) || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow) || virtualBlobPressed);
         
-        // Auto-sustain blob form if inside a low ceiling / crawlspace (Metroid morph-ball rule)
+        // Auto-sustain blob form if inside a low ceiling / crawlspace (Strict Hold & Crawlspace Lock)
         bool hasLowCeilingAbove = false;
         if (isBlobForm)
         {
@@ -534,11 +547,29 @@ public class move : MonoBehaviour
             float feetY = standingColOffset.y - (standingColSize.y * 0.5f);
             float fullHeight = (standingColSize.y > 0.5f) ? standingColSize.y : 2.6f;
             float blobH = (blobColliderSize.y > 0.05f) ? blobColliderSize.y : 0.35f;
-            Vector2 checkOrigin = (Vector2)transform.position + new Vector2(standingColOffset.x, feetY + blobH + 0.04f);
-            RaycastHit2D ceilHit = Physics2D.Raycast(checkOrigin, Vector2.up, fullHeight - blobH, ceilingMask);
-            if (ceilHit.collider != null && !ceilHit.collider.isTrigger && ceilHit.collider.gameObject != gameObject && !ceilHit.collider.CompareTag("enemy") && ceilHit.collider.GetComponent<IDamageable>() == null)
+            float checkHeight = fullHeight - blobH;
+            float width = Mathf.Max(0.5f, standingColSize.x > 0.1f ? standingColSize.x * 0.85f : 0.8f);
+            float halfW = width * 0.5f;
+
+            Vector2 baseCenter = (Vector2)transform.position + new Vector2(standingColOffset.x, feetY + blobH + 0.04f);
+
+            // 1. BoxCast covering the standing body clearance width
+            RaycastHit2D boxHit = Physics2D.BoxCast(baseCenter, new Vector2(width, 0.08f), 0f, Vector2.up, checkHeight, ceilingMask);
+            if (IsValidCeilingObstacle(boxHit))
             {
                 hasLowCeilingAbove = true;
+            }
+            else
+            {
+                // 2. Triple-raycast fallback (Left, Center, Right) across the crawlspace
+                RaycastHit2D leftHit = Physics2D.Raycast(baseCenter + new Vector2(-halfW, 0f), Vector2.up, checkHeight, ceilingMask);
+                RaycastHit2D midHit = Physics2D.Raycast(baseCenter, Vector2.up, checkHeight, ceilingMask);
+                RaycastHit2D rightHit = Physics2D.Raycast(baseCenter + new Vector2(halfW, 0f), Vector2.up, checkHeight, ceilingMask);
+
+                if (IsValidCeilingObstacle(leftHit) || IsValidCeilingObstacle(midHit) || IsValidCeilingObstacle(rightHit))
+                {
+                    hasLowCeilingAbove = true;
+                }
             }
         }
 
@@ -824,7 +855,6 @@ public class move : MonoBehaviour
                         anim.SetBool("isJumping", true);
                         anim.SetBool("isFalling", false);
                         anim.SetTrigger("jump");
-                        anim.SetTrigger("Jump");
                         if (anim.HasState(0, Animator.StringToHash("jump")))
                             anim.Play("jump", 0, 0f);
                         else if (anim.HasState(0, Animator.StringToHash("Jump")))
@@ -1254,4 +1284,16 @@ public class move : MonoBehaviour
         }
         return false;
     }
+
+    private bool IsValidCeilingObstacle(RaycastHit2D hit)
+    {
+        if (hit.collider == null) return false;
+        if (hit.collider.isTrigger) return false;
+        if (hit.collider.gameObject == gameObject) return false;
+        if (hit.transform.IsChildOf(transform)) return false;
+        if (hit.collider.CompareTag("Player") || hit.collider.CompareTag("enemy")) return false;
+        if (hit.collider.GetComponent<IDamageable>() != null) return false;
+        return true;
+    }
+
 }

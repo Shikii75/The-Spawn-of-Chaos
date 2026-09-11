@@ -24,6 +24,7 @@ public class TsuchigumoBossController : MonoBehaviour, IDamageable
 {
     public enum BossState
     {
+        DisguisedWarrior,
         Idle,
         Stalking,
         Telegraphing,
@@ -37,6 +38,14 @@ public class TsuchigumoBossController : MonoBehaviour, IDamageable
         Roaring,
         Dead
     }
+
+    [Header("Disguise Settings")]
+    [Tooltip("Whether Tsuchigumo starts in human samurai warrior disguise in the Pantheon.")]
+    public bool startAsDisguisedWarrior = true;
+    public Sprite disguisedWarriorSprite;
+    private Sprite originalSpiderSprite;
+    private RuntimeAnimatorController originalSpiderAnimController;
+    private bool hasTransformed = false;
 
     [Header("Boss Identity & Health")]
     public string bossName = "Tsuchigumo, The Shape-Shifter";
@@ -147,13 +156,46 @@ public class TsuchigumoBossController : MonoBehaviour, IDamageable
         }
     }
 
+    private void EnsureDisguisedSpriteAssigned()
+    {
+        if (disguisedWarriorSprite == null)
+        {
+#if UNITY_EDITOR
+            disguisedWarriorSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(
+                "Assets/Scenes/animations/frames/normalmalesamurai/normalmalesamuraistopandstep-45da2e11/frame_001.png"
+            );
+#endif
+        }
+    }
+
     private void Start()
     {
         currentHealth = maxHealth;
         startingPosition = transform.position;
         FindPlayer();
-        PlayAnimation(AnimIdle, force: true);
-        nextActionTime = Time.time + Random.Range(2.5f, 4.0f);
+        EnsureDisguisedSpriteAssigned();
+
+        if (startAsDisguisedWarrior && !hasTransformed)
+        {
+            currentState = BossState.DisguisedWarrior;
+            if (spriteRenderer != null) originalSpiderSprite = spriteRenderer.sprite;
+            if (animator != null)
+            {
+                originalSpiderAnimController = animator.runtimeAnimatorController;
+                animator.enabled = false;
+            }
+            if (spriteRenderer != null && disguisedWarriorSprite != null)
+            {
+                spriteRenderer.sprite = disguisedWarriorSprite;
+            }
+            // Temporarily hide boss health bar while disguised
+            BossHealthBar.Instance?.HideBossBar();
+        }
+        else
+        {
+            PlayAnimation(AnimIdle, force: true);
+            nextActionTime = Time.time + Random.Range(2.5f, 4.0f);
+        }
     }
 
     private void Update()
@@ -172,6 +214,9 @@ public class TsuchigumoBossController : MonoBehaviour, IDamageable
         // State Loop
         switch (currentState)
         {
+            case BossState.DisguisedWarrior:
+                UpdateDisguisedWarrior();
+                break;
             case BossState.Idle:
             case BossState.Stalking:
                 UpdateStalking();
@@ -204,6 +249,78 @@ public class TsuchigumoBossController : MonoBehaviour, IDamageable
             currentPhase = 2;
             TriggerPhaseRoar(spiderlingCount: 2);
         }
+    }
+
+
+    private void UpdateDisguisedWarrior()
+    {
+        if (player == null) return;
+
+        FaceTarget(player.position);
+        float distToPlayer = Vector2.Distance(transform.position, player.position);
+
+        // Player approaches close or attacks the disguised warrior
+        if (distToPlayer <= 5.5f || currentHealth < maxHealth)
+        {
+            StartCoroutine(ExecuteTransformationRoutine());
+        }
+    }
+
+    private IEnumerator ExecuteTransformationRoutine()
+    {
+        hasTransformed = true;
+        currentState = BossState.Roaring;
+        rb.linearVelocity = Vector2.zero;
+
+        // Briefly freeze player movement for dramatic standoff
+        move.ExternalMovementLock = true;
+
+        // Violet warning glow
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.color = new Color(0.9f, 0.3f, 1f, 1f);
+        }
+
+        if (CameraShakeManager.Instance != null)
+        {
+            CameraShakeManager.Shake(1.2f, 0.8f);
+        }
+
+        yield return new WaitForSeconds(0.8f);
+
+        // Restore spider visuals and animator
+        if (animator != null)
+        {
+            animator.enabled = true;
+            if (originalSpiderAnimController != null)
+            {
+                animator.runtimeAnimatorController = originalSpiderAnimController;
+            }
+        }
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.color = originalSpriteColor;
+            if (originalSpiderSprite != null)
+            {
+                spriteRenderer.sprite = originalSpiderSprite;
+            }
+        }
+
+        // Show Boss Health Bar
+        if (BossHealthBar.Instance != null)
+        {
+            Health h = GetComponent<Health>();
+            if (h != null)
+            {
+                BossHealthBar.Instance.ShowBossBar(h, bossName);
+            }
+        }
+
+        // Release player movement
+        move.ExternalMovementLock = false;
+
+        // Play initial menacing Growl/Roar and summon spiderlings
+        TriggerPhaseRoar(spiderlingCount: 2);
     }
 
     private void UpdateStalking()

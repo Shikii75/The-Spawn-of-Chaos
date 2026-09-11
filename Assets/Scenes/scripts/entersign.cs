@@ -102,7 +102,7 @@ public class entersign : MonoBehaviour
         }
         else
         {
-            SceneManager.LoadScene(targetSceneName);
+            SpawnOfChaos.Systems.ArcaneLoadingScreen.LoadScene(targetSceneName);
         }
     }
 

@@ -57,6 +57,14 @@ namespace SpawnOfChaos.NPC
         [Tooltip("If true, the raw sprite asset faces Left by default. Facing calculation will invert accordingly.")]
         public bool spriteFacesLeftByDefault = true;
 
+        [Header("Mounted Player Visuals")]
+        [Tooltip("Optional sprite override for the player while riding Genbu (sitting/kneeling pose).")]
+        public Sprite seatedPlayerSprite;
+
+        private Animator playerAnim;
+        private SpriteRenderer playerSr;
+        private Sprite cachedOriginalPlayerSprite;
+
         [Header("Prompt UI")]
         [Tooltip("Custom prompt text displayed when approaching Genbu at start ledge.")]
         public string mountPromptText = "[E] Ride Genbu";
@@ -81,6 +89,26 @@ namespace SpawnOfChaos.NPC
         private Vector3 initialGenbuPos;
         private Vector3 initialAbsScale = Vector3.one;
 
+
+        private void EnsureSeatedSpriteAssigned()
+        {
+            if (seatedPlayerSprite == null)
+            {
+#if UNITY_EDITOR
+                string[] candidatePaths = new string[]
+                {
+                    "Assets/Scenes/animations/frames/magestartlanding-142e8565/clean/frame_004.png",
+                    "Assets/Scenes/animations/frames/basePlayer/baseplayeridle-9e5e89c4/frame_013.png"
+                };
+                foreach (string path in candidatePaths)
+                {
+                    seatedPlayerSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(path);
+                    if (seatedPlayerSprite != null) break;
+                }
+#endif
+            }
+        }
+
         private void Awake()
         {
             if (Instance == null)
@@ -104,6 +132,7 @@ namespace SpawnOfChaos.NPC
             );
 
             EnsureShellMountPoint();
+            EnsureSeatedSpriteAssigned();
             CreateWorldSpacePromptUI();
         }
 
@@ -340,6 +369,17 @@ namespace SpawnOfChaos.NPC
                 playerRb.linearVelocity = Vector2.zero;
             }
 
+            // Apply seated pose / pause running animations while riding Genbu
+            if (playerAnim != null)
+            {
+                playerAnim.enabled = false;
+            }
+            if (playerSr != null && seatedPlayerSprite != null)
+            {
+                cachedOriginalPlayerSprite = playerSr.sprite;
+                playerSr.sprite = seatedPlayerSprite;
+            }
+
             // Turn Genbu to face the destination platform swim direction before departing
             Vector3 targetPlatformPos = destinationPlatformPoint != null ? destinationPlatformPoint.position : (transform.position + new Vector3(32f, 0f, 0f));
             SetFacingDirection(targetPlatformPos.x - transform.position.x);
@@ -432,6 +472,12 @@ namespace SpawnOfChaos.NPC
                 yield return new WaitForSeconds(0.1f);
             }
 
+            // Restore animator and sprite
+            if (playerAnim != null)
+            {
+                playerAnim.enabled = true;
+            }
+
             // Restore full player controls
             move.ExternalMovementLock = false;
 
@@ -452,6 +498,11 @@ namespace SpawnOfChaos.NPC
             if (currentState == FerryState.Completed) return;
 
             StopAllCoroutines();
+
+            if (playerAnim != null)
+            {
+                playerAnim.enabled = true;
+            }
 
             if (startLedgePoint != null)
             {

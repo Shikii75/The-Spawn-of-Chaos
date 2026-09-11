@@ -212,7 +212,8 @@ namespace SpawnOfChaos.Systems
             if (backgroundFlashImage != null) backgroundFlashImage.color = Color.clear;
             if (speedlinesImage != null) speedlinesImage.color = Color.clear;
 
-            Time.timeScale = (MainMenuUIToolkitController.isPlaying) ? 1.0f : 0f;
+            bool isPaused = PauseMenu.Instance != null && PauseMenu.Instance.isPaused;
+            Time.timeScale = isPaused ? 0f : (originalTimeScale > 0.05f ? originalTimeScale : 1.0f);
             activeImpactRoutine = null;
         }
     }

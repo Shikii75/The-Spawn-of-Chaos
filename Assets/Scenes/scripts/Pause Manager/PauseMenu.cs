@@ -21,11 +21,11 @@ public class PauseMenu : MonoBehaviour
     public string menuSceneName = "MainMenu";
 
     // ── Palette: midnight void + aether cyan + restrained violet ──
-    private static readonly Color VoidOverlay       = new Color(0.015f, 0.025f, 0.06f, 0.88f);
-    private static readonly Color NeonPurple        = new Color(0.34f, 0.88f, 1f, 1f);
-    private static readonly Color NeonPurpleDim     = new Color(0.34f, 0.88f, 1f, 0.42f);
-    private static readonly Color ArcaneViolet      = new Color(0.45f, 0.48f, 0.95f, 1f);
-    private static readonly Color ArcaneVioletDim   = new Color(0.45f, 0.48f, 0.95f, 0.35f);
+    private static readonly Color VoidOverlay       = new Color(0.012f, 0.005f, 0.025f, 0.90f);
+    private static readonly Color NeonPurple        = new Color(0.75f, 0.52f, 0.99f, 1f); // #c084fc Radiant Violet
+    private static readonly Color NeonPurpleDim     = new Color(0.75f, 0.52f, 0.99f, 0.42f);
+    private static readonly Color ArcaneViolet      = new Color(0.66f, 0.33f, 0.97f, 1f); // #a855f7 Mystic Amethyst
+    private static readonly Color ArcaneVioletDim   = new Color(0.66f, 0.33f, 0.97f, 0.35f);
 
     [Header("Title Screen Artwork & Sprites")]
     public Sprite logoSprite;
@@ -224,32 +224,32 @@ public class PauseMenu : MonoBehaviour
 
         CreateArcaneDivider(contentColumnRT, "TitleDivider");
 
-        // ── Main Menu Styled Cyber-Gothic Glassmorphic Buttons ──
-        // 1. Resume (Cyan/Teal)
+        // ── Main Menu Styled Cyber-Gothic Glassmorphic Buttons (Shades of Purple) ──
+        // 1. Resume (Radiant Violet / Electric Lavender - Primary Action)
         CreateCyberGothicButton(
             contentColumnRT, "ResumeBtn", "RESUME", "CONTINUE EXPEDITION", "✦",
-            new Color(0.18f, 0.83f, 0.75f, 1f), // #2dd4bf
+            new Color(0.75f, 0.52f, 0.99f, 1f), // #c084fc Radiant Violet
             () => ResumeGame()
         );
 
-        // 2. Restart (Arcane Violet)
+        // 2. Restart (Mystic Amethyst Purple)
         CreateCyberGothicButton(
             contentColumnRT, "RestartBtn", "RESTART", "RETRY FROM CHECKPOINT", "❖",
-            new Color(0.66f, 0.33f, 0.97f, 1f), // #a855f7
+            new Color(0.66f, 0.33f, 0.97f, 1f), // #a855f7 Mystic Amethyst
             () => RestartLevel()
         );
 
-        // 3. Minigames (Aether Gold/Cyan)
+        // 3. Minigames (Celestial Orchid / Neon Magenta-Purple)
         CreateCyberGothicButton(
             contentColumnRT, "MinigamesBtn", "ARCADE VAULT", "TRAINING & MINIGAMES", "◈",
-            new Color(0.98f, 0.75f, 0.14f, 1f), // #fbbf24
+            new Color(0.85f, 0.27f, 0.94f, 1f), // #d946ef Celestial Orchid
             () => OpenMinigamesMenu()
         );
 
-        // 4. Quit to Menu (Rose Crimson)
+        // 4. Quit to Menu (Dusky Void Plum)
         CreateCyberGothicButton(
             contentColumnRT, "QuitBtn", "QUIT TO MENU", "RETURN TO TITLE SCREEN", "✕",
-            new Color(0.96f, 0.25f, 0.37f, 1f), // #f43f5e
+            new Color(0.55f, 0.20f, 0.85f, 1f), // #8c33d9 Dusky Void Plum
             () => QuitToMenu(menuSceneName)
         );
 
@@ -258,7 +258,7 @@ public class PauseMenu : MonoBehaviour
 
         TextMeshProUGUI hintText = UIFactory.CreateText(
             contentColumnRT, "Hint", "PRESS ESC OR P TO RESUME",
-            12f, new Color(0.55f, 0.72f, 0.90f, 0.75f), TextAlignmentOptions.Center);
+            12f, new Color(0.80f, 0.65f, 0.95f, 0.75f), TextAlignmentOptions.Center);
         hintText.characterSpacing = 3f;
         
         LayoutElement hintLe = hintText.gameObject.AddComponent<LayoutElement>();
@@ -707,9 +707,9 @@ public class CyberGothicButtonFX : MonoBehaviour,
     {
         isHovered = true;
         targetScale = originalScale * 1.04f;
-        targetBgColor = new Color(0.14f, 0.08f, 0.24f, 0.98f);
+        targetBgColor = new Color(0.18f, 0.08f, 0.32f, 0.98f);
         targetBorderColor = new Color(themeColor.r, themeColor.g, themeColor.b, 1.0f);
-        targetTopAccentColor = new Color(1f, 1f, 1f, 1.0f); // Bright white-neon flash
+        targetTopAccentColor = new Color(0.95f, 0.85f, 1.0f, 1.0f); // Bright white-neon flash
         targetLabelColor = Color.white;
     }
 
@@ -732,6 +732,6 @@ public class CyberGothicButtonFX : MonoBehaviour,
     public void OnPointerUp(UnityEngine.EventSystems.PointerEventData eventData)
     {
         targetScale = isHovered ? originalScale * 1.04f : originalScale;
-        targetBgColor = isHovered ? new Color(0.14f, 0.08f, 0.24f, 0.98f) : origBgColor;
+        targetBgColor = isHovered ? new Color(0.18f, 0.08f, 0.32f, 0.98f) : origBgColor;
     }
 }

@@ -240,7 +240,7 @@ public class DynamicPinkBridgeCluster : MonoBehaviour
         ParticleSystemRenderer psr = burstObj.GetComponent<ParticleSystemRenderer>();
 
         var main = ps.main;
-        main.duration = 0.4f;
+        // Removed main.duration assignment to prevent Unity runtime error
         main.loop = false;
         main.startLifetime = new ParticleSystem.MinMaxCurve(0.3f, 0.6f);
         main.startSpeed = new ParticleSystem.MinMaxCurve(2.5f, 5.5f);

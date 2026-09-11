@@ -70,7 +70,30 @@ public class NyxarisManager : MonoBehaviour
         public float new_trust; 
     }
 
-    public static bool IsChatActive => Instance != null && Instance.mainInterfacePanel != null && Instance.mainInterfacePanel.activeSelf;
+    public bool IsCinematicPlaying => cinematicCoroutine != null;
+    public static bool IsChatActive
+    {
+        get
+        {
+            if (Instance == null) return false;
+            if (Instance.IsCinematicPlaying) return true;
+            NyxarisUIStyler styler = Instance.GetStyler();
+            if (styler != null && styler.gameObject.activeInHierarchy)
+            {
+                CanvasGroup cg = styler.GetComponent<CanvasGroup>();
+                if (cg != null) return cg.alpha > 0.05f;
+            }
+            Transform uiSpace = Instance.transform.Find("UIspace");
+            if (uiSpace != null && uiSpace.gameObject.activeSelf) return true;
+            if (Instance.mainInterfacePanel != null && Instance.mainInterfacePanel != Instance.gameObject)
+            {
+                CanvasGroup cg = Instance.mainInterfacePanel.GetComponent<CanvasGroup>();
+                if (cg != null) return cg.alpha > 0.05f;
+                return Instance.mainInterfacePanel.activeSelf;
+            }
+            return false;
+        }
+    }
 
     public static bool IsTyping
     {
@@ -95,7 +118,12 @@ public class NyxarisManager : MonoBehaviour
         AutoLoadExpressionSprites();
         EnsureCanvasScaling();
 
-        if (mainInterfacePanel != null)
+        if (mainInterfacePanel == null)
+        {
+            mainInterfacePanel = gameObject;
+        }
+
+        if (mainInterfacePanel != null && mainInterfacePanel != gameObject)
         {
             mainInterfacePanel.SetActive(false);
         }
@@ -118,7 +146,15 @@ public class NyxarisManager : MonoBehaviour
             messageInput.onSubmit.AddListener((text) => SendInputMessage());
         }
 
-        HideInterface();
+        if (!IsCinematicPlaying)
+        {
+            CanvasGroup cg = GetComponent<CanvasGroup>();
+            if (cg != null) cg.alpha = 0f;
+            if (mainInterfacePanel != null && mainInterfacePanel != gameObject)
+            {
+                mainInterfacePanel.SetActive(false);
+            }
+        }
     }
 
     private void EnsureCanvasScaling()
@@ -146,7 +182,7 @@ public class NyxarisManager : MonoBehaviour
         }
     }
 
-    private void SetupPortraitAndAnimator()
+    public void SetupPortraitAndAnimator()
     {
         // Cleanup any stray untextured overlay
         GameObject stray = GameObject.Find("NyxarisPortraitOverlay");
@@ -156,15 +192,57 @@ public class NyxarisManager : MonoBehaviour
         }
 
         NyxarisUIStyler styler = GetStyler();
-        if (styler != null && styler.portraitImage != null)
+        if (styler != null)
         {
-            portrait = styler.portraitImage;
+            styler.ApplyStyling();
+            if (styler.portraitImage != null) portrait = styler.portraitImage;
+            if (styler.dialogueText != null) dialogueText = styler.dialogueText;
         }
-        else if (portrait == null && mainInterfacePanel != null)
+
+        if (dialogueText == null && mainInterfacePanel != null)
+        {
+            Transform dt = mainInterfacePanel.transform.Find("UIspace/LowerPanel/DialogueText") ?? 
+                           mainInterfacePanel.transform.Find("LowerPanel/DialogueText") ??
+                           mainInterfacePanel.transform.Find("DialogueText");
+            if (dt != null) dialogueText = dt.GetComponent<TMP_Text>();
+        }
+        if (dialogueText == null)
+        {
+            TMP_Text[] texts = GetComponentsInChildren<TMP_Text>(true);
+            foreach (var t in texts)
+            {
+                if (t.gameObject.name.ToLower().Contains("dialogue"))
+                {
+                    dialogueText = t;
+                    break;
+                }
+            }
+            if (dialogueText == null && texts.Length > 0) dialogueText = texts[0];
+        }
+
+        if (portrait == null && mainInterfacePanel != null)
         {
             Transform p = mainInterfacePanel.transform.Find("UIspace/Portrait") ?? 
                           mainInterfacePanel.transform.Find("Portrait");
             if (p != null) portrait = p.GetComponent<Image>();
+        }
+        if (portrait == null)
+        {
+            Image[] images = GetComponentsInChildren<Image>(true);
+            foreach (var img in images)
+            {
+                if (img.gameObject.name.ToLower().Contains("portrait"))
+                {
+                    portrait = img;
+                    break;
+                }
+            }
+            if (portrait == null && images.Length > 0) portrait = images[0];
+        }
+
+        if (messageInput == null)
+        {
+            messageInput = GetComponentInChildren<TMP_InputField>(true);
         }
 
         if (portrait != null)
@@ -866,13 +944,39 @@ public class NyxarisManager : MonoBehaviour
     {
         if (Instance != null) return Instance;
 
+        NyxarisManager existing = Object.FindAnyObjectByType<NyxarisManager>(FindObjectsInactive.Include);
+        if (existing != null)
+        {
+            Instance = existing;
+            existing.SetupPortraitAndAnimator();
+            return existing;
+        }
+
         GameObject prefab = Resources.Load<GameObject>("Prefabs/MainInterface") ?? 
                             Resources.Load<GameObject>("MainInterface");
+#if UNITY_EDITOR
+        if (prefab == null)
+        {
+            prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/MainInterface.prefab");
+        }
+#endif
         if (prefab != null)
         {
             GameObject go = Object.Instantiate(prefab);
             go.name = "MainInterface";
-            return go.GetComponentInChildren<NyxarisManager>(true);
+            NyxarisManager mgr = go.GetComponentInChildren<NyxarisManager>(true);
+            if (mgr == null)
+            {
+                mgr = go.AddComponent<NyxarisManager>();
+            }
+            mgr.mainInterfacePanel = go;
+            mgr.SetupPortraitAndAnimator();
+            Transform uiSpace = go.transform.Find("UIspace");
+            if (uiSpace != null) uiSpace.gameObject.SetActive(false);
+            CanvasGroup cg = go.GetComponent<CanvasGroup>();
+            if (cg != null) cg.alpha = 0f;
+            Instance = mgr;
+            return mgr;
         }
         return null;
     }
@@ -885,6 +989,71 @@ public class NyxarisManager : MonoBehaviour
     /// </summary>
     public void StartCinematicStoryDialogue(CinematicLine[] lines, System.Action onComplete)
     {
+        // 1. Stop any closing animations or coroutines immediately
+        NyxarisUIStyler styler = GetStyler();
+        if (styler != null)
+        {
+            styler.StopAllCoroutines();
+        }
+
+        // 2. Ensure GameObject is fully active and scale is 1
+        gameObject.SetActive(true);
+        transform.localScale = Vector3.one;
+        if (mainInterfacePanel == null) mainInterfacePanel = gameObject;
+        mainInterfacePanel.SetActive(true);
+
+        // 3. Ensure Canvas is ScreenSpaceOverlay with top sorting order
+        Canvas c = mainInterfacePanel.GetComponent<Canvas>() ?? mainInterfacePanel.GetComponentInParent<Canvas>();
+        if (c != null)
+        {
+            c.renderMode = RenderMode.ScreenSpaceOverlay;
+            c.overrideSorting = true;
+            c.sortingOrder = 1000;
+        }
+
+        // 4. Force all CanvasGroups to 100% opaque
+        CanvasGroup[] cgs = mainInterfacePanel.GetComponentsInChildren<CanvasGroup>(true);
+        foreach (var cg in cgs)
+        {
+            cg.alpha = 1f;
+            cg.interactable = true;
+            cg.blocksRaycasts = true;
+        }
+
+        // 5. Ensure RectTransform fills screen
+        RectTransform rt = mainInterfacePanel.GetComponent<RectTransform>();
+        if (rt != null)
+        {
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+        }
+
+        // 6. Ensure UIspace and LowerPanel are active
+        Transform uiSpace = mainInterfacePanel.transform.Find("UIspace") ?? mainInterfacePanel.transform;
+        uiSpace.gameObject.SetActive(true);
+        Transform lowerPanel = uiSpace.Find("LowerPanel");
+        if (lowerPanel != null) lowerPanel.gameObject.SetActive(true);
+
+        EnsureCanvasScaling();
+        SetupPortraitAndAnimator();
+
+        if (dialogueText != null)
+        {
+            dialogueText.gameObject.SetActive(true);
+            dialogueText.enabled = true;
+            dialogueText.color = Color.white;
+            dialogueText.alpha = 1f;
+        }
+
+        if (portrait != null)
+        {
+            portrait.gameObject.SetActive(true);
+            portrait.enabled = true;
+            portrait.color = Color.white;
+        }
+
         if (cinematicCoroutine != null) StopCoroutine(cinematicCoroutine);
         cinematicCoroutine = StartCoroutine(CinematicStoryRoutine(lines, onComplete));
     }
@@ -893,13 +1062,19 @@ public class NyxarisManager : MonoBehaviour
     {
         try
         {
-            if (mainInterfacePanel != null)
+            // Initial debounce so combat clicks don't skip line 1
+            yield return new WaitForSecondsRealtime(0.25f);
+
+            CanvasGroup[] cgs = GetComponentsInChildren<CanvasGroup>(true);
+            foreach (var cg in cgs) { cg.alpha = 1f; cg.interactable = true; cg.blocksRaycasts = true; }
+
+            SetupPortraitAndAnimator();            if (mainInterfacePanel != null)
             {
                 mainInterfacePanel.SetActive(true);
                 Canvas c = mainInterfacePanel.GetComponentInParent<Canvas>();
                 if (c != null)
                 {
-                    c.sortingOrder = 950;
+                    c.sortingOrder = 1000;
                     c.renderMode = RenderMode.ScreenSpaceOverlay;
                 }
             }
@@ -945,13 +1120,13 @@ public class NyxarisManager : MonoBehaviour
                     if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || Input.GetMouseButtonDown(0))
                     {
                         if (dialogueText != null) dialogueText.text = fullText;
-                        yield return new WaitForSeconds(0.12f);
+                        yield return new WaitForSecondsRealtime(0.12f);
                         break;
                     }
 
                     if (dialogueText != null) dialogueText.text += fullText[charIndex];
                     charIndex++;
-                    yield return new WaitForSeconds(charInterval);
+                    yield return new WaitForSecondsRealtime(charInterval);
                 }
 
                 if (dialogueText != null)
@@ -960,22 +1135,24 @@ public class NyxarisManager : MonoBehaviour
                 }
 
                 // 3. Wait for Player to press [E] or any key to advance
-                yield return new WaitForSeconds(0.1f);
+                yield return new WaitForSecondsRealtime(0.1f);
                 float lineWaitTimer = 0f;
                 while (lineWaitTimer < 8f)
                 {
-                    lineWaitTimer += Time.deltaTime;
+                    lineWaitTimer += Time.unscaledDeltaTime;
                     if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || Input.GetMouseButtonDown(0))
                     {
                         break;
                     }
                     yield return null;
                 }
-                yield return new WaitForSeconds(0.08f);
+                yield return new WaitForSecondsRealtime(0.08f);
             }
         }
+
         finally
         {
+            cinematicCoroutine = null;
             HideInterface();
             move.ExternalMovementLock = false;
             onComplete?.Invoke();

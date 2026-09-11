@@ -14,8 +14,7 @@ namespace SpawnOfChaos.Minigames
     /// Dynamically binds to player stats, auto-updates fill ratios, triggers liquid splashes when world orbs are collected or damage is taken,
     /// hides when on the main menu / title screen, and persists across scene transitions (e.g., Dojo screen).
     /// </summary>
-    [ExecuteAlways]
-    public class HUDOrbPanel : MonoBehaviour
+        public class HUDOrbPanel : MonoBehaviour
     {
         public static HUDOrbPanel Instance { get; private set; }
 
@@ -48,7 +47,8 @@ namespace SpawnOfChaos.Minigames
         {
             if (Instance != null && Instance != this && Instance.gameObject != null)
             {
-                Destroy(gameObject);
+                if (Application.isPlaying) Destroy(gameObject);
+                else DestroyImmediate(gameObject);
                 return;
             }
 
@@ -84,7 +84,8 @@ namespace SpawnOfChaos.Minigames
             {
                 if (p != null && p != this && p != Instance)
                 {
-                    Destroy(p.gameObject);
+                    if (Application.isPlaying) Destroy(p.gameObject);
+                    else DestroyImmediate(p.gameObject);
                 }
             }
 
@@ -238,7 +239,7 @@ namespace SpawnOfChaos.Minigames
         {
             if (this == null || gameObject == null) return;
 
-            bool shouldShowHUD = !HUDManager.IsInMainMenu();
+            bool shouldShowHUD = HUDManager.IsGameplayActive();
 
             if (panelGO != null && panelGO.activeSelf != shouldShowHUD)
             {
@@ -364,10 +365,10 @@ namespace SpawnOfChaos.Minigames
             panelOutline.effectColor = new Color(0.12f, 0.18f, 0.32f, 0.65f);
             panelOutline.effectDistance = new Vector2(2f, 2f);
 
-            healthOrbUI = CreateOrbItem(panelRT, OrbType.Health, "HEALTH", new Color(0.95f, 0.2f, 0.35f, 1f), 60f, out healthValueText);
-            manaOrbUI = CreateOrbItem(panelRT, OrbType.Mana, "MANA", new Color(0f, 0.85f, 1f, 1f), 180f, out manaValueText);
-            currencyOrbUI = CreateOrbItem(panelRT, OrbType.Currency, "COINS", new Color(0.92f, 0.15f, 0.22f, 1f), 300f, out currencyValueText);
-            epOrbUI = CreateOrbItem(panelRT, OrbType.EP, "EXP", new Color(0.85f, 0.4f, 1f, 1f), 420f, out epValueText);
+            healthOrbUI = CreateOrbItem(panelRT, OrbType.Health, "HEALTH", new Color(1.0f, 0.25f, 0.38f, 1f), 60f, out healthValueText);
+            manaOrbUI = CreateOrbItem(panelRT, OrbType.Mana, "MANA", new Color(0.15f, 0.75f, 1.0f, 1f), 180f, out manaValueText);
+            currencyOrbUI = CreateOrbItem(panelRT, OrbType.Currency, "COINS", new Color(1.0f, 0.82f, 0.18f, 1f), 300f, out currencyValueText);
+            epOrbUI = CreateOrbItem(panelRT, OrbType.EP, "EXP", new Color(0.78f, 0.42f, 1.0f, 1f), 420f, out epValueText);
 
             // Level Up Banner (Center Screen)
             if (levelUpBanner == null)

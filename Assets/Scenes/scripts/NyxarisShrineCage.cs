@@ -160,7 +160,7 @@ public class NyxarisShrineCage : MonoBehaviour, IDamageable
         ParticleSystemRenderer psr = burstObj.GetComponent<ParticleSystemRenderer>();
 
         var main = ps.main;
-        main.duration = 0.5f;
+        // Removed main.duration assignment to prevent Unity runtime error
         main.loop = false;
         main.startLifetime = new ParticleSystem.MinMaxCurve(0.4f, 0.9f);
         main.startSpeed = new ParticleSystem.MinMaxCurve(4f, 9f);

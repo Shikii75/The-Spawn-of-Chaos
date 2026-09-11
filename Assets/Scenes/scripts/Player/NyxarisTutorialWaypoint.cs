@@ -27,6 +27,9 @@ public class NyxarisTutorialWaypoint : MonoBehaviour
     [Tooltip("Button prompt badge displayed below dialogue.")]
     public string promptBadgeText = "Press [A] / [D] to move";
 
+    [Tooltip("Expression animation played by Nyxaris (e.g. explaining, happy, excited, cutely_annoyed, neutral, thinking, confidently, pissed).")]
+    public string expressionAnimationKey = "explaining";
+
     [Header("Action Requirement")]
     public TutorialActionType requiredAction = TutorialActionType.MoveHorizontal;
 
@@ -57,8 +60,21 @@ public class NyxarisTutorialWaypoint : MonoBehaviour
         InferDefaultsFromName();
     }
 
-    public void InferDefaultsFromName()
+    public void InferDefaultsFromName(bool force = false)
     {
+        if (!force && !string.IsNullOrEmpty(dialogueText) && dialogueText != "Do I have to teach you how to walk?")
+        {
+            // Preserve user-edited dialogue in Inspector!
+            return;
+        }
+
+        if (TutorialDialogueConfig.TryGetEntry(gameObject.name, out var entry))
+        {
+            dialogueText = entry.dialogueText;
+            promptBadgeText = entry.promptBadgeText;
+            expressionAnimationKey = entry.expressionKey;
+        }
+
         string n = gameObject.name.ToLower().Replace(" ", "").Replace("_", "").Replace("'", "");
 
         // 1. Walking / Start

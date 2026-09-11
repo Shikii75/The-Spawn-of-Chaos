@@ -166,9 +166,19 @@ public static class NyxarisOrbSetupTool
             sealGO.transform.position = new Vector3(85f, 2.5f, 0f);
         }
 
-        NyxarisSealSequence seq = sealGO.GetComponent<NyxarisSealSequence>();
-        if (seq == null) seq = Undo.AddComponent<NyxarisSealSequence>(sealGO);
+        // Host the manager on dedicated Nyxaris_SealSequenceManager so seal visual transitions never stop the coroutine
+        GameObject managerGO = GameObject.Find("Nyxaris_SealSequenceManager");
+        if (managerGO == null) managerGO = new GameObject("Nyxaris_SealSequenceManager");
+        NyxarisSealSequence seq = managerGO.GetComponent<NyxarisSealSequence>();
+        if (seq == null) seq = Undo.AddComponent<NyxarisSealSequence>(managerGO);
         seq.intactSealGO = sealGO;
+
+        // Clean up any duplicate component attached directly to sealGO
+        NyxarisSealSequence oldOnSeal = sealGO.GetComponent<NyxarisSealSequence>();
+        if (oldOnSeal != null && oldOnSeal != seq)
+        {
+            Undo.DestroyObjectImmediate(oldOnSeal);
+        }
 
         // Auto-detect webs
         seq.coveringWebs.Clear();

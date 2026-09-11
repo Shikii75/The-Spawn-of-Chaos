@@ -47,7 +47,8 @@ public class BasePlayerBuilder
         AnimationClip attackClip = CreateClipFromFolder(FindSubfolder(baseFramesPath, "baseplayerpunches"), animSaveDir + "/basePlayerAttack.anim", 16f, false);
         AnimationClip shadowAttackClip = CreateClipFromFolder(FindSubfolder(baseFramesPath, "baseplayershadowattack"), animSaveDir + "/basePlayerShadowAttack.anim", 14f, false);
         AnimationClip blobClip = CreateClipFromFolder(blobFramesPath, animSaveDir + "/basePlayerBlob.anim", 12f, true);
-        AnimationClip dashClip = CreateClipFromFolder("Assets/Scenes/animations/frames/dashmage-827d61b5", animSaveDir + "/basePlayerDash.anim", 14f, false);
+        // Base player uses run animation for dash rather than mage dash
+        AnimationClip dashClip = runClip;
 
         // 2. Create AnimatorController
         string controllerPath = animSaveDir + "/BasePlayerController.controller";

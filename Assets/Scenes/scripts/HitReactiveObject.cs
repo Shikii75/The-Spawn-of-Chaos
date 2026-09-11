@@ -329,7 +329,7 @@ public class HitReactiveObject : MonoBehaviour, IDamageable
         ParticleSystemRenderer psr = dustObj.GetComponent<ParticleSystemRenderer>();
 
         var main = ps.main;
-        main.duration = 0.4f;
+        // Removed main.duration assignment to prevent Unity runtime error
         main.loop = false;
         main.startLifetime = new ParticleSystem.MinMaxCurve(0.3f, 0.6f);
         main.startSpeed = new ParticleSystem.MinMaxCurve(1f, 3.5f);

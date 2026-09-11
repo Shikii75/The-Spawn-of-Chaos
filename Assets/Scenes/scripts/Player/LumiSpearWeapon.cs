@@ -82,6 +82,13 @@ public class LumiSpearWeapon : MonoBehaviour
         }
     }
 
+        public bool IsSpearDisabledInCurrentScene()
+    {
+        string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        return string.Equals(sceneName, "TutorialScene", System.StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(sceneName, "Tutorial", System.StringComparison.OrdinalIgnoreCase);
+    }
+
     void Awake()
     {
         if (Instance == null)
@@ -291,6 +298,21 @@ public class LumiSpearWeapon : MonoBehaviour
             FindReferences();
         }
 
+        // Completely hide and disable spear in Tutorial Scene
+        if (IsSpearDisabledInCurrentScene())
+        {
+            if (spearRenderer != null && spearRenderer.enabled) spearRenderer.enabled = false;
+            if (platformCollider != null && platformCollider.enabled) platformCollider.enabled = false;
+            if (platformEffector != null && platformEffector.enabled) platformEffector.enabled = false;
+            if (tetherLineRenderer != null && tetherLineRenderer.enabled) tetherLineRenderer.enabled = false;
+            if (moteParticleSystem != null && moteParticleSystem.isPlaying) moteParticleSystem.Stop();
+            return;
+        }
+        else
+        {
+            if (spearRenderer != null && !spearRenderer.enabled) spearRenderer.enabled = true;
+        }
+
         if (spearRenderer != null && spearRenderer.sprite == null)
         {
             LoadSpearSprite();
@@ -365,14 +387,15 @@ public class LumiSpearWeapon : MonoBehaviour
     // --- State 1: Independent Floating beside Lumi ---
     void UpdateIndependentFloating()
     {
-        Vector3 basePos = (lumi != null) ? lumi.transform.position : (playerTransform != null ? playerTransform.position : Vector3.zero);
+        // Float comfortably in front of the player with dedicated space
+        Vector3 basePos = (playerTransform != null) ? playerTransform.position : ((lumi != null) ? lumi.transform.position : Vector3.zero);
         float facing = (playerTransform != null && playerTransform.localScale.x < 0) ? -1f : 1f;
 
         // Independent hovering physics with sinusoidal wave
         float bobY = Mathf.Sin(Time.time * floatFrequency) * floatAmplitude;
         float bobX = Mathf.Cos(Time.time * (floatFrequency * 0.6f)) * (floatAmplitude * 0.5f);
 
-        Vector3 targetPos = basePos + new Vector3(independentOffset.x * facing + bobX, independentOffset.y + bobY, 0f);
+        Vector3 targetPos = basePos + new Vector3((1.8f + bobX) * facing, 0.6f + bobY, 0f);
         transform.position = Vector3.Lerp(transform.position, targetPos, Time.deltaTime * 12f);
 
         // Smoothly orient towards aim direction (safe from inf/NaN on touch/simulator)
@@ -585,8 +608,9 @@ public class LumiSpearWeapon : MonoBehaviour
             }
         }
 
-        // 2. Blast Player in Vertical Super Jump (22 units/s)!
-        if (playerRb != null)
+        // 2. Blast Player in Vertical Super Jump (22 units/s) ONLY IF MOUNTED on the spear
+        bool isMounted = (playerTransform != null && Vector2.Distance(playerTransform.position, transform.position + Vector3.up * 0.3f) < 1.6f);
+        if (isMounted && playerRb != null)
         {
             playerRb.linearVelocity = new Vector2(playerRb.linearVelocity.x * 0.5f, superLaunchVelocity);
 
@@ -662,7 +686,7 @@ public class LumiSpearWeapon : MonoBehaviour
         main.startSize = 0.28f * scale;
         main.startSpeed = 7f * scale;
         main.startLifetime = 0.5f;
-        main.duration = 0.5f;
+        // Removed main.duration assignment to prevent Unity runtime error
         main.loop = false;
 
         var emission = ps.emission;
@@ -826,7 +850,7 @@ public class LumiSpearWeapon : MonoBehaviour
         main.startSize = 0.45f;
         main.startSpeed = 16f;
         main.startLifetime = 0.22f;
-        main.duration = 0.22f;
+        // Removed main.duration assignment to prevent Unity runtime error
         main.loop = false;
 
         var emission = ps.emission;
@@ -866,42 +890,52 @@ public class LumiSpearWeapon : MonoBehaviour
         float defaultFacing = (playerTransform != null && playerTransform.localScale.x < 0f) ? -1f : 1f;
         Vector2 defaultDir = new Vector2(defaultFacing, 0f);
 
-        if (Application.isMobilePlatform)
-        {
-            return defaultDir;
-        }
-
-        Vector3 mPos = Input.mousePosition;
-        if (float.IsInfinity(mPos.x) || float.IsInfinity(mPos.y) || float.IsNaN(mPos.x) || float.IsNaN(mPos.y))
-        {
-            return defaultDir;
-        }
-
-        if (mPos.x < 0f || mPos.x > Screen.width || mPos.y < 0f || mPos.y > Screen.height)
-        {
-            return defaultDir;
-        }
-
         Camera cam = Camera.main;
         if (cam == null) return defaultDir;
 
-        try
+        // 1. Mouse / Cursor Aiming (PC and Editor)
+        Vector3 mPos = Input.mousePosition;
+        if (!float.IsNaN(mPos.x) && !float.IsInfinity(mPos.x) && !float.IsNaN(mPos.y) && !float.IsInfinity(mPos.y))
         {
-            Vector3 worldPos = cam.ScreenToWorldPoint(new Vector3(mPos.x, mPos.y, -cam.transform.position.z));
-            if (float.IsNaN(worldPos.x) || float.IsInfinity(worldPos.x))
+            try
             {
-                return defaultDir;
+                Vector3 screenPoint = cam.orthographic ? new Vector3(mPos.x, mPos.y, 0f) : new Vector3(mPos.x, mPos.y, -cam.transform.position.z);
+                Vector3 mouseWorld = cam.ScreenToWorldPoint(screenPoint);
+                mouseWorld.z = 0f;
+                Vector2 delta = (Vector2)mouseWorld - (Vector2)transform.position;
+                if (delta.sqrMagnitude > 0.02f)
+                {
+                    return delta.normalized;
+                }
             }
-            worldPos.z = 0f;
-            Vector2 delta = (Vector2)worldPos - (Vector2)transform.position;
-            if (delta.sqrMagnitude > 0.01f)
-            {
-                return delta.normalized;
-            }
+            catch (System.Exception) { }
         }
-        catch (System.Exception)
+
+        // 2. Touch Aiming (if touching game area and not over UI buttons)
+        if (Input.touchCount > 0)
         {
-            return defaultDir;
+            for (int i = 0; i < Input.touchCount; i++)
+            {
+                Touch touch = Input.GetTouch(i);
+                if (UnityEngine.EventSystems.EventSystem.current != null &&
+                    UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject(touch.fingerId))
+                {
+                    continue; // Skip touches on UI controls
+                }
+
+                try
+                {
+                    Vector3 screenPoint = cam.orthographic ? new Vector3(touch.position.x, touch.position.y, 0f) : new Vector3(touch.position.x, touch.position.y, -cam.transform.position.z);
+                    Vector3 touchWorld = cam.ScreenToWorldPoint(screenPoint);
+                    touchWorld.z = 0f;
+                    Vector2 delta = (Vector2)touchWorld - (Vector2)transform.position;
+                    if (delta.sqrMagnitude > 0.02f)
+                    {
+                        return delta.normalized;
+                    }
+                }
+                catch (System.Exception) { }
+            }
         }
 
         return defaultDir;

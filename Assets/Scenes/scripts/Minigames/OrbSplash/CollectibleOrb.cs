@@ -15,8 +15,7 @@ namespace SpawnOfChaos.Entities
     /// - Distinct procedural 2D shapes (Heart, Arcane Tear, Diamond Coin, Cosmic Crystal) and scale variations.
     /// - Real-time stat restoration & HUD liquid splash synchronization.
     /// </summary>
-    [ExecuteAlways]
-    [RequireComponent(typeof(SpriteRenderer), typeof(CircleCollider2D))]
+        [RequireComponent(typeof(SpriteRenderer), typeof(CircleCollider2D))]
     public class CollectibleOrb : MonoBehaviour
     {
         public OrbType orbType = OrbType.Currency;
@@ -82,6 +81,7 @@ namespace SpawnOfChaos.Entities
 
         void Update()
         {
+            if (!Application.isPlaying) return;
             if (HUDManager.IsInMainMenu()) return;
 
             if (playerTransform == null)
@@ -351,12 +351,20 @@ namespace SpawnOfChaos.Entities
             Destroy(target);
         }
 
+        private static readonly System.Collections.Generic.Dictionary<OrbType, Sprite> cachedSprites = new System.Collections.Generic.Dictionary<OrbType, Sprite>();
+
         /// <summary>
         /// Generates distinct procedural glowing shapes (Heart, Arcane Tear, Diamond Coin, Cosmic Crystal).
         /// </summary>
         private void EnsureProceduralSprite()
         {
             if (spriteRenderer.sprite != null) return;
+
+            if (cachedSprites.TryGetValue(orbType, out Sprite cached) && cached != null)
+            {
+                spriteRenderer.sprite = cached;
+                return;
+            }
 
             int size = 64;
             Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
@@ -437,7 +445,9 @@ namespace SpawnOfChaos.Entities
             }
 
             tex.Apply();
-            spriteRenderer.sprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 32);
+            Sprite newSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 32);
+            cachedSprites[orbType] = newSprite;
+            spriteRenderer.sprite = newSprite;
         }
 
         public static Color32 GetOrbColor(OrbType type)

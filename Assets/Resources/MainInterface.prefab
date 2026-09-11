@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 8113434422962297862}
   - component: {fileID: 1306827552678031015}
   - component: {fileID: 689148594025504230}
+  - component: {fileID: 900100000000000001}
   m_Layer: 5
   m_Name: MainInterface
   m_TagString: Untagged
@@ -54,14 +55,14 @@ Canvas:
   m_PlaneDistance: 100
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
-  m_OverrideSorting: 0
+  m_OverrideSorting: 1
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 999
   m_TargetDisplay: 0
 --- !u!114 &1306827552678031015
 MonoBehaviour:
@@ -1457,7 +1458,7 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 999
   m_MaskInteraction: 0
   m_Sprite: {fileID: 0}
   m_Color: {r: 0, g: 0, b: 0, a: 1}
@@ -1480,6 +1481,7 @@ GameObject:
   - component: {fileID: 2449613348032064375}
   - component: {fileID: 5159085388524038804}
   - component: {fileID: 8897377226331784057}
+  - component: {fileID: 900100000000000002}
   m_Layer: 5
   m_Name: Portrait
   m_TagString: Untagged
@@ -1699,3 +1701,52 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+
+--- !u!114 &900100000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 53763348469173805}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 20188a5b382354f4089a72e79feb6b66, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
+  mainInterfacePanel: {fileID: 53763348469173805}
+  dialogueText: {fileID: 8818773378169808579}
+  messageInput: {fileID: 7634669083918819836}
+  portrait: {fileID: 8897377226331784057}
+  frameAnimator: {fileID: 900100000000000002}
+  neutralSprite: {fileID: -137972784495506535, guid: 0adce7644d21286439240610135c28e2, type: 3}
+  explainingSprite: {fileID: -9222455528075658264, guid: 3e0eca7e70081f94f80ad30e7329c626, type: 3}
+  cuteSprite: {fileID: 8736220602137757637, guid: b11184409aeed1147be98c009d7154b9, type: 3}
+  neutralSprites: []
+  explainingSprites: []
+  thinkingSprites: []
+  angrySprites: []
+  cuteSprites: []
+  motherlySprites: []
+  kindSprites: []
+  currentMode: idle
+  currentTrust: 0.5
+  apiHost: http://127.0.0.1:5000/nyxaris
+  apiHostFallback: http://127.0.0.1:5001/nyxaris
+
+--- !u!114 &900100000000000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8144227588824320967}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86f299ba86130774cb18baafddbe4a05, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NyxarisFrameAnimator
+  targetImage: {fileID: 8897377226331784057}
+  defaultFPS: 20
+  defaultIdleAnimation: nyxarisnuetral-411247bb
+  sequences: []

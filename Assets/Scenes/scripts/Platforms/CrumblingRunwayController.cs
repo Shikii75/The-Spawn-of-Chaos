@@ -111,12 +111,12 @@ namespace SpawnOfChaos.Platforms
                     if (r.transform.position.y > maxY) maxY = r.transform.position.y;
                 }
 
-                // Place trigger at the runway entrance (leftmost edge)
-                Vector3 worldCenter = new Vector3(minX - 0.5f, (minY + maxY) * 0.5f + 1.5f, 0f);
+                // Place trigger ON the rocks (entrance + 1.2f) so it only collapses AFTER player mounts
+                Vector3 worldCenter = new Vector3(minX + 1.2f, (minY + maxY) * 0.5f + 1.5f, 0f);
                 Vector3 localCenter = transform.InverseTransformPoint(worldCenter);
 
                 triggerZone.offset = new Vector2(localCenter.x, localCenter.y);
-                triggerZone.size = new Vector2(3.5f, 5.0f);
+                triggerZone.size = new Vector2(2.0f, 5.0f);
             }
         }
 

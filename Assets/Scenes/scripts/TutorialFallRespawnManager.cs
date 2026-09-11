@@ -18,9 +18,15 @@ namespace SpawnOfChaos.Systems
         [Tooltip("Active respawn location when the player falls.")]
         public Vector3 currentCheckpoint = new Vector3(-2887.0f, 498.5f, 0f);
 
+        [Header("Dynamic Safe Platform Tracking")]
+        [Tooltip("Last verified safe grounded platform position.")]
+        public Vector3 lastSafePlatformPosition = new Vector3(-2887.0f, 498.5f, 0f);
+        private float safePositionRecordTimer = 0f;
+        private Vector3 bufferedSafePosition;
+
         [Header("Fall Detection Settings")]
         [Tooltip("Number of continuous seconds falling downward before triggering respawn.")]
-        public float continuousFallTimeLimit = 3.0f;
+        public float continuousFallTimeLimit = 1.8f;
 
         [Tooltip("Absolute Y world position below which the player is instantly respawned.")]
         public float bottomPitYThreshold = 475.0f;
@@ -39,6 +45,7 @@ namespace SpawnOfChaos.Systems
         private Transform playerTransform;
         private Rigidbody2D playerRb;
         private SpriteRenderer playerSr;
+        private move playerMove;
 
         private void Awake()
         {
@@ -55,6 +62,11 @@ namespace SpawnOfChaos.Systems
         private void Start()
         {
             FindPlayerComponents();
+            if (playerTransform != null)
+            {
+                lastSafePlatformPosition = playerTransform.position;
+                bufferedSafePosition = playerTransform.position;
+            }
         }
 
         private void Update()
@@ -67,6 +79,9 @@ namespace SpawnOfChaos.Systems
                 if (playerTransform == null) return;
             }
 
+            // Track safe grounded platform position
+            UpdateSafePlatformTracking();
+
             // Check if player has fallen below absolute pit bottom
             if (playerTransform.position.y < bottomPitYThreshold)
             {
@@ -74,7 +89,7 @@ namespace SpawnOfChaos.Systems
                 return;
             }
 
-            // Check continuous downward fall velocity (linearVelocity.y < -1f)
+            // Check continuous downward fall velocity (linearVelocity.y < -1.5f)
             float vertVel = playerRb.linearVelocity.y;
             if (vertVel < -1.5f)
             {
@@ -87,6 +102,36 @@ namespace SpawnOfChaos.Systems
             else
             {
                 currentFallTimer = 0f;
+            }
+        }
+
+        private void UpdateSafePlatformTracking()
+        {
+            if (playerMove == null && playerTransform != null)
+            {
+                playerMove = playerTransform.GetComponent<move>();
+            }
+
+            bool isGrounded = playerMove != null ? playerMove.IsGrounded : (Mathf.Abs(playerRb.linearVelocity.y) < 0.2f);
+
+            // Verify solid ground directly underneath player feet
+            if (isGrounded && Mathf.Abs(playerRb.linearVelocity.y) < 0.4f)
+            {
+                int groundMask = ~LayerMask.GetMask("Player", "Ignore Raycast");
+                Vector2 origin = (Vector2)playerTransform.position + Vector2.up * 0.2f;
+                RaycastHit2D hit = Physics2D.Raycast(origin, Vector2.down, 1.2f, groundMask);
+
+                if (hit.collider != null && !hit.collider.isTrigger && !hit.collider.CompareTag("enemy"))
+                {
+                    safePositionRecordTimer += Time.deltaTime;
+                    // Buffer position every 0.25s while safely grounded
+                    if (safePositionRecordTimer >= 0.25f)
+                    {
+                        safePositionRecordTimer = 0f;
+                        lastSafePlatformPosition = bufferedSafePosition;
+                        bufferedSafePosition = new Vector3(playerTransform.position.x, hit.point.y + 0.6f, 0f);
+                    }
+                }
             }
         }
 
@@ -126,7 +171,9 @@ namespace SpawnOfChaos.Systems
 
             if (playerTransform != null)
             {
-                playerTransform.position = currentCheckpoint;
+                Vector3 targetSpawn = (lastSafePlatformPosition != Vector3.zero) ? lastSafePlatformPosition : currentCheckpoint;
+                playerTransform.position = targetSpawn;
+                Debug.Log($"<color=#55FF88>[TutorialFallRespawnManager] Respawned player on safe platform at: {targetSpawn}</color>");
             }
 
             // Reset crumbling runway if not cleared

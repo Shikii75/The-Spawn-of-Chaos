@@ -238,6 +238,39 @@ public static class AIEditorBridge
                     EditorSceneManager.OpenScene(activeScenePath);
                     return new CommandResponse { status = "success", message = "Active scene reloaded from disk." };
 
+                case "openscene":
+                    string sPath = cmd.targetName;
+                    if (!sPath.EndsWith(".unity")) sPath = "Assets/Scenes/" + sPath + ".unity";
+                    if (!sPath.StartsWith("Assets/")) sPath = "Assets/Scenes/" + sPath;
+                    EditorSceneManager.OpenScene(sPath);
+                    return new CommandResponse { status = "success", message = $"Opened scene '{sPath}' successfully." };
+
+                case "check_font_load":
+                    Font fg = Resources.Load<Font>("Fonts/AncientGothic");
+                    Font fp = Resources.Load<Font>("Fonts/AncientPapyrus");
+                    Font fs = Resources.Load<Font>("Fonts/AncientSerif");
+                    return new CommandResponse {
+                        status = "success",
+                        message = $"Gothic: {(fg!=null?fg.name:"null")}, Papyrus: {(fp!=null?fp.name:"null")}, Serif: {(fs!=null?fs.name:"null")}"
+                    };
+
+                case "bake_fonts":
+                    string[] bFonts = new string[] { "AncientGothic", "AncientPapyrus", "AncientSerif" };
+                    int bakedCount = 0;
+                    foreach (var fName in bFonts)
+                    {
+                        Font f = AssetDatabase.LoadAssetAtPath<Font>($"Assets/Resources/Fonts/{fName}.ttf");
+                        if (f != null)
+                        {
+                            Selection.activeObject = f;
+                            EditorApplication.ExecuteMenuItem("Assets/Create/TextMeshPro/Font Asset");
+                            bakedCount++;
+                        }
+                    }
+                    AssetDatabase.SaveAssets();
+                    AssetDatabase.Refresh();
+                    return new CommandResponse { status = "success", message = $"Executed font asset generation for {bakedCount} fonts." };
+
                 case "toggleplay":
                     EditorApplication.isPlaying = !EditorApplication.isPlaying;
                     return new CommandResponse { status = "success", message = $"Play mode toggled. IsPlaying: {EditorApplication.isPlaying}" };

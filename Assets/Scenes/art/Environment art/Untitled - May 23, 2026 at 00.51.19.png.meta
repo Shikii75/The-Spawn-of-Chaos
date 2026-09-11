@@ -100,7 +100,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Untitled - May 23, 2026 at 00.51.19_0
+      name: BUSH
       rect:
         serializedVersion: 2
         x: 28
@@ -108,7 +108,7 @@ TextureImporter:
         width: 502
         height: 319
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -121,11 +121,33 @@ TextureImporter:
       indices: 
       edges: []
       weights: []
+    - serializedVersion: 2
+      name: Untitled - May 23, 2026 at 00.51.19_0
+      rect:
+        serializedVersion: 2
+        x: 37
+        y: 341
+        width: 496
+        height: 269
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 37f6d9c7cfcc4b5499f7ddf96a450292
+      internalID: -1011301480
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
     outline: []
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: df4ec9455df485c4da6fa6c97dc9313d
     internalID: 0
     vertices: []
     indices: 
@@ -135,7 +157,8 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Untitled - May 23, 2026 at 00.51.19_0: -2831835070717454277
+      BUSH: -2831835070717454277
+      Untitled - May 23, 2026 at 00.51.19_0: -1011301480
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

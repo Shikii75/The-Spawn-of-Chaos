@@ -257,8 +257,7 @@ public class HUDManager : MonoBehaviour
 
     public void UpdateVisibility()
     {
-        bool inMenu = IsInMainMenu();
-        bool shouldShowHUD = !inMenu;
+        bool shouldShowHUD = IsGameplayActive();
 
         if (canvas != null)
         {

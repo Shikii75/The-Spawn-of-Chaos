@@ -465,10 +465,10 @@ namespace SpawnOfChaos.Minigames
         {
             switch (type)
             {
-                case OrbType.Health: return new Color32(18, 14, 22, 250);   // Void Black Liquid
-                case OrbType.Mana: return new Color32(0, 180, 255, 250);     // Electric Neon Blue
-                case OrbType.Currency: return new Color32(145, 10, 25, 250); // Dark Blood Red
-                case OrbType.EP: return new Color32(65, 12, 105, 250);      // Dark Mystic Purple
+                case OrbType.Health: return new Color32(205, 22, 50, 255);   // Vibrant Ruby Blood Red
+                case OrbType.Mana: return new Color32(15, 140, 255, 255);    // Luminous Sapphire Azure
+                case OrbType.Currency: return new Color32(255, 185, 25, 255);// Radiant Molten Amber Gold
+                case OrbType.EP: return new Color32(150, 45, 240, 255);      // Radiant Cosmic Amethyst
                 default: return new Color32(255, 255, 255, 255);
             }
         }
@@ -477,10 +477,10 @@ namespace SpawnOfChaos.Minigames
         {
             switch (type)
             {
-                case OrbType.Health: return new Color32(8, 6, 12, 255);     // Abyssal Deep Black
-                case OrbType.Mana: return new Color32(0, 70, 160, 255);     // Deep Oceanic Blue
-                case OrbType.Currency: return new Color32(65, 0, 12, 255);  // Deep Abyssal Crimson
-                case OrbType.EP: return new Color32(28, 4, 50, 255);       // Deep Abyssal Violet
+                case OrbType.Health: return new Color32(105, 8, 22, 255);    // Deep Garnet Crimson
+                case OrbType.Mana: return new Color32(8, 55, 165, 255);      // Deep Abyssal Blue
+                case OrbType.Currency: return new Color32(165, 95, 10, 255); // Burnished Bronze Amber
+                case OrbType.EP: return new Color32(70, 15, 130, 255);       // Deep Cosmic Violet
                 default: return new Color32(100, 100, 100, 255);
             }
         }
@@ -489,10 +489,10 @@ namespace SpawnOfChaos.Minigames
         {
             switch (type)
             {
-                case OrbType.Health: return new Color32(65, 18, 30, 240);   // Obsidian Crimson Sheen
-                case OrbType.Mana: return new Color32(80, 240, 255, 250);   // Ultra Neon Azure
-                case OrbType.Currency: return new Color32(235, 40, 60, 240); // Ruby Flame Highlight
-                case OrbType.EP: return new Color32(165, 45, 245, 240);     // Luminous Cosmic Violet
+                case OrbType.Health: return new Color32(255, 85, 115, 250);  // Brilliant Ruby Flare
+                case OrbType.Mana: return new Color32(110, 235, 255, 250);   // Electric Azure Sparkle
+                case OrbType.Currency: return new Color32(255, 240, 125, 250);// Shimmering Gold Sunburst
+                case OrbType.EP: return new Color32(220, 125, 255, 250);     // Cosmic Supernova Flare
                 default: return new Color32(255, 255, 255, 255);
             }
         }
@@ -501,10 +501,10 @@ namespace SpawnOfChaos.Minigames
         {
             switch (type)
             {
-                case OrbType.Health: return new Color32(120, 25, 45, 255);  // Eerie Crimson Foam Mist
-                case OrbType.Mana: return new Color32(200, 250, 255, 255);  // Neon Frost White
-                case OrbType.Currency: return new Color32(255, 130, 100, 255);// Amber-Red Crest Foam
-                case OrbType.EP: return new Color32(210, 140, 255, 255);    // Lavender Cosmic Foam
+                case OrbType.Health: return new Color32(255, 185, 205, 255); // Pale Ruby Crest Foam
+                case OrbType.Mana: return new Color32(215, 250, 255, 255);   // Frost Cyan Wave Crest
+                case OrbType.Currency: return new Color32(255, 248, 195, 255);// Luminous Golden Froth
+                case OrbType.EP: return new Color32(245, 215, 255, 255);     // Stardust Lavender Foam
                 default: return new Color32(255, 255, 255, 255);
             }
         }

@@ -226,7 +226,7 @@ public class PlayerCombatJuice : MonoBehaviour
         psRenderer.material = new Material(Shader.Find("Sprites/Default"));
 
         var main = ps.main;
-        main.duration = 0.22f;
+        // Removed main.duration assignment to prevent Unity runtime error
         main.loop = false;
         main.startLifetime = isHeavy ? 0.26f : 0.18f;
         main.startSpeed = isHeavy ? 9.5f : 6.0f;
@@ -298,7 +298,7 @@ public class PlayerCombatJuice : MonoBehaviour
         psRenderer.material = new Material(Shader.Find("Sprites/Default"));
 
         var main = ps.main;
-        main.duration = 0.25f;
+        // Removed main.duration assignment to prevent Unity runtime error
         main.loop = false;
         main.startLifetime = isHeavy ? 0.28f : 0.18f;
         main.startSpeed = isHeavy ? 12f : 7f;

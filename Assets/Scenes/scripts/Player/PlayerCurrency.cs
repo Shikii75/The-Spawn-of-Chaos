@@ -99,7 +99,7 @@ public class PlayerCurrency : MonoBehaviour
             // Ignore key if dialogue, shop, or chat panels are open
             if (NPCDialogueUI.Instance != null && NPCDialogueUI.Instance.IsDialogueActive) return;
             if (ShopUI.Instance != null && ShopUI.Instance.IsShopActive) return;
-            if (NyxarisManager.Instance != null && NyxarisManager.Instance.mainInterfacePanel != null && NyxarisManager.Instance.mainInterfacePanel.activeSelf) return;
+            if (NyxarisManager.IsChatActive) return;
 
             UsePotion();
         }

@@ -40,6 +40,8 @@ public class PlayerSceneSpawner : MonoBehaviour
         PlayerSpawnPointManager.targetSpawnPointName = "";
         PlayerSpawnPointManager.isRespawning = false;
 
+        bool isTutorialScene = sceneName.Equals("TutorialScene", System.StringComparison.OrdinalIgnoreCase);
+
         // --- Step 1: Find the persistent player ---
         GameObject player = FindPersistentPlayer();
         Debug.Log($"[PlayerSceneSpawner] FindPersistentPlayer returned: {(player != null ? player.name : "NULL")}");
@@ -47,58 +49,95 @@ public class PlayerSceneSpawner : MonoBehaviour
         // --- Step 2: Clean up duplicates ---
         CleanupDuplicatePlayers(ref player);
 
-        // --- Step 3: If no explicit door transition spawn point, ALWAYS leave player at editor position! ---
-        if (string.IsNullOrEmpty(targetName) && player != null)
+        // In TutorialScene, enforce BasePlayer. If existing player is the Mage, remove it so BasePlayer spawns fresh!
+        if (isTutorialScene && player != null && !player.name.Contains("BasePlayer"))
         {
-            Debug.Log($"[PlayerSceneSpawner] Preserving player editor position at {player.transform.position}");
-            if (isRespawning)
-            {
-                Health ph = player.GetComponent<Health>();
-                if (ph != null) ph.Resurrect();
-            }
-            ActivateAndSetupPlayer(player);
-            return;
+            Debug.Log($"[PlayerSceneSpawner] Clearing non-BasePlayer '{player.name}' to start Tutorial with BasePlayer.");
+            Destroy(player);
+            player = null;
         }
 
-        // --- Step 4: Resolve spawn point name ---
+        // --- Step 3: Resolve spawn point name & position ---
         if (string.IsNullOrEmpty(targetName))
         {
-            targetName = defaultSpawnPointName;
+            targetName = isTutorialScene ? "DefaultSpawnPoint" : defaultSpawnPointName;
             Debug.Log($"[PlayerSceneSpawner] Using default spawn point: '{targetName}'");
         }
 
-        // --- Step 5: Find spawn point position ---
         Vector3 spawnPosition = Vector3.zero;
-        GameObject spawnPoint = GameObject.Find(targetName);
-
-        if (spawnPoint != null)
+        bool foundSpawnPoint = false;
+        if (!string.IsNullOrEmpty(targetName))
         {
-            spawnPosition = spawnPoint.transform.position;
-            Debug.Log($"[PlayerSceneSpawner] Found spawn point '{targetName}' at position {spawnPosition}");
-        }
-        else
-        {
-            Debug.LogWarning($"[PlayerSceneSpawner] Spawn point '{targetName}' NOT FOUND in scene '{sceneName}'. Using origin.");
-        }
-
-        // --- Step 6: Instantiate or transport ---
-        if (player == null)
-        {
-            if (playerPrefab != null)
+            GameObject spawnPoint = GameObject.Find(targetName);
+            if (spawnPoint != null)
             {
-                player = Instantiate(playerPrefab, spawnPosition, Quaternion.identity);
-                Debug.Log($"[PlayerSceneSpawner] INSTANTIATED new player at '{targetName}' pos={spawnPosition}");
+                spawnPosition = spawnPoint.transform.position;
+                foundSpawnPoint = true;
+                Debug.Log($"[PlayerSceneSpawner] Found spawn point '{targetName}' at position {spawnPosition}");
+            }
+        }
+
+        // Fallback search for DefaultSpawnPoint or StartScene if initial target not found
+        if (!foundSpawnPoint)
+        {
+            GameObject startSceneObj = GameObject.Find("StartScene");
+            if (isTutorialScene && startSceneObj != null)
+            {
+                spawnPosition = startSceneObj.transform.position + Vector3.up * 2f;
+                foundSpawnPoint = true;
+                Debug.Log($"[PlayerSceneSpawner] Snapped directly to StartScene at {spawnPosition}");
             }
             else
             {
-                Debug.LogError("[PlayerSceneSpawner] CRITICAL: No player found and no playerPrefab assigned! Player will be missing!");
+                GameObject defSp = GameObject.Find("DefaultSpawnPoint");
+                if (defSp != null)
+                {
+                    spawnPosition = defSp.transform.position;
+                    foundSpawnPoint = true;
+                    Debug.Log($"[PlayerSceneSpawner] Snapped to DefaultSpawnPoint at {spawnPosition}");
+                }
+                else if (isTutorialScene)
+                {
+                    spawnPosition = new Vector3(-3378.2f, 518.5f, 0f);
+                    foundSpawnPoint = true;
+                }
+            }
+        }
+
+        // --- Step 4: Instantiate or transport ---
+        if (player == null)
+        {
+            GameObject prefabToUse = playerPrefab;
+            if (prefabToUse == null || (isTutorialScene && !prefabToUse.name.Contains("BasePlayer")))
+            {
+                prefabToUse = Resources.Load<GameObject>("Prefabs/BasePlayer");
+#if UNITY_EDITOR
+                if (prefabToUse == null)
+                {
+                    prefabToUse = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/BasePlayer.prefab");
+                }
+#endif
+            }
+
+            if (prefabToUse != null)
+            {
+                player = Instantiate(prefabToUse, spawnPosition, Quaternion.identity);
+                Debug.Log($"[PlayerSceneSpawner] INSTANTIATED player '{prefabToUse.name}' at pos={spawnPosition}");
+            }
+            else
+            {
+                Debug.LogError("[PlayerSceneSpawner] CRITICAL: No playerPrefab found!");
                 return;
             }
         }
         else
         {
-            player.transform.position = spawnPosition;
-            Debug.Log($"[PlayerSceneSpawner] TRANSPORTED existing player '{player.name}' to '{targetName}' pos={spawnPosition}");
+            // Transport player to the spawn point
+            if (foundSpawnPoint)
+            {
+                player.transform.position = spawnPosition;
+                Debug.Log($"[PlayerSceneSpawner] TRANSPORTED existing player '{player.name}' to '{targetName}' pos={spawnPosition}");
+            }
         }
 
         // Reset health if respawning (player died and is being resurrected)

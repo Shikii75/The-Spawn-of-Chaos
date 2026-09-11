@@ -169,7 +169,7 @@ public class NPCInteractable : MonoBehaviour
     {
         bool dialogueActive = (NPCDialogueUI.Instance != null && NPCDialogueUI.Instance.IsDialogueActive);
         bool shopActive = (ShopUI.Instance != null && ShopUI.Instance.IsShopActive);
-        bool nyxarisActive = (NyxarisManager.Instance != null && NyxarisManager.Instance.mainInterfacePanel != null && NyxarisManager.Instance.mainInterfacePanel.activeSelf);
+        bool nyxarisActive = NyxarisManager.IsChatActive;
         return dialogueActive || shopActive || nyxarisActive;
     }
 }

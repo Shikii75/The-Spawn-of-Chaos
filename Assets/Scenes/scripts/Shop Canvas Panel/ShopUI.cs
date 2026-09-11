@@ -1,11 +1,13 @@
-using SpawnOfChaos.Weapons;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using SpawnOfChaos.Weapons;
 
 /// <summary>
-/// Shop UI that builds its entire Canvas and panel hierarchy from code in Awake().
-/// No Inspector references needed for UI — everything is created programmatically via UIFactory.
+/// Full-Screen Drake-Themed Shop UI with Weapon Grid & Mastery Arsenal,
+/// matching the sleek cyber-gothic glassmorphic aesthetic of the Title and Pause screens.
+/// Procedurally built at runtime via UIFactory.
 /// </summary>
 public class ShopUI : MonoBehaviour
 {
@@ -14,12 +16,42 @@ public class ShopUI : MonoBehaviour
     [Header("Shop System Connection")]
     public ShopSystem shopSystem;
 
-    // ── Private UI references (built from code) ──
+    // UI Root References
     private GameObject shopPanel;
     private TextMeshProUGUI currencyText;
-    private Transform itemListContainer;
+    private TextMeshProUGUI potionText;
+
+    // Tabs & Containers
+    private GameObject weaponsTabGo;
+    private GameObject suppliesTabGo;
+    private Button weaponsTabBtn;
+    private Button suppliesTabBtn;
+    private Transform weaponGridContainer;
+    private Transform suppliesListContainer;
+
+    private enum Tab { Weapons, Supplies }
+    private Tab currentTab = Tab.Weapons;
 
     public bool IsShopActive => shopPanel != null && shopPanel.activeSelf;
+
+    // Drake / Cyber-Gothic Void Palette
+    private static readonly Color VoidOverlay       = new Color(0.015f, 0.025f, 0.06f, 0.92f);
+    private static readonly Color PanelVoidBg       = new Color(10f/255f, 9f/255f, 20f/255f, 0.98f);
+    private static readonly Color HeaderBg          = new Color(7f/255f, 6f/255f, 15f/255f, 1.0f);
+    private static readonly Color CardVoidBg        = new Color(17f/255f, 15f/255f, 32f/255f, 0.96f);
+    private static readonly Color CardEquippedBg    = new Color(14f/255f, 28f/255f, 42f/255f, 0.98f);
+    private static readonly Color NeonCyan          = new Color(0.34f, 0.88f, 1.0f, 1.0f);
+    private static readonly Color NeonCyanDim       = new Color(0.34f, 0.88f, 1.0f, 0.35f);
+    private static readonly Color ArcaneViolet      = new Color(0.66f, 0.33f, 0.97f, 1.0f);
+    private static readonly Color ArcaneVioletDim   = new Color(0.66f, 0.33f, 0.97f, 0.35f);
+    private static readonly Color DrakeGold         = new Color(0.98f, 0.78f, 0.16f, 1.0f);
+    private static readonly Color CrimsonFlame      = new Color(0.96f, 0.25f, 0.37f, 1.0f);
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatic()
+    {
+        Instance = null;
+    }
 
     void Awake()
     {
@@ -29,10 +61,12 @@ public class ShopUI : MonoBehaviour
         }
         else
         {
-            Destroy(gameObject);
+            if (Application.isPlaying) Destroy(gameObject);
+            else DestroyImmediate(gameObject);
             return;
         }
 
+        WeaponManager.EnsureExists();
         BuildUI();
     }
 
@@ -47,6 +81,8 @@ public class ShopUI : MonoBehaviour
         {
             shopSystem = FindFirstObjectByType<ShopSystem>() ?? GetComponent<ShopSystem>() ?? gameObject.AddComponent<ShopSystem>();
         }
+
+        WeaponManager.EnsureExists();
     }
 
     void Update()
@@ -55,77 +91,295 @@ public class ShopUI : MonoBehaviour
 
         UpdateCurrencyUI();
 
-        // Escape closes the shop UI
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             CloseShop();
         }
     }
 
-    // ── UI Construction ────────────────────────────────────────────
+    // ── UI Construction ──────────────────────────────────────────────
 
     private void BuildUI()
     {
-        // Create dedicated canvas for the shop (sort order 5, above game HUD)
-        Canvas canvas = UIFactory.CreateCanvas("ShopCanvas", 5);
+        // Dedicated high-sorting Canvas (Order 70 — firmly above HUD Canvas Order 50)
+        Canvas canvas = UIFactory.CreateCanvas("ShopCanvas", 70);
         canvas.transform.SetParent(transform, false);
 
-        // Main shop panel — centered, fixed size 600×500
-        RectTransform panelRT = UIFactory.CreatePanel(
-            canvas.transform, "ShopPanel", UIFactory.PanelBackground,
-            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
-        UIFactory.SetRectFixed(panelRT, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-            Vector2.zero, new Vector2(660f, 580f));
-        shopPanel = panelRT.gameObject;
+        CanvasScaler scaler = canvas.GetComponent<CanvasScaler>();
+        if (scaler != null)
+        {
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920, 1080);
+            scaler.matchWidthOrHeight = 0.5f;
+        }
 
-        // Vertical layout on the panel content
-        VerticalLayoutGroup vlg = UIFactory.AddVerticalLayout(shopPanel, 6f,
-            new RectOffset(25, 25, 20, 20), TextAnchor.UpperCenter);
+        // Layer 0: Fullscreen Void Overlay backdrop — shopPanel is the overlay itself so the entire backdrop hides when closed
+        RectTransform overlayRT = UIFactory.CreateFullScreenPanel(canvas.transform, "ShopOverlay", VoidOverlay);
+        shopPanel = overlayRT.gameObject;
 
-        // ── Title: SHADOW MERCHANT ──
-        TextMeshProUGUI title = UIFactory.CreateText(
-            panelRT, "TitleText", "SHADOW MERCHANT",
-            28f, UIFactory.Accent, TextAlignmentOptions.Center);
-        UIFactory.AddLayoutElement(title.gameObject, preferredHeight: 40f);
+        // Layer 1: Main Shop Frame — Covers screen like Main Menu (~92% viewport)
+        RectTransform frameRT = UIFactory.CreatePanel(
+            overlayRT, "ShopFrame", PanelVoidBg,
+            Vector2.zero, Vector2.one,
+            new Vector2(40f, 25f), new Vector2(-40f, -25f));
 
-        // ── Divider ──
-        RectTransform divider = UIFactory.CreateDivider(panelRT, "TitleDivider");
-        UIFactory.AddLayoutElement(divider.gameObject, preferredHeight: 2f);
+        Image frameImg = frameRT.GetComponent<Image>();
+        frameImg.sprite = UIFactory.GetRoundedSprite();
+        frameImg.type = Image.Type.Sliced;
 
-        // ── Currency text ──
-        currencyText = UIFactory.CreateText(
-            panelRT, "CurrencyText", "Coins: 0",
-            20f, UIFactory.TextWhite, TextAlignmentOptions.Center);
-        UIFactory.AddLayoutElement(currencyText.gameObject, preferredHeight: 30f);
+        // Sleek arcane violet outline
+        Outline frameOutline = frameRT.gameObject.AddComponent<Outline>();
+        frameOutline.effectColor = new Color(ArcaneViolet.r, ArcaneViolet.g, ArcaneViolet.b, 0.55f);
+        frameOutline.effectDistance = new Vector2(2f, -2f);
 
-        // ── Scrollable item list area (True ScrollRect) ──
-        GameObject scrollGo = new GameObject("ShopScrollView", typeof(RectTransform));
-        scrollGo.transform.SetParent(panelRT, false);
-        UIFactory.AddLayoutElement(scrollGo, preferredHeight: 440f, flexibleWidth: true);
+        // Vertical Master Layout controlling full inner height
+        VerticalLayoutGroup masterVLG = UIFactory.AddVerticalLayout(frameRT.gameObject, 0f,
+            new RectOffset(0, 0, 0, 0), TextAnchor.UpperCenter);
+        masterVLG.childControlWidth = true;
+        masterVLG.childControlHeight = true;
+        masterVLG.childForceExpandWidth = true;
+        masterVLG.childForceExpandHeight = false;
+
+        // ── 1. TOP HEADER BAR ──
+        BuildHeader(frameRT);
+
+        // ── 2. TAB SELECTOR BAR ──
+        BuildTabBar(frameRT);
+
+        // ── 3. THIN GLOWING DIVIDER ──
+        RectTransform tabDivider = UIFactory.CreateDivider(frameRT, "TabDivider");
+        tabDivider.GetComponent<Image>().color = new Color(NeonCyan.r, NeonCyan.g, NeonCyan.b, 0.35f);
+        LayoutElement divLE = tabDivider.gameObject.AddComponent<LayoutElement>();
+        divLE.preferredHeight = 2f;
+        divLE.minHeight = 2f;
+        divLE.flexibleHeight = 0;
+
+        // ── 4. CONTENT AREA CONTAINER (Fills 100% of remaining panel height) ──
+        GameObject contentArea = new GameObject("TabContentArea", typeof(RectTransform));
+        contentArea.transform.SetParent(frameRT, false);
+        LayoutElement contentLE = contentArea.AddComponent<LayoutElement>();
+        contentLE.flexibleHeight = 1;
+        contentLE.flexibleWidth = 1;
+        contentLE.minHeight = 300f;
+
+        // Weapons Tab (Grid View)
+        weaponsTabGo = BuildWeaponsTab(contentArea.transform);
+
+        // Supplies Tab (List / Cards)
+        suppliesTabGo = BuildSuppliesTab(contentArea.transform);
+
+        // Initialize Tab
+        SwitchTab(Tab.Weapons);
+        shopPanel.SetActive(false);
+    }
+
+    private void BuildHeader(Transform parent)
+    {
+        RectTransform headerRT = UIFactory.CreatePanel(parent, "HeaderBar", HeaderBg,
+            Vector2.zero, Vector2.one);
+        LayoutElement hLE = headerRT.gameObject.AddComponent<LayoutElement>();
+        hLE.preferredHeight = 70f;
+        hLE.minHeight = 70f;
+        hLE.flexibleHeight = 0;
+
+        HorizontalLayoutGroup hlg = UIFactory.AddHorizontalLayout(
+            headerRT.gameObject, 16f, new RectOffset(35, 35, 10, 10), TextAnchor.MiddleLeft);
+        hlg.childControlWidth = false;
+        hlg.childControlHeight = false;
+        hlg.childForceExpandWidth = false;
+        hlg.childForceExpandHeight = false;
+
+        // Title Text
+        TextMeshProUGUI titleText = UIFactory.CreateText(
+            headerRT, "ShopTitle", "❖  SHADOW ARSENAL & BAZAAR  ❖",
+            26f, NeonCyan, TextAlignmentOptions.Left);
+        titleText.fontStyle = FontStyles.Bold;
+        titleText.characterSpacing = 3f;
+        UIFactory.AddLayoutElement(titleText.gameObject, preferredWidth: 540f, preferredHeight: 50f);
+
+        // Flexible Spacer
+        GameObject spacer = new GameObject("Spacer", typeof(RectTransform));
+        spacer.transform.SetParent(headerRT, false);
+        LayoutElement spacerLE = spacer.AddComponent<LayoutElement>();
+        spacerLE.flexibleWidth = 1;
+        spacerLE.preferredWidth = 50f;
+        spacerLE.preferredHeight = 50f;
+
+        // Currency Pill: Coins
+        RectTransform coinPillRT = UIFactory.CreatePanel(headerRT, "CoinPill",
+            new Color(25f/255f, 20f/255f, 10f/255f, 0.95f),
+            Vector2.zero, Vector2.one);
+        coinPillRT.GetComponent<Image>().sprite = UIFactory.GetRoundedSprite();
+        coinPillRT.GetComponent<Image>().type = Image.Type.Sliced;
+        UIFactory.AddLayoutElement(coinPillRT.gameObject, preferredWidth: 190f, preferredHeight: 44f);
+        Outline coinOutline = coinPillRT.gameObject.AddComponent<Outline>();
+        coinOutline.effectColor = new Color(DrakeGold.r, DrakeGold.g, DrakeGold.b, 0.45f);
+
+        currencyText = UIFactory.CreateText(coinPillRT, "CurrencyText", "❖ 0 COINS",
+            17f, DrakeGold, TextAlignmentOptions.Center);
+        currencyText.fontStyle = FontStyles.Bold;
+        UIFactory.SetRect(currencyText.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+
+        // Potion Pill
+        RectTransform potPillRT = UIFactory.CreatePanel(headerRT, "PotPill",
+            new Color(15f/255f, 25f/255f, 35f/255f, 0.95f),
+            Vector2.zero, Vector2.one);
+        potPillRT.GetComponent<Image>().sprite = UIFactory.GetRoundedSprite();
+        potPillRT.GetComponent<Image>().type = Image.Type.Sliced;
+        UIFactory.AddLayoutElement(potPillRT.gameObject, preferredWidth: 160f, preferredHeight: 44f);
+        Outline potOutline = potPillRT.gameObject.AddComponent<Outline>();
+        potOutline.effectColor = new Color(NeonCyan.r, NeonCyan.g, NeonCyan.b, 0.45f);
+
+        potionText = UIFactory.CreateText(potPillRT, "PotionText", "✦ 0 POTIONS",
+            16f, NeonCyan, TextAlignmentOptions.Center);
+        potionText.fontStyle = FontStyles.Bold;
+        UIFactory.SetRect(potionText.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+
+        // Header Close Button (Integrated into Header Bar)
+        Button closeBtn = UIFactory.CreateButton(headerRT, "ShopCloseBtn", "✕ CLOSE", 14f, () => CloseShop());
+        UIFactory.AddLayoutElement(closeBtn.gameObject, preferredWidth: 115f, preferredHeight: 44f);
+        closeBtn.GetComponent<Image>().sprite = UIFactory.GetRoundedSprite();
+        closeBtn.GetComponent<Image>().type = Image.Type.Sliced;
+
+        ColorBlock cb = closeBtn.colors;
+        cb.normalColor = new Color(CrimsonFlame.r, CrimsonFlame.g, CrimsonFlame.b, 0.35f);
+        cb.highlightedColor = new Color(CrimsonFlame.r, CrimsonFlame.g, CrimsonFlame.b, 0.65f);
+        cb.pressedColor = new Color(CrimsonFlame.r, CrimsonFlame.g, CrimsonFlame.b, 0.9f);
+        closeBtn.colors = cb;
+        closeBtn.GetComponent<Image>().color = cb.normalColor;
+    }
+
+    private void BuildTabBar(Transform parent)
+    {
+        RectTransform tabBarRT = UIFactory.CreatePanel(parent, "TabBar",
+            new Color(13f/255f, 11f/255f, 24f/255f, 1.0f),
+            Vector2.zero, Vector2.one);
+        LayoutElement tLE = tabBarRT.gameObject.AddComponent<LayoutElement>();
+        tLE.preferredHeight = 48f;
+        tLE.minHeight = 48f;
+        tLE.flexibleHeight = 0;
+
+        HorizontalLayoutGroup hlg = UIFactory.AddHorizontalLayout(
+            tabBarRT.gameObject, 12f, new RectOffset(35, 35, 5, 5), TextAnchor.MiddleLeft);
+        hlg.childControlWidth = false;
+        hlg.childControlHeight = false;
+        hlg.childForceExpandWidth = false;
+        hlg.childForceExpandHeight = false;
+
+        weaponsTabBtn = UIFactory.CreateButton(tabBarRT, "Tab_Weapons", "⚔  WEAPON ARSENAL & MASTERY", 15f,
+            () => SwitchTab(Tab.Weapons));
+        UIFactory.AddLayoutElement(weaponsTabBtn.gameObject, preferredWidth: 290f, preferredHeight: 38f);
+        weaponsTabBtn.GetComponent<Image>().sprite = UIFactory.GetRoundedSprite();
+        weaponsTabBtn.GetComponent<Image>().type = Image.Type.Sliced;
+
+        suppliesTabBtn = UIFactory.CreateButton(tabBarRT, "Tab_Supplies", "⚗  RELICS & SUPPLIES", 15f,
+            () => SwitchTab(Tab.Supplies));
+        UIFactory.AddLayoutElement(suppliesTabBtn.gameObject, preferredWidth: 240f, preferredHeight: 38f);
+        suppliesTabBtn.GetComponent<Image>().sprite = UIFactory.GetRoundedSprite();
+        suppliesTabBtn.GetComponent<Image>().type = Image.Type.Sliced;
+    }
+
+    private void SwitchTab(Tab tab)
+    {
+        currentTab = tab;
+        if (weaponsTabGo != null) weaponsTabGo.SetActive(tab == Tab.Weapons);
+        if (suppliesTabGo != null) suppliesTabGo.SetActive(tab == Tab.Supplies);
+
+        UpdateTabBtnStyle(weaponsTabBtn, tab == Tab.Weapons, NeonCyan);
+        UpdateTabBtnStyle(suppliesTabBtn, tab == Tab.Supplies, ArcaneViolet);
+
+        RefreshShopItems();
+    }
+
+    private void UpdateTabBtnStyle(Button btn, bool isActive, Color activeCol)
+    {
+        if (btn == null) return;
+        ColorBlock cb = btn.colors;
+        cb.normalColor = isActive
+            ? new Color(activeCol.r, activeCol.g, activeCol.b, 0.40f)
+            : new Color(30f/255f, 25f/255f, 50f/255f, 0.35f);
+        cb.highlightedColor = isActive
+            ? new Color(activeCol.r, activeCol.g, activeCol.b, 0.60f)
+            : new Color(45f/255f, 40f/255f, 70f/255f, 0.55f);
+        btn.colors = cb;
+        Image img = btn.GetComponent<Image>();
+        if (img != null) img.color = cb.normalColor;
+    }
+
+    // ── Weapons Tab (Grid View) ──────────────────────────────────────
+
+    private GameObject BuildWeaponsTab(Transform parent)
+    {
+        GameObject scrollGo = new GameObject("WeaponsScrollView", typeof(RectTransform));
+        scrollGo.transform.SetParent(parent, false);
         RectTransform scrollRT = scrollGo.GetComponent<RectTransform>();
-        scrollRT.anchorMin = Vector2.zero;
-        scrollRT.anchorMax = Vector2.one;
-        scrollRT.sizeDelta = Vector2.zero;
+        UIFactory.SetRect(scrollRT, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
 
         ScrollRect sr = scrollGo.AddComponent<ScrollRect>();
         sr.horizontal = false;
         sr.vertical = true;
-        sr.scrollSensitivity = 28f;
+        sr.scrollSensitivity = 38f;
         sr.movementType = ScrollRect.MovementType.Clamped;
 
-        // Viewport with RectMask2D
         GameObject viewportGo = new GameObject("Viewport", typeof(RectTransform));
         viewportGo.transform.SetParent(scrollGo.transform, false);
         RectTransform viewRT = viewportGo.GetComponent<RectTransform>();
-        viewRT.anchorMin = Vector2.zero;
-        viewRT.anchorMax = Vector2.one;
-        viewRT.sizeDelta = Vector2.zero;
-        viewRT.pivot = new Vector2(0.5f, 0.5f);
+        UIFactory.SetRect(viewRT, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        viewRT.pivot = new Vector2(0.5f, 1f);
         viewportGo.AddComponent<RectMask2D>();
         sr.viewport = viewRT;
 
-        // Scroll Content
-        GameObject contentGo = new GameObject("Content", typeof(RectTransform));
+        GameObject contentGo = new GameObject("WeaponGridContent", typeof(RectTransform));
+        contentGo.transform.SetParent(viewportGo.transform, false);
+        RectTransform contentRT = contentGo.GetComponent<RectTransform>();
+        contentRT.anchorMin = new Vector2(0f, 1f);
+        contentRT.anchorMax = new Vector2(1f, 1f);
+        contentRT.pivot = new Vector2(0.5f, 1f);
+        contentRT.sizeDelta = new Vector2(0f, 400f);
+        contentRT.anchoredPosition = Vector2.zero;
+        sr.content = contentRT;
+
+        GridLayoutGroup grid = contentGo.AddComponent<GridLayoutGroup>();
+        grid.cellSize = new Vector2(330f, 405f);
+        grid.spacing = new Vector2(20f, 20f);
+        grid.padding = new RectOffset(30, 30, 20, 30);
+        grid.startCorner = GridLayoutGroup.Corner.UpperLeft;
+        grid.startAxis = GridLayoutGroup.Axis.Horizontal;
+        grid.childAlignment = TextAnchor.UpperCenter;
+        grid.constraint = GridLayoutGroup.Constraint.Flexible;
+
+        ContentSizeFitter csf = contentGo.AddComponent<ContentSizeFitter>();
+        csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        csf.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+
+        weaponGridContainer = contentRT;
+        return scrollGo;
+    }
+
+    // ── Supplies Tab (Relics & Potions) ──────────────────────────────
+
+    private GameObject BuildSuppliesTab(Transform parent)
+    {
+        GameObject scrollGo = new GameObject("SuppliesScrollView", typeof(RectTransform));
+        scrollGo.transform.SetParent(parent, false);
+        RectTransform scrollRT = scrollGo.GetComponent<RectTransform>();
+        UIFactory.SetRect(scrollRT, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+
+        ScrollRect sr = scrollGo.AddComponent<ScrollRect>();
+        sr.horizontal = false;
+        sr.vertical = true;
+        sr.scrollSensitivity = 32f;
+        sr.movementType = ScrollRect.MovementType.Clamped;
+
+        GameObject viewportGo = new GameObject("Viewport", typeof(RectTransform));
+        viewportGo.transform.SetParent(scrollGo.transform, false);
+        RectTransform viewRT = viewportGo.GetComponent<RectTransform>();
+        UIFactory.SetRect(viewRT, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        viewRT.pivot = new Vector2(0.5f, 1f);
+        viewportGo.AddComponent<RectMask2D>();
+        sr.viewport = viewRT;
+
+        GameObject contentGo = new GameObject("SuppliesContent", typeof(RectTransform));
         contentGo.transform.SetParent(viewportGo.transform, false);
         RectTransform contentRT = contentGo.GetComponent<RectTransform>();
         contentRT.anchorMin = new Vector2(0f, 1f);
@@ -135,35 +389,34 @@ public class ShopUI : MonoBehaviour
         contentRT.anchoredPosition = Vector2.zero;
         sr.content = contentRT;
 
-        UIFactory.AddVerticalLayout(contentGo, 5f, new RectOffset(6, 6, 6, 6), TextAnchor.UpperCenter);
+        UIFactory.AddVerticalLayout(contentGo, 12f, new RectOffset(50, 50, 20, 30), TextAnchor.UpperCenter);
         ContentSizeFitter csf = contentGo.AddComponent<ContentSizeFitter>();
         csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         csf.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
 
-        itemListContainer = contentRT;
-
-        // ── Close button (✕) in top-right ──
-        UIFactory.CreateCloseButton(panelRT, () => CloseShop());
-
-        // Start hidden
-        shopPanel.SetActive(false);
+        suppliesListContainer = contentRT;
+        return scrollGo;
     }
 
-    // ── Public API ─────────────────────────────────────────────────
+    // ── Public API ───────────────────────────────────────────────────
 
     public void OpenShop()
     {
+        WeaponManager.EnsureExists();
         if (shopPanel != null)
         {
             shopPanel.SetActive(true);
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;
+
             if (shopSystem == null)
             {
                 shopSystem = FindFirstObjectByType<ShopSystem>() ?? GetComponent<ShopSystem>() ?? gameObject.AddComponent<ShopSystem>();
             }
+
             UpdateCurrencyUI();
             RefreshShopItems();
+
             HUDManager.Instance?.UpdateVisibility();
             SpawnOfChaos.Minigames.HUDOrbPanel.Instance?.UpdateVisibility();
         }
@@ -191,193 +444,400 @@ public class ShopUI : MonoBehaviour
 
     public void UpdateCurrencyUI()
     {
-        if (currencyText != null)
+        int coins = 0;
+        int pots = 0;
+        if (PlayerCurrency.Instance != null)
         {
-            int currentCoins = 0;
-            // Get currency from the PlayerCurrency singleton or fallback to shopSystem
-            PlayerCurrency pc = PlayerCurrency.Instance;
-            if (pc != null)
-            {
-                currentCoins = pc.Coins;
-            }
-            else if (shopSystem != null)
-            {
-                currentCoins = shopSystem.playerCurrency;
-            }
-            currencyText.text = "Coins: " + currentCoins;
+            coins = PlayerCurrency.Instance.Coins;
+            pots = PlayerCurrency.Instance.HealingPotions;
+        }
+        else if (shopSystem != null)
+        {
+            coins = shopSystem.playerCurrency;
+        }
+
+        if (currencyText != null)
+            currencyText.text = $"❖ {coins} COINS";
+        if (potionText != null)
+            potionText.text = $"✦ {pots} POTIONS";
+    }
+
+    // ── Refresh & Content Populators ────────────────────────────────
+
+    public void RefreshShopItems()
+    {
+        WeaponManager.EnsureExists();
+
+        if (currentTab == Tab.Weapons)
+        {
+            PopulateWeaponsGrid();
+        }
+        else
+        {
+            PopulateSuppliesList();
         }
     }
 
-    /// <summary>
-    /// Rebuilds the item rows from ShopSystem.shopItems[].
-    /// Called after purchase to update sold states.
-    /// </summary>
-    public void RefreshShopItems()
+    private void PopulateWeaponsGrid()
     {
-        if (itemListContainer == null || shopSystem == null) return;
+        if (weaponGridContainer == null) return;
+        ClearContainer(weaponGridContainer);
 
-        // Clear existing rows cleanly (unparenting prevents layout ghosting in the same frame)
-        var toDestroy = new System.Collections.Generic.List<GameObject>();
-        for (int i = 0; i < itemListContainer.childCount; i++)
+        if (WeaponManager.Instance == null) return;
+
+        foreach (var weapon in WeaponManager.Instance.AllWeapons)
         {
-            toDestroy.Add(itemListContainer.GetChild(i).gameObject);
+            try
+            {
+                CreateWeaponCard(weaponGridContainer, weapon);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[ShopUI] Failed to create card for {weapon.displayName}: {ex.Message}\n{ex.StackTrace}");
+            }
         }
-        foreach (var child in toDestroy)
+    }
+
+    private void CreateWeaponCard(Transform container, WeaponInfo wep)
+    {
+        bool isUnlocked = WeaponManager.Instance.IsUnlocked(wep.id);
+        bool isEquipped = (WeaponManager.Instance.ActiveWeapon == wep.id);
+        int tier = WeaponManager.Instance.GetTier(wep.id);
+        int playerCoins = PlayerCurrency.Instance != null ? PlayerCurrency.Instance.Coins : 0;
+
+        // Card root panel
+        Color cardBg = isEquipped ? CardEquippedBg : CardVoidBg;
+        RectTransform cardRT = UIFactory.CreatePanel(container, "Card_" + wep.id, cardBg,
+            Vector2.zero, Vector2.one);
+        Image cardImg = cardRT.GetComponent<Image>();
+        cardImg.sprite = UIFactory.GetRoundedSprite();
+        cardImg.type = Image.Type.Sliced;
+
+        Outline outline = cardRT.gameObject.AddComponent<Outline>();
+        if (isEquipped)
         {
-            child.transform.SetParent(null, false);
-            Destroy(child);
+            outline.effectColor = NeonCyan;
+            outline.effectDistance = new Vector2(2.5f, -2.5f);
+        }
+        else if (isUnlocked)
+        {
+            outline.effectColor = new Color(ArcaneViolet.r, ArcaneViolet.g, ArcaneViolet.b, 0.5f);
+            outline.effectDistance = new Vector2(1.5f, -1.5f);
+        }
+        else
+        {
+            outline.effectColor = new Color(0.2f, 0.18f, 0.3f, 0.4f);
+            outline.effectDistance = new Vector2(1f, -1f);
         }
 
-        // Build a row for each shop item
+        // Layout inside Card
+        VerticalLayoutGroup vlg = UIFactory.AddVerticalLayout(cardRT.gameObject, 6f,
+            new RectOffset(16, 16, 14, 14), TextAnchor.UpperCenter);
+        vlg.childControlWidth = true;
+        vlg.childControlHeight = false;
+        vlg.childForceExpandWidth = true;
+        vlg.childForceExpandHeight = false;
+
+        // 1. Archetype Pill Badge
+        Color badgeColor = wep.auraColor;
+        badgeColor.a = 1f;
+        TextMeshProUGUI archeText = UIFactory.CreateText(
+            cardRT, "Archetype", $"[ {wep.archetype.ToUpper()} ]",
+            11f, badgeColor, TextAlignmentOptions.Center);
+        archeText.fontStyle = FontStyles.Bold;
+        archeText.characterSpacing = 2f;
+        UIFactory.AddLayoutElement(archeText.gameObject, preferredHeight: 18f);
+
+        // 2. Weapon Name
+        TextMeshProUGUI nameText = UIFactory.CreateText(
+            cardRT, "WepName", wep.displayName,
+            17f, isEquipped ? NeonCyan : UIFactory.TextWhite, TextAlignmentOptions.Center);
+        nameText.fontStyle = FontStyles.Bold;
+        UIFactory.AddLayoutElement(nameText.gameObject, preferredHeight: 24f);
+
+        // 3. Sprite / Icon Preview Area
+        RectTransform iconBoxRT = UIFactory.CreatePanel(cardRT, "IconBox",
+            new Color(10f/255f, 9f/255f, 22f/255f, 0.9f),
+            Vector2.zero, Vector2.one);
+        iconBoxRT.GetComponent<Image>().sprite = UIFactory.GetRoundedSprite();
+        iconBoxRT.GetComponent<Image>().type = Image.Type.Sliced;
+        UIFactory.AddLayoutElement(iconBoxRT.gameObject, preferredHeight: 95f, preferredWidth: 280f);
+
+        Sprite wepSprite = wep.GetSprite();
+        if (wepSprite != null)
+        {
+            GameObject imgGo = new GameObject("WepIcon", typeof(RectTransform), typeof(Image));
+            imgGo.transform.SetParent(iconBoxRT, false);
+            Image img = imgGo.GetComponent<Image>();
+            img.sprite = wepSprite;
+            img.preserveAspect = true;
+            img.raycastTarget = false;
+            RectTransform imgRT = img.rectTransform;
+            imgRT.anchorMin = new Vector2(0.15f, 0.1f);
+            imgRT.anchorMax = new Vector2(0.85f, 0.9f);
+            imgRT.sizeDelta = Vector2.zero;
+        }
+        else
+        {
+            TextMeshProUGUI rune = UIFactory.CreateText(
+                iconBoxRT, "RuneIcon", "⚔", 42f, badgeColor, TextAlignmentOptions.Center);
+            UIFactory.SetRect(rune.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        }
+
+        // 4. Combat Stats Row
+        int currentDmg = wep.GetDamageForTier(tier);
+        int currentExplode = wep.GetExplosionDamageForTier(tier);
+        string statStr = $"DMG: <color=#{ColorUtility.ToHtmlStringRGB(CrimsonFlame)}>{currentDmg}</color>  |  BLAST: <color=#{ColorUtility.ToHtmlStringRGB(DrakeGold)}>{currentExplode}</color>";
+        TextMeshProUGUI statsText = UIFactory.CreateText(
+            cardRT, "Stats", statStr,
+            12f, UIFactory.TextMuted, TextAlignmentOptions.Center);
+        statsText.fontStyle = FontStyles.Bold;
+        UIFactory.AddLayoutElement(statsText.gameObject, preferredHeight: 20f);
+
+        // 5. Ability Description
+        string abilityInfo = $"<b><color=#{ColorUtility.ToHtmlStringRGB(badgeColor)}>{wep.abilityName}</color></b>\n{wep.abilityDescription}";
+        TextMeshProUGUI abilityText = UIFactory.CreateText(
+            cardRT, "AbilityDesc", abilityInfo,
+            10.5f, new Color(0.75f, 0.75f, 0.85f, 1f), TextAlignmentOptions.Center);
+        abilityText.lineSpacing = -10f;
+        UIFactory.AddLayoutElement(abilityText.gameObject, preferredHeight: 52f);
+
+        // Divider
+        RectTransform cardDiv = UIFactory.CreateDivider(cardRT, "CardDiv");
+        cardDiv.GetComponent<Image>().color = new Color(0.3f, 0.25f, 0.45f, 0.35f);
+        UIFactory.AddLayoutElement(cardDiv.gameObject, preferredHeight: 1f);
+
+        // 6. Mastery Tier Status
+        string tierLabel = isUnlocked ? (tier == 1 ? "TIER I  •  BASE" : (tier == 2 ? "TIER II  •  AWAKENED" : "✦ TIER III  •  MAX ✦")) : "LOCKED";
+        Color tierCol = isUnlocked ? (tier == 3 ? DrakeGold : NeonCyan) : Color.gray;
+        TextMeshProUGUI tierText = UIFactory.CreateText(
+            cardRT, "TierStatus", tierLabel,
+            12f, tierCol, TextAlignmentOptions.Center);
+        tierText.fontStyle = FontStyles.Bold;
+        UIFactory.AddLayoutElement(tierText.gameObject, preferredHeight: 20f);
+
+        // 7. Actions Row (Buy / Equip & Upgrade)
+        if (!isUnlocked)
+        {
+            int cost = wep.unlockCost;
+            bool canAfford = playerCoins >= cost;
+            string buyLabel = $"BUY WEAPON ({cost} COINS)";
+            Button buyBtn = UIFactory.CreateButton(cardRT, "BuyWepBtn", buyLabel, 13f, () =>
+            {
+                if (PlayerCurrency.Instance != null && PlayerCurrency.Instance.SpendCoins(cost))
+                {
+                    WeaponManager.Instance.UnlockWeapon(wep.id);
+                    WeaponManager.Instance.EquipWeapon(wep.id);
+                    UpdateCurrencyUI();
+                    RefreshShopItems();
+                }
+            });
+            UIFactory.AddLayoutElement(buyBtn.gameObject, preferredHeight: 38f);
+            buyBtn.GetComponent<Image>().sprite = UIFactory.GetRoundedSprite();
+            buyBtn.GetComponent<Image>().type = Image.Type.Sliced;
+
+            ColorBlock bcb = buyBtn.colors;
+            bcb.normalColor = canAfford
+                ? new Color(DrakeGold.r, DrakeGold.g, DrakeGold.b, 0.35f)
+                : new Color(0.4f, 0.2f, 0.2f, 0.25f);
+            bcb.highlightedColor = canAfford
+                ? new Color(DrakeGold.r, DrakeGold.g, DrakeGold.b, 0.65f)
+                : new Color(0.4f, 0.2f, 0.2f, 0.35f);
+            buyBtn.colors = bcb;
+            buyBtn.interactable = canAfford;
+        }
+        else
+        {
+            GameObject btnRow = new GameObject("ActionRow", typeof(RectTransform));
+            btnRow.transform.SetParent(cardRT, false);
+            UIFactory.AddLayoutElement(btnRow, preferredHeight: 38f);
+            HorizontalLayoutGroup ahlg = UIFactory.AddHorizontalLayout(
+                btnRow, 8f, new RectOffset(0, 0, 0, 0), TextAnchor.MiddleCenter);
+            ahlg.childControlWidth = true;
+            ahlg.childForceExpandWidth = true;
+
+            // Equip Item
+            if (isEquipped)
+            {
+                RectTransform eqPanel = UIFactory.CreatePanel(btnRow.transform, "EqBadge",
+                    new Color(NeonCyan.r, NeonCyan.g, NeonCyan.b, 0.2f),
+                    Vector2.zero, Vector2.one);
+                eqPanel.GetComponent<Image>().sprite = UIFactory.GetRoundedSprite();
+                eqPanel.GetComponent<Image>().type = Image.Type.Sliced;
+                UIFactory.AddLayoutElement(eqPanel.gameObject, preferredHeight: 38f, preferredWidth: 140f);
+
+                TextMeshProUGUI eqLabel = UIFactory.CreateText(
+                    eqPanel, "EqLabel", "EQUIPPED",
+                    12.5f, NeonCyan, TextAlignmentOptions.Center);
+                eqLabel.fontStyle = FontStyles.Bold;
+                UIFactory.SetRect(eqLabel.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            }
+            else
+            {
+                Button equipBtn = UIFactory.CreateButton(btnRow.transform, "EquipBtn", "EQUIP", 13f, () =>
+                {
+                    WeaponManager.Instance.EquipWeapon(wep.id);
+                    RefreshShopItems();
+                });
+                UIFactory.AddLayoutElement(equipBtn.gameObject, preferredHeight: 38f, preferredWidth: 140f);
+                equipBtn.GetComponent<Image>().sprite = UIFactory.GetRoundedSprite();
+                equipBtn.GetComponent<Image>().type = Image.Type.Sliced;
+
+                ColorBlock ecb = equipBtn.colors;
+                ecb.normalColor = new Color(NeonCyan.r, NeonCyan.g, NeonCyan.b, 0.35f);
+                ecb.highlightedColor = new Color(NeonCyan.r, NeonCyan.g, NeonCyan.b, 0.65f);
+                equipBtn.colors = ecb;
+            }
+
+            // Upgrade Item
+            if (tier < 3)
+            {
+                int upgCost = (tier == 1) ? wep.tier2Cost : wep.tier3Cost;
+                bool canAffordUpg = playerCoins >= upgCost;
+                Button upgBtn = UIFactory.CreateButton(btnRow.transform, "UpgBtn", $"UPG ({upgCost}c)", 12.5f, () =>
+                {
+                    if (PlayerCurrency.Instance != null && PlayerCurrency.Instance.SpendCoins(upgCost))
+                    {
+                        WeaponManager.Instance.UpgradeWeapon(wep.id);
+                        UpdateCurrencyUI();
+                        RefreshShopItems();
+                    }
+                });
+                UIFactory.AddLayoutElement(upgBtn.gameObject, preferredHeight: 38f, preferredWidth: 140f);
+                upgBtn.GetComponent<Image>().sprite = UIFactory.GetRoundedSprite();
+                upgBtn.GetComponent<Image>().type = Image.Type.Sliced;
+
+                ColorBlock ucb = upgBtn.colors;
+                ucb.normalColor = canAffordUpg
+                    ? new Color(ArcaneViolet.r, ArcaneViolet.g, ArcaneViolet.b, 0.35f)
+                    : new Color(0.3f, 0.2f, 0.3f, 0.25f);
+                ucb.highlightedColor = canAffordUpg
+                    ? new Color(ArcaneViolet.r, ArcaneViolet.g, ArcaneViolet.b, 0.65f)
+                    : new Color(0.3f, 0.2f, 0.3f, 0.35f);
+                upgBtn.colors = ucb;
+                upgBtn.interactable = canAffordUpg;
+            }
+            else
+            {
+                RectTransform maxPanel = UIFactory.CreatePanel(btnRow.transform, "MaxBadge",
+                    new Color(DrakeGold.r, DrakeGold.g, DrakeGold.b, 0.2f),
+                    Vector2.zero, Vector2.one);
+                maxPanel.GetComponent<Image>().sprite = UIFactory.GetRoundedSprite();
+                maxPanel.GetComponent<Image>().type = Image.Type.Sliced;
+                UIFactory.AddLayoutElement(maxPanel.gameObject, preferredHeight: 38f, preferredWidth: 140f);
+
+                TextMeshProUGUI maxLabel = UIFactory.CreateText(
+                    maxPanel, "MaxLabel", "✦ MAX TIER ✦",
+                    12f, DrakeGold, TextAlignmentOptions.Center);
+                maxLabel.fontStyle = FontStyles.Bold;
+                UIFactory.SetRect(maxLabel.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            }
+        }
+    }
+
+    private void PopulateSuppliesList()
+    {
+        if (suppliesListContainer == null || shopSystem == null) return;
+        ClearContainer(suppliesListContainer);
+
         ShopItem[] items = shopSystem.shopItems;
         if (items == null) return;
+
+        int playerCoins = PlayerCurrency.Instance != null ? PlayerCurrency.Instance.Coins : 0;
 
         for (int i = 0; i < items.Length; i++)
         {
             ShopItem item = items[i];
-            int index = i; // capture for closure
-
-            // Row container with horizontal layout
-            RectTransform rowRT = UIFactory.CreatePanel(
-                itemListContainer, "ItemRow_" + i, UIFactory.ButtonNormal,
-                Vector2.zero, Vector2.one);
-            UIFactory.AddLayoutElement(rowRT.gameObject, preferredHeight: 45f);
-            HorizontalLayoutGroup hlg = UIFactory.AddHorizontalLayout(
-                rowRT.gameObject, 8f, new RectOffset(12, 12, 5, 5), TextAnchor.MiddleLeft);
-            hlg.childControlWidth = false;
-            hlg.childForceExpandWidth = false;
-
-            // Item name (left aligned)
-            TextMeshProUGUI nameText = UIFactory.CreateText(
-                rowRT, "ItemName", item.itemName,
-                18f, UIFactory.TextWhite, TextAlignmentOptions.Left);
-            UIFactory.AddLayoutElement(nameText.gameObject, preferredWidth: 260f, preferredHeight: 35f);
-
-            // Cost text
-            TextMeshProUGUI costText = UIFactory.CreateText(
-                rowRT, "CostText", item.cost + " coins",
-                16f, UIFactory.TextMuted, TextAlignmentOptions.Right);
-            UIFactory.AddLayoutElement(costText.gameObject, preferredWidth: 110f, preferredHeight: 35f);
-
+            int index = i;
             bool isRepeatable = (item.type == ShopItemType.HealingPotion);
+            bool canAfford = playerCoins >= item.cost;
 
+            RectTransform rowRT = UIFactory.CreatePanel(
+                suppliesListContainer, "SupplyRow_" + i, CardVoidBg,
+                Vector2.zero, Vector2.one);
+            rowRT.GetComponent<Image>().sprite = UIFactory.GetRoundedSprite();
+            rowRT.GetComponent<Image>().type = Image.Type.Sliced;
+            UIFactory.AddLayoutElement(rowRT.gameObject, preferredHeight: 65f);
+
+            HorizontalLayoutGroup hlg = UIFactory.AddHorizontalLayout(
+                rowRT.gameObject, 16f, new RectOffset(25, 25, 10, 10), TextAnchor.MiddleLeft);
+            hlg.childControlWidth = false;
+            hlg.childControlHeight = false;
+            hlg.childForceExpandWidth = false;
+            hlg.childForceExpandHeight = false;
+
+            // Glyph
+            string glyph = item.type == ShopItemType.HealingPotion ? "✦" :
+                           (item.type == ShopItemType.HealthBoost ? "❖" :
+                           (item.type == ShopItemType.DashUpgrade ? "⚔" : "◈"));
+            TextMeshProUGUI glyphText = UIFactory.CreateText(
+                rowRT, "Glyph", glyph, 24f, DrakeGold, TextAlignmentOptions.Center);
+            UIFactory.AddLayoutElement(glyphText.gameObject, preferredWidth: 45f, preferredHeight: 45f);
+
+            // Description
+            string desc = item.type == ShopItemType.HealingPotion ? "Restores 45% of maximum HP on use" :
+                          (item.type == ShopItemType.HealthBoost ? "Permanently increases player maximum health" :
+                          (item.type == ShopItemType.DashUpgrade ? "Reduces dash cooldown and extends invulnerability duration" : "Unlocks mystic ranged arcane projectile"));
+            TextMeshProUGUI nameText = UIFactory.CreateText(
+                rowRT, "ItemName", $"<b>{item.itemName}</b>\n<size=12><color=#A0A0B5>{desc}</color></size>",
+                15f, UIFactory.TextWhite, TextAlignmentOptions.Left);
+            UIFactory.AddLayoutElement(nameText.gameObject, preferredWidth: 620f, preferredHeight: 48f);
+
+            // Spacer
+            GameObject spacer = new GameObject("Spacer", typeof(RectTransform));
+            spacer.transform.SetParent(rowRT, false);
+            UIFactory.AddLayoutElement(spacer, preferredWidth: 100f, preferredHeight: 40f, flexibleWidth: true);
+
+            // Cost
+            TextMeshProUGUI costText = UIFactory.CreateText(
+                rowRT, "CostText", $"❖ {item.cost} COINS",
+                16f, DrakeGold, TextAlignmentOptions.Right);
+            costText.fontStyle = FontStyles.Bold;
+            UIFactory.AddLayoutElement(costText.gameObject, preferredWidth: 150f, preferredHeight: 40f);
+
+            // Button / Acquired
             if (item.purchased && !isRepeatable)
             {
-                // Show SOLD label (dimmed) instead of buy button
                 TextMeshProUGUI soldText = UIFactory.CreateText(
-                    rowRT, "SoldLabel", "SOLD",
-                    16f, UIFactory.AccentDim, TextAlignmentOptions.Center);
-                UIFactory.AddLayoutElement(soldText.gameObject, preferredWidth: 90f, preferredHeight: 35f);
+                    rowRT, "SoldLabel", "✓ ACQUIRED",
+                    14f, new Color(0.5f, 0.5f, 0.6f, 0.6f), TextAlignmentOptions.Center);
+                soldText.fontStyle = FontStyles.Bold;
+                UIFactory.AddLayoutElement(soldText.gameObject, preferredWidth: 130f, preferredHeight: 40f);
             }
             else
             {
-                // Buy button
-                Button buyBtn = UIFactory.CreateButton(rowRT, "BuyBtn_" + i, "BUY", 16f,
-                    () => BuyItemFromUI(index));
-                UIFactory.AddLayoutElement(buyBtn.gameObject, preferredWidth: 90f, preferredHeight: 35f);
+                Button buyBtn = UIFactory.CreateButton(rowRT, "BuyBtn_" + i, "PURCHASE", 14f, () => BuyItemFromUI(index));
+                UIFactory.AddLayoutElement(buyBtn.gameObject, preferredWidth: 130f, preferredHeight: 40f);
+                buyBtn.GetComponent<Image>().sprite = UIFactory.GetRoundedSprite();
+                buyBtn.GetComponent<Image>().type = Image.Type.Sliced;
+
+                ColorBlock bcb = buyBtn.colors;
+                bcb.normalColor = canAfford
+                    ? new Color(ArcaneViolet.r, ArcaneViolet.g, ArcaneViolet.b, 0.35f)
+                    : new Color(0.3f, 0.2f, 0.3f, 0.25f);
+                bcb.highlightedColor = canAfford
+                    ? new Color(ArcaneViolet.r, ArcaneViolet.g, ArcaneViolet.b, 0.65f)
+                    : new Color(0.3f, 0.2f, 0.3f, 0.35f);
+                buyBtn.colors = bcb;
+                buyBtn.interactable = canAfford;
             }
         }
+    }
 
-        // ── WEAPON ARSENAL & MASTERY SECTION ──
-        if (WeaponManager.Instance != null)
+    private void ClearContainer(Transform container)
+    {
+        var toDestroy = new List<GameObject>();
+        for (int i = 0; i < container.childCount; i++)
         {
-            RectTransform wepDivider = UIFactory.CreateDivider(itemListContainer, "WeaponDivider");
-            UIFactory.AddLayoutElement(wepDivider.gameObject, preferredHeight: 2f);
-
-            TextMeshProUGUI wepHeader = UIFactory.CreateText(
-                itemListContainer, "WeaponHeader", "WEAPONS & MASTERY",
-                20f, UIFactory.Accent, TextAlignmentOptions.Center);
-            UIFactory.AddLayoutElement(wepHeader.gameObject, preferredHeight: 30f);
-
-            foreach (var wep in WeaponManager.Instance.AllWeapons)
-            {
-                var capturedWep = wep;
-                bool isUnlocked = WeaponManager.Instance.IsUnlocked(capturedWep.id);
-                bool isEquipped = (WeaponManager.Instance.ActiveWeapon == capturedWep.id);
-                int tier = WeaponManager.Instance.GetTier(capturedWep.id);
-
-                RectTransform wRowRT = UIFactory.CreatePanel(
-                    itemListContainer, "WepRow_" + capturedWep.id, UIFactory.ButtonNormal,
-                    Vector2.zero, Vector2.one);
-                UIFactory.AddLayoutElement(wRowRT.gameObject, preferredHeight: 50f);
-                HorizontalLayoutGroup wHlg = UIFactory.AddHorizontalLayout(
-                    wRowRT.gameObject, 8f, new RectOffset(10, 10, 5, 5), TextAnchor.MiddleLeft);
-                wHlg.childControlWidth = false;
-                wHlg.childForceExpandWidth = false;
-
-                // Weapon Name + Archetype
-                string tierLabel = isUnlocked ? $" [T{tier}]" : "";
-                TextMeshProUGUI wName = UIFactory.CreateText(
-                    wRowRT, "WName", $"{capturedWep.displayName}{tierLabel}",
-                    16f, UIFactory.TextWhite, TextAlignmentOptions.Left);
-                UIFactory.AddLayoutElement(wName.gameObject, preferredWidth: 260f, preferredHeight: 35f);
-
-                if (!isUnlocked)
-                {
-                    // Cost & Buy button
-                    TextMeshProUGUI wCost = UIFactory.CreateText(
-                        wRowRT, "WCost", $"{capturedWep.unlockCost} coins",
-                        15f, UIFactory.TextMuted, TextAlignmentOptions.Right);
-                    UIFactory.AddLayoutElement(wCost.gameObject, preferredWidth: 90f, preferredHeight: 35f);
-
-                    Button buyBtn = UIFactory.CreateButton(wRowRT, "BuyWepBtn", "UNLOCK", 15f, () =>
-                    {
-                        if (PlayerCurrency.Instance != null && PlayerCurrency.Instance.Coins >= capturedWep.unlockCost)
-                        {
-                            PlayerCurrency.Instance.SpendCoins(capturedWep.unlockCost);
-                            WeaponManager.Instance.UnlockWeapon(capturedWep.id);
-                            WeaponManager.Instance.EquipWeapon(capturedWep.id);
-                            UpdateCurrencyUI();
-                            RefreshShopItems();
-                        }
-                    });
-                    UIFactory.AddLayoutElement(buyBtn.gameObject, preferredWidth: 90f, preferredHeight: 35f);
-                }
-                else
-                {
-                    // Equip button / status
-                    if (isEquipped)
-                    {
-                        TextMeshProUGUI eqLabel = UIFactory.CreateText(
-                            wRowRT, "EqLabel", "EQUIPPED",
-                            15f, new Color(0.15f, 0.9f, 1f), TextAlignmentOptions.Center);
-                        UIFactory.AddLayoutElement(eqLabel.gameObject, preferredWidth: 90f, preferredHeight: 35f);
-                    }
-                    else
-                    {
-                        Button eqBtn = UIFactory.CreateButton(wRowRT, "EqBtn", "EQUIP", 15f, () =>
-                        {
-                            WeaponManager.Instance.EquipWeapon(capturedWep.id);
-                            RefreshShopItems();
-                        });
-                        UIFactory.AddLayoutElement(eqBtn.gameObject, preferredWidth: 90f, preferredHeight: 35f);
-                    }
-
-                    // Upgrade Mastery button
-                    if (tier < 3)
-                    {
-                        int upgradeCost = tier == 1 ? capturedWep.tier2Cost : capturedWep.tier3Cost;
-                        Button upgBtn = UIFactory.CreateButton(wRowRT, "UpgBtn", $"UPG ({upgradeCost}c)", 13f, () =>
-                        {
-                            if (PlayerCurrency.Instance != null && PlayerCurrency.Instance.Coins >= upgradeCost)
-                            {
-                                PlayerCurrency.Instance.SpendCoins(upgradeCost);
-                                WeaponManager.Instance.UpgradeWeapon(capturedWep.id);
-                                UpdateCurrencyUI();
-                                RefreshShopItems();
-                            }
-                        });
-                        UIFactory.AddLayoutElement(upgBtn.gameObject, preferredWidth: 95f, preferredHeight: 35f);
-                    }
-                    else
-                    {
-                        TextMeshProUGUI maxLabel = UIFactory.CreateText(
-                            wRowRT, "MaxLabel", "MAX TIER",
-                            14f, new Color(1f, 0.85f, 0.2f), TextAlignmentOptions.Center);
-                        UIFactory.AddLayoutElement(maxLabel.gameObject, preferredWidth: 95f, preferredHeight: 35f);
-                    }
-                }
-            }
+            toDestroy.Add(container.GetChild(i).gameObject);
+        }
+        foreach (var child in toDestroy)
+        {
+            child.transform.SetParent(null, false);
+            if (Application.isPlaying)
+                Destroy(child);
+            else
+                DestroyImmediate(child);
         }
     }
 }

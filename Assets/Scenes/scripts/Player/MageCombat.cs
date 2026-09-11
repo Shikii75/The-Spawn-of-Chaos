@@ -83,6 +83,11 @@ public class MageCombat : MonoBehaviour
             gameObject.AddComponent<PlayerCombatJuice>();
         }
 
+        if (meleeAttackCollider == null)
+        {
+            Transform hb = transform.Find("hitbox") ?? transform.Find("Hitbox");
+            if (hb != null) meleeAttackCollider = hb.GetComponent<Collider2D>();
+        }
         if (meleeAttackCollider != null)
         {
             meleeAttackCollider.enabled = false;
@@ -123,7 +128,7 @@ public class MageCombat : MonoBehaviour
 
         // Check if game is paused or UI is active
         if (PauseMenu.Instance != null && PauseMenu.Instance.isPaused) return;
-        if (NyxarisManager.Instance != null && NyxarisManager.Instance.mainInterfacePanel != null && NyxarisManager.Instance.mainInterfacePanel.activeSelf) return;
+        if (NyxarisManager.IsChatActive) return;
         if (ShopUI.Instance != null && ShopUI.Instance.IsShopActive) return;
         if (NPCDialogueUI.Instance != null && NPCDialogueUI.Instance.IsDialogueActive) return;
         if (move.Instance != null && move.Instance.IsDashing) return;
@@ -170,8 +175,10 @@ public class MageCombat : MonoBehaviour
             }
         }
 
-        // 3. Melee Attack Input (J Key)
-        if (Input.GetKeyDown(KeyCode.J))
+        // 3. Melee Attack Input (J Key or Left Mouse Click)
+        bool attackPressed = Input.GetKeyDown(KeyCode.J) ||
+            (Input.GetMouseButtonDown(0) && (UnityEngine.EventSystems.EventSystem.current == null || !UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()));
+        if (attackPressed)
         {
             if (comboStep == 0 && !isAttack1Active && !isSecondHitActive)
             {
@@ -273,6 +280,7 @@ public class MageCombat : MonoBehaviour
             move.Instance.ResetPlayerScaleToNormal();
         }
 
+        hitsThisSwing.Clear();
         if (animator != null)
         {
             // 1. Clear ALL attack triggers to prevent queued trigger buildup
@@ -280,6 +288,13 @@ public class MageCombat : MonoBehaviour
 
             // 2. Force-play the Attack state at frame 0 with NO cross-fade blending.
             animator.Play("Attack", 0, 0f);
+            animator.SetTrigger("Attack");
+        }
+
+        if (PlayerCombatJuice.Instance != null)
+        {
+            float dir = (transform.localScale.x < 0f) ? -1f : 1f;
+            PlayerCombatJuice.Instance.SpawnSlashArc(transform.position, dir, false);
         }
 
         if (shadowVFXCoroutine != null) StopCoroutine(shadowVFXCoroutine);
@@ -314,6 +329,7 @@ public class MageCombat : MonoBehaviour
 
     private void PerformSecondHit()
     {
+        hitsThisSwing.Clear();
         comboStep = 2;
         secondHitQueued = false;
         comboTimer = 0.35f;
@@ -447,18 +463,17 @@ public class MageCombat : MonoBehaviour
         Debug.Log("Magic projectile unlocked!");
     }
 
+    private readonly System.Collections.Generic.HashSet<IDamageable> hitsThisSwing = new System.Collections.Generic.HashSet<IDamageable>();
+
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (meleeAttackCollider != null && meleeAttackCollider.enabled)
         {
-            IDamageable target = other.GetComponent<IDamageable>();
-            if (target == null)
-            {
-                target = other.GetComponentInParent<IDamageable>();
-            }
+            IDamageable target = other.GetComponent<IDamageable>() ?? other.GetComponentInParent<IDamageable>();
 
-            if (target != null && other.gameObject != gameObject)
+            if (target != null && other.gameObject != gameObject && !hitsThisSwing.Contains(target))
             {
+                hitsThisSwing.Add(target);
                 bool isHeavyCombo = (comboStep == 2);
                 int currentDamage = isHeavyCombo ? secondHitDamage : meleeDamage;
                 target.TakeDamage(currentDamage);
@@ -482,6 +497,7 @@ public class MageCombat : MonoBehaviour
     /// </summary>
     public void TriggerMeleeAttackFromTouch()
     {
+        if (NyxarisManager.IsChatActive) return;
         float currentTime = Time.time;
         float tapDelta = currentTime - lastJTapTime;
         lastJTapTime = currentTime;

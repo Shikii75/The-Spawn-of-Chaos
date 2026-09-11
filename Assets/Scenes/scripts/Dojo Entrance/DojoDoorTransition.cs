@@ -233,7 +233,7 @@ public class DojoDoorTransition : MonoBehaviour
         if (PauseMenu.Instance != null && PauseMenu.Instance.isPaused) return true;
         if (NPCDialogueUI.Instance != null && NPCDialogueUI.Instance.IsDialogueActive) return true;
         if (ShopUI.Instance != null && ShopUI.Instance.IsShopActive) return true;
-        if (NyxarisManager.Instance != null && NyxarisManager.Instance.mainInterfacePanel != null && NyxarisManager.Instance.mainInterfacePanel.activeSelf) return true;
+        if (NyxarisManager.IsChatActive) return true;
         return false;
     }
 

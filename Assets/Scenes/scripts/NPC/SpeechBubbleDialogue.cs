@@ -292,7 +292,8 @@ public class SpeechBubbleDialogue : MonoBehaviour
     private void TypeLine(string line)
     {
         if (_typeRoutine != null) StopCoroutine(_typeRoutine);
-        _typeRoutine = StartCoroutine(TypeRoutine(line));
+        string processed = SpawnOfChaos.Systems.TelepathyOrbSystem.ProcessDialogueLine(line, false);
+        _typeRoutine = StartCoroutine(TypeRoutine(processed));
     }
 
     private IEnumerator TypeRoutine(string line)
@@ -314,7 +315,7 @@ public class SpeechBubbleDialogue : MonoBehaviour
     private void SkipTyping()
     {
         if (_typeRoutine != null) StopCoroutine(_typeRoutine);
-        _bodyText.text = dialogueLines[_lineIndex];
+        _bodyText.text = SpawnOfChaos.Systems.TelepathyOrbSystem.ProcessDialogueLine(dialogueLines[_lineIndex], false);
         _typing = false;
         SetAdvanceActive(true);
     }

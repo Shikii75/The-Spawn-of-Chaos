@@ -272,7 +272,7 @@ public class EnemySpawnFX : MonoBehaviour
 
         ParticleSystem ps = pObj.AddComponent<ParticleSystem>();
         var main = ps.main;
-        main.duration = 0.25f;
+        // Removed main.duration assignment to prevent Unity runtime error
         main.loop = false;
         main.startLifetime = 0.35f;
         main.startSpeed = 2.5f;

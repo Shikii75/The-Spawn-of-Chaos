@@ -2,6 +2,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Events;
 using TMPro;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem.UI;
+#endif
 
 /// <summary>
 /// Static utility class for creating consistent, styled UI elements from code.
@@ -34,6 +37,63 @@ public static class UIFactory
     public static readonly Color BorderColor       = new Color(146f/255f, 104f/255f, 255f/255f, 0.25f);
     public static readonly Color OverlayDark       = new Color(0f, 0f, 0f, 0.75f);
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    public static void InitializeSceneEventSystem()
+    {
+        EnsureEventSystem();
+    }
+
+    /// <summary>
+    /// Guarantees that an active EventSystem and suitable InputModule exist in the scene.
+    /// Supports both the new InputSystem and legacy StandaloneInputModule seamlessly.
+    /// </summary>
+    public static UnityEngine.EventSystems.EventSystem EnsureEventSystem()
+    {
+        var es = UnityEngine.Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>();
+        if (es == null)
+        {
+            GameObject esGo = new GameObject("EventSystem");
+            es = esGo.AddComponent<UnityEngine.EventSystems.EventSystem>();
+
+            #if ENABLE_INPUT_SYSTEM
+            try
+            {
+                var inputModule = esGo.AddComponent<InputSystemUIInputModule>();
+                inputModule.AssignDefaultActions();
+            }
+            catch
+            {
+                esGo.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+            }
+            #else
+            esGo.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+            #endif
+
+            UnityEngine.Object.DontDestroyOnLoad(esGo);
+        }
+        else
+        {
+            var baseModule = es.GetComponent<UnityEngine.EventSystems.BaseInputModule>();
+            if (baseModule == null)
+            {
+                #if ENABLE_INPUT_SYSTEM
+                try
+                {
+                    var inputModule = es.gameObject.AddComponent<InputSystemUIInputModule>();
+                    inputModule.AssignDefaultActions();
+                }
+                catch
+                {
+                    es.gameObject.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+                }
+                #else
+                es.gameObject.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+                #endif
+            }
+        }
+        return es;
+    }
+
     // ── Canvas ─────────────────────────────────────────────────────
 
     /// <summary>
@@ -41,6 +101,8 @@ public static class UIFactory
     /// </summary>
     public static Canvas CreateCanvas(string name, int sortOrder = 0)
     {
+        EnsureEventSystem();
+
         GameObject go = new GameObject(name);
         Canvas canvas = go.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -110,6 +172,18 @@ public static class UIFactory
     }
 
     /// <summary>
+    /// Creates a TextMeshProUGUI element with specified styling, positioned by anchor point and size delta.
+    /// </summary>
+    public static TextMeshProUGUI CreateText(Transform parent, string name, string content,
+        float fontSize, Color color, Vector2 anchor, Vector2 sizeDelta,
+        TextAlignmentOptions alignment = TextAlignmentOptions.Center)
+    {
+        TextMeshProUGUI text = CreateText(parent, name, content, fontSize, color, alignment);
+        SetRectFixed(text.rectTransform, anchor, anchor, Vector2.zero, sizeDelta);
+        return text;
+    }
+
+    /// <summary>
     /// Sets RectTransform anchoring and sizing on any existing RectTransform.
     /// </summary>
     public static void SetRect(RectTransform rt, Vector2 anchorMin, Vector2 anchorMax,
@@ -147,8 +221,10 @@ public static class UIFactory
 
         Image bg = go.AddComponent<Image>();
         bg.color = ButtonNormal;
+        bg.raycastTarget = true;
 
         Button btn = go.AddComponent<Button>();
+        btn.targetGraphic = bg;
         ColorBlock cb = btn.colors;
         cb.normalColor = ButtonNormal;
         cb.highlightedColor = ButtonHighlight;
@@ -166,6 +242,7 @@ public static class UIFactory
         // Add text child
         TextMeshProUGUI text = CreateText(go.transform, "Label", label,
             fontSize, TextWhite, TextAlignmentOptions.Center);
+        text.raycastTarget = false;
         SetRect(text.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
 
         return btn;
@@ -192,6 +269,53 @@ public static class UIFactory
         cb.highlightedColor = new Color(220f/255f, 53f/255f, 69f/255f, 0.5f);
         cb.pressedColor = new Color(220f/255f, 53f/255f, 69f/255f, 0.7f);
         btn.colors = cb;
+
+        return btn;
+    }
+
+    /// <summary>
+    /// Creates a Cyber-Gothic styled button with custom positioning and size delta.
+    /// </summary>
+    public static Button CreateCyberGothicButton(Transform parent, string name, string label,
+        Vector2 anchor, Vector2 sizeDelta, UnityAction onClick)
+    {
+        GameObject go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+
+        RectTransform rt = go.AddComponent<RectTransform>();
+        SetRectFixed(rt, anchor, anchor, Vector2.zero, sizeDelta);
+
+        Image bg = go.AddComponent<Image>();
+        bg.sprite = GetRoundedSprite();
+        bg.type = Image.Type.Sliced;
+        bg.color = new Color(0.12f, 0.08f, 0.22f, 0.95f);
+        bg.raycastTarget = true;
+
+        var outline = go.AddComponent<Outline>();
+        outline.effectColor = new Color(0.82f, 0.2f, 1.0f, 0.85f);
+        outline.effectDistance = new Vector2(1.5f, -1.5f);
+
+        Button btn = go.AddComponent<Button>();
+        btn.targetGraphic = bg;
+        ColorBlock cb = btn.colors;
+        cb.normalColor = Color.white;
+        cb.highlightedColor = new Color(1.2f, 1.1f, 1.3f, 1f);
+        cb.pressedColor = new Color(0.7f, 0.6f, 0.9f, 1f);
+        cb.disabledColor = ButtonDisabled;
+        cb.colorMultiplier = 1f;
+        cb.fadeDuration = 0.1f;
+        btn.colors = cb;
+
+        if (onClick != null)
+        {
+            btn.onClick.AddListener(onClick);
+        }
+
+        TextMeshProUGUI text = CreateText(go.transform, "Label", label,
+            15f, TextWhite, TextAlignmentOptions.Center);
+        text.fontStyle = FontStyles.Bold;
+        text.raycastTarget = false;
+        SetRect(text.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
 
         return btn;
     }

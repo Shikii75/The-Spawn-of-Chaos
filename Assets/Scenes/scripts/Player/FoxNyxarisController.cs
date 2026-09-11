@@ -50,6 +50,16 @@ public class FoxNyxarisController : MonoBehaviour
     public string sortingLayerName = "Default";
     public int baseSortingOrder = 50;
 
+    // Static Cached Sprite Animation Arrays
+    private static Sprite[] s_idleFrames;
+    private static Sprite[] s_startWalkFrames;
+    private static Sprite[] s_walkFrames;
+    private static Sprite[] s_stepForwardFrames;
+    private static Sprite[] s_startLayDownFrames;
+    private static Sprite[] s_restingFrames;
+    public static bool IsPrewarmed => s_isPrewarmed;
+    private static bool s_isPrewarmed = false;
+
     // Sprite Animation Arrays (Loaded from Resources)
     private Sprite[] idleFrames;
     private Sprite[] startWalkFrames;
@@ -116,16 +126,53 @@ public class FoxNyxarisController : MonoBehaviour
         PlayAnimation(FoxAnimState.Idle);
     }
 
+    public static IEnumerator PreloadFramesRoutine(System.Action onComplete = null)
+    {
+        if (s_isPrewarmed && s_idleFrames != null && s_idleFrames.Length > 0)
+        {
+            onComplete?.Invoke();
+            yield break;
+        }
+
+        s_idleFrames = Resources.LoadAll<Sprite>("Sprites/FoxNyxaris/Idle");
+        yield return null;
+        s_startWalkFrames = Resources.LoadAll<Sprite>("Sprites/FoxNyxaris/StartWalk");
+        yield return null;
+        s_walkFrames = Resources.LoadAll<Sprite>("Sprites/FoxNyxaris/Walk");
+        yield return null;
+        s_stepForwardFrames = Resources.LoadAll<Sprite>("Sprites/FoxNyxaris/StepForward");
+        yield return null;
+        s_startLayDownFrames = Resources.LoadAll<Sprite>("Sprites/FoxNyxaris/StartLayDown");
+        yield return null;
+        s_restingFrames = Resources.LoadAll<Sprite>("Sprites/FoxNyxaris/Resting");
+        yield return null;
+
+        s_isPrewarmed = true;
+        Debug.Log("<color=#D47BFF>[FoxNyxaris] Preloaded all companion animation frames asynchronously in background.</color>");
+        onComplete?.Invoke();
+    }
+
     private void LoadAnimationSprites()
     {
-        idleFrames = Resources.LoadAll<Sprite>("Sprites/FoxNyxaris/Idle");
-        startWalkFrames = Resources.LoadAll<Sprite>("Sprites/FoxNyxaris/StartWalk");
-        walkFrames = Resources.LoadAll<Sprite>("Sprites/FoxNyxaris/Walk");
-        stepForwardFrames = Resources.LoadAll<Sprite>("Sprites/FoxNyxaris/StepForward");
-        startLayDownFrames = Resources.LoadAll<Sprite>("Sprites/FoxNyxaris/StartLayDown");
-        restingFrames = Resources.LoadAll<Sprite>("Sprites/FoxNyxaris/Resting");
+        if (!s_isPrewarmed || s_idleFrames == null || s_idleFrames.Length == 0)
+        {
+            s_idleFrames = Resources.LoadAll<Sprite>("Sprites/FoxNyxaris/Idle");
+            s_startWalkFrames = Resources.LoadAll<Sprite>("Sprites/FoxNyxaris/StartWalk");
+            s_walkFrames = Resources.LoadAll<Sprite>("Sprites/FoxNyxaris/Walk");
+            s_stepForwardFrames = Resources.LoadAll<Sprite>("Sprites/FoxNyxaris/StepForward");
+            s_startLayDownFrames = Resources.LoadAll<Sprite>("Sprites/FoxNyxaris/StartLayDown");
+            s_restingFrames = Resources.LoadAll<Sprite>("Sprites/FoxNyxaris/Resting");
+            s_isPrewarmed = true;
+        }
 
-        Debug.Log($"<color=#D47BFF>[FoxNyxaris] Loaded frames - Idle:{idleFrames?.Length}, Walk:{walkFrames?.Length}, Step:{stepForwardFrames?.Length}, Lay:{startLayDownFrames?.Length}, Rest:{restingFrames?.Length}</color>");
+        idleFrames = s_idleFrames;
+        startWalkFrames = s_startWalkFrames;
+        walkFrames = s_walkFrames;
+        stepForwardFrames = s_stepForwardFrames;
+        startLayDownFrames = s_startLayDownFrames;
+        restingFrames = s_restingFrames;
+
+        Debug.Log($"<color=#D47BFF>[FoxNyxaris] Attached pre-warmed frames - Idle:{idleFrames?.Length}, Walk:{walkFrames?.Length}, Step:{stepForwardFrames?.Length}, Lay:{startLayDownFrames?.Length}, Rest:{restingFrames?.Length}</color>");
     }
 
     void FindPlayer()
@@ -386,7 +433,7 @@ public class FoxNyxarisController : MonoBehaviour
 
         if (speechCanvasGO != null)
         {
-            speechCanvasGO.transform.position = transform.position + new Vector3(0f, 1.25f + foxScale * 0.75f, 0f);
+            speechCanvasGO.transform.localPosition = new Vector3(0f, 1.25f + foxScale * 0.75f, 0f);
             // Counter-flip canvas localScale.x so text is NEVER mirrored, scaled up for readability
             float parentSign = Mathf.Sign(transform.localScale.x);
             speechCanvasGO.transform.localScale = new Vector3(parentSign * 0.022f, 0.022f, 1f);
@@ -496,7 +543,7 @@ public class FoxNyxarisController : MonoBehaviour
                 audioSource.PlayOneShot(chirpClip, 0.45f);
             }
 
-            yield return new WaitForSeconds(0.028f);
+            yield return new WaitForSecondsRealtime(0.028f);
         }
 
         isSpeaking = false;
@@ -509,7 +556,7 @@ public class FoxNyxarisController : MonoBehaviour
         float elapsed = 0f;
         while (elapsed < duration)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime;
             cg.alpha = Mathf.Lerp(startAlpha, targetAlpha, elapsed / duration);
             yield return null;
         }
@@ -649,10 +696,10 @@ public class FoxNyxarisController : MonoBehaviour
         }
 
         // Wait until player lands back on the ground
-        yield return new WaitUntil(() => playerMove != null && playerMove.IsGrounded && Mathf.Abs(playerRb.linearVelocity.y) < 0.4f);
+        yield return new WaitUntil(() => playerMove != null && playerMove.IsGrounded && (playerRb == null || Mathf.Abs(playerRb.linearVelocity.y) < 0.4f));
 
         // Land and morph back into Fox Form
-        Vector3 landPos = playerTransform.position + new Vector3(-Mathf.Sign(playerTransform.localScale.x) * followDistance, 0f, 0f);
+        Vector3 landPos = playerTransform != null ? (playerTransform.position + new Vector3(-Mathf.Sign(playerTransform.localScale.x) * followDistance, 0f, 0f)) : transform.position;
         transform.position = landPos;
 
         if (NyxarisOrbGuide.Instance != null)

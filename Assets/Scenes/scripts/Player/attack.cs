@@ -66,6 +66,7 @@ public class Attack : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
+        if (!enabled) return;
         IDamageable target = other.GetComponent<IDamageable>();
         if (target == null) target = other.GetComponentInParent<IDamageable>();
 

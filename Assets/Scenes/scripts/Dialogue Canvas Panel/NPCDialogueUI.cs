@@ -487,7 +487,13 @@ public class NPCDialogueUI : MonoBehaviour
     {
         if (lines == null || lines.Length == 0) return;
 
-        dialogueLines = lines;
+        bool isCompanion = !string.IsNullOrEmpty(npcName) && (npcName.IndexOf("Nyxaris", StringComparison.OrdinalIgnoreCase) >= 0 || npcName.IndexOf("Lumi", StringComparison.OrdinalIgnoreCase) >= 0);
+        string[] processedLines = new string[lines.Length];
+        for (int i = 0; i < lines.Length; i++)
+        {
+            processedLines[i] = SpawnOfChaos.Systems.TelepathyOrbSystem.ProcessDialogueLine(lines[i], isCompanion);
+        }
+        dialogueLines = processedLines;
         currentLineIndex = 0;
         onComplete = onCompleteCallback;
         openedFrameCount = Time.frameCount;

@@ -35,10 +35,10 @@ public class NyxarisOrbGuide : MonoBehaviour
 
     [Header("Generous Follow & Personal Space")]
     [Tooltip("Offset (X = 2.5, Y = 2.2) to keep the orb comfortably floating to the side and above the player.")]
-    public Vector3 followOffset = new Vector3(2.5f, 2.2f, 0f);
+    public Vector3 followOffset = new Vector3(3.4f, 2.4f, 0f);
 
     [Tooltip("Minimum distance from player. If player gets closer, the orb repels away to maintain personal space.")]
-    public float minPersonalSpace = 2.0f;
+    public float minPersonalSpace = 2.6f;
 
     public float smoothSpeed = 4.5f;
     public float returnRushSpeed = 9.0f;
@@ -154,6 +154,12 @@ public class NyxarisOrbGuide : MonoBehaviour
 
     void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            if (Application.isPlaying) Destroy(gameObject);
+            else DestroyImmediate(gameObject);
+            return;
+        }
         Instance = this;
         EnsureVisualsExist();
 
@@ -449,9 +455,9 @@ public class NyxarisOrbGuide : MonoBehaviour
             }
         }
 
-        if (activeWaypoint != null && !activeWaypoint.isCompleted)
+        if (activeWaypoint != null)
         {
-            if (activeWaypoint.CheckActionCompleted(playerRb, playerMove))
+            if (activeWaypoint.isCompleted || activeWaypoint.CheckActionCompleted(playerRb, playerMove))
             {
                 CompleteActiveWaypoint();
             }
@@ -465,7 +471,8 @@ public class NyxarisOrbGuide : MonoBehaviour
         wp.onWaypointActivated?.Invoke();
         currentState = GuideState.LeadingWaypoint;
 
-        ShowDialogue(wp.dialogueText, wp.promptBadgeText);
+        string expr = !string.IsNullOrEmpty(wp.expressionAnimationKey) ? wp.expressionAnimationKey : "explaining";
+        ShowDialogue(wp.dialogueText, wp.promptBadgeText, expr);
     }
 
     private void CompleteActiveWaypoint()
@@ -480,7 +487,7 @@ public class NyxarisOrbGuide : MonoBehaviour
 
         if (promptBadgeComp != null)
         {
-            promptBadgeComp.text = "<color=#55FF88>✓ COMPLETED!</color>";
+            promptBadgeComp.text = "<color=#55FF88>COMPLETED!</color>";
         }
 
         StartCoroutine(DelayedFadeOutSpeech(1.2f));
@@ -530,7 +537,7 @@ public class NyxarisOrbGuide : MonoBehaviour
     {
         if (idleQuips == null || idleQuips.Length == 0) return;
         string quip = idleQuips[Random.Range(0, idleQuips.Length)];
-        ShowDialogue(quip, "Press [A] / [D] to move");
+        ShowDialogue(quip, "Press [A] / [D] to move", "cutely_annoyed");
     }
 
     private void UpdateOrbMovement()
@@ -817,7 +824,7 @@ public class NyxarisOrbGuide : MonoBehaviour
 
     #region Speech Bubble & Typewriter UI
 
-    public void ShowDialogue(string text, string promptBadge)
+    public void ShowDialogue(string text, string promptBadge, string expressionKey = "")
     {
         if (speechCanvasGroup == null) return;
 
@@ -855,7 +862,7 @@ public class NyxarisOrbGuide : MonoBehaviour
                 audioSource.PlayOneShot(speechChirpClip, 0.5f);
             }
 
-            yield return new WaitForSeconds(0.028f);
+            yield return new WaitForSecondsRealtime(0.028f);
         }
 
         isSpeaking = false;
@@ -863,7 +870,7 @@ public class NyxarisOrbGuide : MonoBehaviour
 
     private IEnumerator DelayedFadeOutSpeech(float delay)
     {
-        yield return new WaitForSeconds(delay);
+        yield return new WaitForSecondsRealtime(delay);
         yield return FadeCanvasGroup(speechCanvasGroup, 0f, 0.35f);
     }
 
@@ -874,7 +881,7 @@ public class NyxarisOrbGuide : MonoBehaviour
         float elapsed = 0f;
         while (elapsed < duration)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime;
             cg.alpha = Mathf.Lerp(startAlpha, targetAlpha, elapsed / duration);
             yield return null;
         }
@@ -1020,9 +1027,9 @@ public class NyxarisOrbGuide : MonoBehaviour
         GameObject bgGO = new GameObject("BubbleBackground");
         bgGO.transform.SetParent(speechCanvasGO.transform, false);
         bubbleBgImage = bgGO.AddComponent<Image>();
-        bubbleBgImage.color = new Color(0.06f, 0.015f, 0.12f, 0.68f); // Semi-transparent glassmorphic obsidian
+        bubbleBgImage.color = new Color(0.06f, 0.015f, 0.12f, 0.88f); // Rich glassmorphic obsidian
         RectTransform bgRT = bgGO.GetComponent<RectTransform>();
-        bgRT.sizeDelta = new Vector2(390f, 150f);
+        bgRT.sizeDelta = new Vector2(400f, 150f);
 
         Outline outline = bgGO.AddComponent<Outline>();
         outline.effectColor = new Color(0.85f, 0.25f, 1.0f, 0.9f);
@@ -1037,7 +1044,7 @@ public class NyxarisOrbGuide : MonoBehaviour
         dialogueTextComp.alignment = TextAlignmentOptions.TopLeft;
         dialogueTextComp.textWrappingMode = TextWrappingModes.Normal;
         RectTransform textRT = textGO.GetComponent<RectTransform>();
-        textRT.sizeDelta = new Vector2(360f, 85f);
+        textRT.sizeDelta = new Vector2(370f, 85f);
         textRT.anchoredPosition = new Vector2(0f, 18f);
 
         // Prompt Badge Text
@@ -1049,7 +1056,7 @@ public class NyxarisOrbGuide : MonoBehaviour
         promptBadgeComp.color = new Color(0.92f, 0.65f, 1f, 1f);
         promptBadgeComp.alignment = TextAlignmentOptions.BottomLeft;
         RectTransform promptRT = promptGO.GetComponent<RectTransform>();
-        promptRT.sizeDelta = new Vector2(360f, 34f);
+        promptRT.sizeDelta = new Vector2(370f, 34f);
         promptRT.anchoredPosition = new Vector2(0f, -46f);
     }
 
@@ -1265,12 +1272,13 @@ public class NyxarisOrbGuide : MonoBehaviour
         // 2. Spawn Purple Shadow Burst FX
         BurstSpawnStarRing(groundTarget, 16);
 
-        // 3. Hide Orb Visuals completely
+        // 3. Completely shut down Orb entity & guide while Fox is active
         if (orbRootGO != null) orbRootGO.SetActive(false);
         HideSpeechBubble();
-        // Hide all renderers on this guide
         var guideRenderers = GetComponentsInChildren<Renderer>(true);
         foreach (var r in guideRenderers) if (r != null) r.enabled = false;
+        if (speechCanvasGO != null) speechCanvasGO.SetActive(false);
+        enabled = false; // Disable update/waypoint processing completely
 
         // 4. Instantiate Fox Form Companion (from Prefab or procedural)
         GameObject foxPrefab = Resources.Load<GameObject>("Prefabs/FoxNyxaris_Companion");

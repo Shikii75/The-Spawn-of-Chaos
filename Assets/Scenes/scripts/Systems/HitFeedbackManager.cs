@@ -201,7 +201,7 @@ public class HitFeedbackManager : MonoBehaviour
         psRenderer.material = sparkMat;
 
         var main = ps.main;
-        main.duration = 0.35f;
+        // Removed main.duration assignment to prevent Unity runtime error
         main.loop = false;
         main.startLifetime = isHeavyHit ? 0.3f : 0.2f;
         main.startSpeed = isHeavyHit ? 10f : 6f;

@@ -683,8 +683,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::entersign
   animationDuration: 0.15
   uiPromptObject: {fileID: 0}
-  targetSceneName: SampleScene
-  targetSpawnPointName: Dojo2_ReturnPoint
+  targetSceneName: CaveScene
+  targetSpawnPointName: Cave_EntranceSpawn
   interactKey: 101
 --- !u!61 &262234262
 BoxCollider2D:

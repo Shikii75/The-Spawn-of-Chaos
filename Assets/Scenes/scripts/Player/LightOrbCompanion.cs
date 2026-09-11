@@ -31,7 +31,7 @@ public class LightOrbCompanion : MonoBehaviour
     public static LightOrbCompanion Instance { get; private set; }
 
     [Header("Bouncy Follow Physics")]
-    public Vector3 followOffset = new Vector3(-1.2f, 1.4f, 0f);
+    public Vector3 followOffset = new Vector3(-2.4f, 2.2f, 0f);
     public float smoothTime = 0.16f;
     public float hoverFrequency1 = 3.8f;
     public float hoverFrequency2 = 7.2f;
@@ -155,12 +155,29 @@ public class LightOrbCompanion : MonoBehaviour
         public Vector3 velocity;
     }
 
+    private static bool IsTutorialSceneActive()
+    {
+        string s = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        return string.Equals(s, "TutorialScene", System.StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(s, "Tutorial", System.StringComparison.OrdinalIgnoreCase);
+    }
+
     private void Awake()
     {
+        // Lumi must NEVER exist in the TutorialScene under any circumstance
+        if (IsTutorialSceneActive())
+        {
+            Debug.Log("[LightOrbCompanion] TutorialScene detected in Awake: Lumi must NEVER exist in TutorialScene. Destroying.");
+            if (Instance == this) Instance = null;
+            Destroy(gameObject);
+            return;
+        }
+
         if (Instance == null)
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
             SetupComponents();
         }
         else
@@ -169,8 +186,28 @@ public class LightOrbCompanion : MonoBehaviour
         }
     }
 
+
+
+    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        if (string.Equals(scene.name, "TutorialScene", System.StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(scene.name, "Tutorial", System.StringComparison.OrdinalIgnoreCase))
+        {
+            Debug.Log("[LightOrbCompanion] SceneLoaded event to TutorialScene: Lumi must NEVER exist in TutorialScene. Destroying.");
+            if (Instance == this) Instance = null;
+            Destroy(gameObject);
+        }
+    }
+
     private void Start()
     {
+        if (IsTutorialSceneActive())
+        {
+            if (Instance == this) Instance = null;
+            Destroy(gameObject);
+            return;
+        }
+
         FindPlayerReferences();
         currentColor = colorIdle;
         currentGlowColor = colorGlowIdle;
@@ -472,6 +509,9 @@ public class LightOrbCompanion : MonoBehaviour
 
     private void OnDestroy()
     {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+        if (Instance == this) Instance = null;
+
         if (playerHealth != null)
         {
             playerHealth.onDamageTaken -= OnPlayerTookDamage;
@@ -487,6 +527,12 @@ public class LightOrbCompanion : MonoBehaviour
 
     private void Update()
     {
+        if (IsTutorialSceneActive())
+        {
+            if (Instance == this) Instance = null;
+            Destroy(gameObject);
+            return;
+        }
 
 
         if (playerTransform == null)
@@ -530,29 +576,11 @@ public class LightOrbCompanion : MonoBehaviour
             return;
         }
 
-        // Grapple Hook Input ('Q' Key or Right-Click Hold)
+        // Grapple Hook permanently disabled per player mobility balance
         bool isBlocked = IsPlayerInteractingOrNearInteractable();
-        bool grapplePressed = !isBlocked && (Input.GetKeyDown(grappleKey) || Input.GetMouseButtonDown(1));
-        bool grappleHeld = !isBlocked && (Input.GetKey(grappleKey) || Input.GetMouseButton(1));
-        bool grappleReleased = isBlocked || Input.GetKeyUp(grappleKey) || Input.GetMouseButtonUp(1) || Input.GetKeyDown(KeyCode.Space);
-
-        if (grapplePressed && !IsGrappling)
-        {
-            float dist = Vector3.Distance(playerTransform.position, transform.position);
-            if (dist <= maxGrappleDistance)
-            {
-                StartGrapple();
-            }
-        }
-        else if (grappleReleased && IsGrappling)
-        {
-            ReleaseGrapple(true);
-        }
-
         if (IsGrappling)
         {
-            currentState = LightOrbState.GrappleActive;
-            return;
+            ReleaseGrapple(false);
         }
 
         // Orb Body Trace Attack ('X' Key Press)
@@ -669,7 +697,7 @@ public class LightOrbCompanion : MonoBehaviour
         if (PauseMenu.Instance != null && PauseMenu.Instance.isPaused) return true;
         if (NPCDialogueUI.Instance != null && NPCDialogueUI.Instance.IsDialogueActive) return true;
         if (ShopUI.Instance != null && ShopUI.Instance.IsShopActive) return true;
-        if (NyxarisManager.Instance != null && NyxarisManager.Instance.mainInterfacePanel != null && NyxarisManager.Instance.mainInterfacePanel.activeSelf) return true;
+        if (NyxarisManager.IsChatActive) return true;
         if (OrbInventoryUI.Instance != null && OrbInventoryUI.Instance.IsInventoryOpen) return true;
 
         // 2. Check for nearby interactables, enter signs, doors, or NPCs
