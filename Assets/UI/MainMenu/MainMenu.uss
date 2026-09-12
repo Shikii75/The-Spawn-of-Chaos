@@ -12,13 +12,13 @@
     bottom: 0;
     width: 100%;
     height: 100%;
-    background-color: #030006;
+    background-color: #222429;
     justify-content: center;
     align-items: center;
     overflow: hidden;
 }
 
-/* Completely Solid Deep Cosmic Void Background Layer */
+/* Completely Solid Deep Grey Background Layer */
 .menu-background-layer {
     position: absolute;
     left: 0;
@@ -27,11 +27,11 @@
     bottom: 0;
     width: 100%;
     height: 100%;
-    background-color: #030006;
+    background-color: #222429;
     opacity: 1.0;
 }
 
-/* ── Living Void Floating Purple Orbs Overlay Layer ── */
+/* ── Gentle Fireflies Overlay Layer ── */
 .orbs-container {
     position: absolute;
     left: 0;
@@ -46,8 +46,9 @@
 
 .menu-firefly {
     position: absolute;
+    border-radius: 50%;
     pointer-events: none;
-    background-color: transparent;
+    box-shadow: 0 0 4px rgba(255, 224, 120, 0.65), 0 0 10px rgba(116, 242, 177, 0.24);
 }
 
 /* ── Corner Framing Brackets ── */
@@ -99,7 +100,6 @@
 
 /* ── Centerpiece Logo Artwork Area ── */
 .title-logo-container {
-    cursor: link;
     flex-grow: 1;
     flex-shrink: 1;
     width: 100%;
@@ -110,23 +110,12 @@
 }
 
 .title-logo-image {
-    cursor: link;
-    width: 720px;
-    height: 405px;
-    max-width: 78%;
-    max-height: 58%;
+    width: 820px;
+    height: 480px;
+    max-width: 90%;
+    max-height: 68%;
     background-image: url('project://database/Assets/Scenes/animations/frames/keep-54947fd1/frame_001.png');
     -unity-background-scale-mode: scale-to-fit;
-    transition-property: scale;
-    transition-duration: 0.15s;
-}
-
-.title-logo-image:hover {
-    scale: 1.02 1.02;
-}
-
-.title-logo-image:active {
-    scale: 0.98 0.98;
 }
 
 /* ── Horizontal Navigation Row (Positioned higher) ── */
@@ -221,97 +210,57 @@
     transition-duration: 0.22s;
 }
 
-.cyber-button--continue {
-    background-color: rgba(26, 16, 42, 0.95);
-    border-color: rgba(168, 85, 247, 0.65);
-}
-
-.cyber-button--continue .btn-top-accent,
-.cyber-button--continue .btn-rune {
-    background-color: rgba(168, 85, 247, 0.28);
-    color: #d8b4fe;
-    border-color: rgba(192, 132, 252, 0.55);
-}
-
-/* Primary Action: New Game (Electric Violet / Radiant Purple) */
 .cyber-button--play {
-    background-color: rgba(30, 16, 52, 0.96);
-    border-color: rgba(192, 132, 252, 0.75);
+    border-color: rgba(45, 212, 191, 0.55);
 }
 
 .cyber-button--play .btn-top-accent,
 .cyber-button--play .btn-rune {
-    background-color: rgba(192, 132, 252, 0.35);
-    color: #f3e8ff;
-    border-color: rgba(233, 213, 255, 0.65);
+    background-color: rgba(45, 212, 191, 0.3);
+    color: #5eead4;
+    border-color: rgba(94, 234, 212, 0.55);
 }
 
-/* Secondary Action: Load Game (Ethereal Orchid / Celestial Magenta-Purple) */
-.cyber-button--load {
-    background-color: rgba(28, 14, 46, 0.95);
-    border-color: rgba(217, 70, 239, 0.65);
-}
-
-.cyber-button--load .btn-top-accent,
-.cyber-button--load .btn-rune {
-    background-color: rgba(217, 70, 239, 0.28);
-    color: #f5d0fe;
-    border-color: rgba(240, 171, 252, 0.55);
-}
-
-/* Options / Settings (Mystic Violet) */
 .cyber-button--options {
-    background-color: rgba(22, 14, 38, 0.95);
-    border-color: rgba(147, 51, 234, 0.65);
+    border-color: rgba(192, 132, 252, 0.55);
 }
 
-.cyber-button--options .btn-top-accent,
-.cyber-button--options .btn-rune {
-    background-color: rgba(147, 51, 234, 0.25);
-    color: #c084fc;
-    border-color: rgba(168, 85, 247, 0.5);
-}
-
-/* Quit Button (Dusky Void Plum) */
 .cyber-button--quit {
-    background-color: rgba(20, 10, 32, 0.95);
-    border-color: rgba(126, 34, 206, 0.55);
+    border-color: rgba(251, 113, 133, 0.5);
 }
 
 .cyber-button--quit .btn-top-accent,
 .cyber-button--quit .btn-rune {
-    background-color: rgba(126, 34, 206, 0.22);
-    color: #d8b4fe;
-    border-color: rgba(147, 51, 234, 0.45);
+    background-color: rgba(244, 63, 94, 0.22);
+    color: #fda4af;
+    border-color: rgba(253, 164, 175, 0.5);
 }
 
-/* Hover States (Harmonious Shades of Purple Glow) */
+/* Hover States */
 .cyber-button:hover {
     scale: 1.04 1.04;
     translate: 0px -4px;
-    background-color: rgba(46, 20, 78, 0.98);
-    border-color: #e9d5ff;
+    background-color: rgba(38, 20, 68, 0.98);
+    border-color: #fda4af;
     border-width: 1px;
-    box-shadow: 0 0 28px rgba(192, 132, 252, 0.55);
+    box-shadow: 0 0 26px rgba(192, 132, 252, 0.42);
 }
 
 .cyber-button:hover .btn-top-accent {
-    background-color: #c084fc;
+    background-color: #f43f5e;
 }
 
 .cyber-button:hover .btn-bottom-accent {
-    background-color: rgba(168, 85, 247, 0.45);
+    background-color: rgba(244, 63, 94, 0.4);
 }
 
 .cyber-button:hover .btn-label {
     color: #ffffff;
-    text-shadow: 0 0 12px rgba(233, 213, 255, 0.95);
+    text-shadow: 0 0 12px rgba(255, 255, 255, 0.9);
 }
 
 .cyber-button:hover .btn-rune {
-    color: #f3e8ff;
-    border-color: #e9d5ff;
-    background-color: rgba(192, 132, 252, 0.35);
+    color: #fda4af;
     opacity: 1.0;
 }
 
@@ -327,8 +276,8 @@
 .cyber-button:active {
     scale: 0.97 0.97;
     translate: 0px -2px;
-    background-color: rgba(88, 28, 135, 0.65);
-    border-color: #d8b4fe;
+    background-color: rgba(225, 29, 72, 0.4);
+    border-color: #fda4af;
 }
 
 .cyber-button:focus {
@@ -382,10 +331,10 @@
     width: 34px;
     height: 34px;
     border-radius: 17px;
-    background-color: rgba(147, 51, 234, 0.25);
-    border-color: rgba(192, 132, 252, 0.6);
+    background-color: rgba(225, 29, 72, 0.2);
+    border-color: rgba(244, 63, 94, 0.6);
     border-width: 1px;
-    color: #e9d5ff;
+    color: #fda4af;
     font-size: 16px;
     -unity-font-style: bold;
     align-items: center;
@@ -393,7 +342,7 @@
 }
 
 .modal-close-btn:hover {
-    background-color: rgba(147, 51, 234, 0.75);
+    background-color: rgba(225, 29, 72, 0.7);
     color: #ffffff;
 }
 
@@ -427,7 +376,7 @@
 }
 
 .unity-slider .unity-base-slider__dragger:hover {
-    background-color: #9333ea;
+    background-color: #f43f5e;
     scale: 1.2 1.2;
 }
 
@@ -447,8 +396,8 @@
 }
 
 .setting-toggle:checked .unity-toggle__checkmark {
-    background-color: #9333ea;
-    border-color: #e9d5ff;
+    background-color: #f43f5e;
+    border-color: #fda4af;
 }
 
 /* Visibility classes */
@@ -463,122 +412,3 @@
     opacity: 1;
     pointer-events: all;
 }
-
-
-/* ── 12-Slot Load Game Modal Styling ── */
-.modal-card--load {
-    width: 860px;
-    max-height: 85%;
-    padding: 24px;
-}
-
-.slots-scroll-view {
-    width: 100%;
-    max-height: 520px;
-    padding-right: 12px;
-}
-
-.slots-grid-container {
-    width: 100%;
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: space-between;
-}
-
-.slot-card {
-    width: 48%;
-    background-color: rgba(30, 24, 44, 0.94);
-    border-color: rgba(168, 85, 247, 0.5);
-    border-width: 1px;
-    border-radius: 10px;
-    padding: 12px 14px;
-    margin-bottom: 12px;
-}
-
-.slot-card:hover {
-    border-color: #c084fc;
-    background-color: rgba(45, 30, 70, 0.98);
-}
-
-.slot-card-header {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 6px;
-}
-
-.slot-badge {
-    font-size: 11px;
-    -unity-font-style: bold;
-    color: #e9d5ff;
-    background-color: rgba(168, 85, 247, 0.35);
-    border-radius: 4px;
-    padding: 2px 6px;
-}
-
-.slot-date {
-    font-size: 10px;
-    color: #a78bfa;
-}
-
-.slot-location {
-    font-size: 14px;
-    -unity-font-style: bold;
-    color: #ffffff;
-    margin-bottom: 4px;
-}
-
-.slot-details-row {
-    flex-direction: row;
-    justify-content: space-between;
-    font-size: 11px;
-    color: #c4b5fd;
-    margin-bottom: 8px;
-}
-
-.slot-actions-row {
-    flex-direction: row;
-    justify-content: flex-end;
-}
-
-.slot-btn {
-    border-radius: 5px;
-    padding: 4px 12px;
-    font-size: 11px;
-    -unity-font-style: bold;
-}
-
-.slot-btn--load {
-    background-color: rgba(168, 85, 247, 0.6);
-    border-color: #c084fc;
-    color: #ffffff;
-    margin-left: 8px;
-}
-
-.slot-btn--load:hover {
-    background-color: #9333ea;
-}
-
-.slot-btn--del {
-    background-color: rgba(225, 29, 72, 0.25);
-    border-color: rgba(192, 132, 252, 0.6);
-    color: #e9d5ff;
-}
-
-.slot-btn--del:hover {
-    background-color: rgba(147, 51, 234, 0.75);
-    color: #ffffff;
-}
-
-.slot-card--empty {
-    opacity: 0.65;
-    border-style: dashed;
-    border-color: rgba(168, 85, 247, 0.3);
-}
-
-.slot-card--empty:hover {
-    opacity: 1.0;
-    border-color: #a855f7;
-}
-
-

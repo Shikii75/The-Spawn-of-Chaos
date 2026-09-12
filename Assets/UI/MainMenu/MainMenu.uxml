@@ -24,47 +24,19 @@
                 <ui:VisualElement name="title-logo" class="title-logo-image" />
             </ui:VisualElement>
 
-            <!-- Navigation Row with Continue, New Game, Load Game (12 Slots), Options, Quit -->
+            <!-- Horizontal Navigation Row with Procedural Glassmorphic Buttons -->
             <ui:VisualElement name="nav-section" class="nav-section">
                 
-                <!-- Continue Button -->
-                <ui:Button name="btn-continue" class="cyber-button cyber-button--continue">
+                <!-- Play Button -->
+                <ui:Button name="btn-play" class="cyber-button cyber-button--play">
                     <ui:VisualElement class="btn-top-accent" />
                     <ui:VisualElement class="btn-content-row">
                         <ui:Label text="✦" class="btn-rune btn-rune--left" />
                         <ui:VisualElement class="btn-copy">
-                            <ui:Label text="CONTINUE" class="btn-label" />
-                            <ui:Label text="RESUME SAGA" class="btn-hint" />
+                            <ui:Label text="PLAY" class="btn-label" />
+                            <ui:Label text="ENTER THE REALM" class="btn-hint" />
                         </ui:VisualElement>
                         <ui:Label text="✦" class="btn-rune btn-rune--right" />
-                    </ui:VisualElement>
-                    <ui:VisualElement class="btn-bottom-accent" />
-                </ui:Button>
-
-                <!-- New Game Button -->
-                <ui:Button name="btn-new-game" class="cyber-button cyber-button--play">
-                    <ui:VisualElement class="btn-top-accent" />
-                    <ui:VisualElement class="btn-content-row">
-                        <ui:Label text="⚔" class="btn-rune btn-rune--left" />
-                        <ui:VisualElement class="btn-copy">
-                            <ui:Label text="NEW GAME" class="btn-label" />
-                            <ui:Label text="BEGIN DESCENT" class="btn-hint" />
-                        </ui:VisualElement>
-                        <ui:Label text="⚔" class="btn-rune btn-rune--right" />
-                    </ui:VisualElement>
-                    <ui:VisualElement class="btn-bottom-accent" />
-                </ui:Button>
-
-                <!-- Load Game (12 Slots) Button -->
-                <ui:Button name="btn-load-game" class="cyber-button cyber-button--load">
-                    <ui:VisualElement class="btn-top-accent" />
-                    <ui:VisualElement class="btn-content-row">
-                        <ui:Label text="❖" class="btn-rune btn-rune--left" />
-                        <ui:VisualElement class="btn-copy">
-                            <ui:Label text="LOAD GAME" class="btn-label" />
-                            <ui:Label text="12 MEMORY SLOTS" class="btn-hint" />
-                        </ui:VisualElement>
-                        <ui:Label text="❖" class="btn-rune btn-rune--right" />
                     </ui:VisualElement>
                     <ui:VisualElement class="btn-bottom-accent" />
                 </ui:Button>
@@ -134,22 +106,6 @@
                     <!-- Screen Shake Toggle -->
                     <ui:Toggle name="toggle-screenshake" label="CAMERA SHAKE" value="true" class="setting-toggle" />
                 </ui:VisualElement>
-            </ui:VisualElement>
-        </ui:VisualElement>
-
-        <!-- Load Game (12 Slots) Modal Dialog -->
-        <ui:VisualElement name="modal-load-game" class="modal-overlay panel--hidden">
-            <ui:VisualElement class="modal-card modal-card--load">
-                <ui:VisualElement class="modal-header">
-                    <ui:Label text="CHRONICLES OF DESTINY — 12 MEMORY SLOTS" class="modal-title" />
-                    <ui:Button name="btn-close-load-game" text="✕" class="modal-close-btn" />
-                </ui:VisualElement>
-                
-                <ui:ScrollView name="slots-scroll-view" class="slots-scroll-view">
-                    <ui:VisualElement name="slots-grid" class="slots-grid-container">
-                        <!-- Populated dynamically via MainMenuUIToolkitController -->
-                    </ui:VisualElement>
-                </ui:ScrollView>
             </ui:VisualElement>
         </ui:VisualElement>
 
