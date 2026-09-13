@@ -56,7 +56,7 @@ public class MainMenuUIToolkitController : MonoBehaviour
 
     [Header("Logo Frame Animation & Sizing")]
     [Tooltip("Dimensions of the logo in pixels (Width, Height).")]
-    public Vector2 logoDimensions = new Vector2(560f, 315f);
+    public Vector2 logoDimensions = new Vector2(920f, 518f);
     [Tooltip("Overall scale multiplier for the logo animation.")]
     [Range(0.2f, 2.5f)]
     public float logoScale = 1.0f;
@@ -393,13 +393,13 @@ public class MainMenuUIToolkitController : MonoBehaviour
         if (titleLogo != null)
         {
             if (logoScale > 1.4f) logoScale = 1.0f;
-            logoDimensions = new Vector2(560f, 315f);
+            logoDimensions = new Vector2(920f, 518f);
 
-            // Prominent 16:9 centerpiece logo scaling
+            // Grand 16:9 centerpiece logo scaling
             titleLogo.style.width = logoDimensions.x * logoScale;
             titleLogo.style.height = logoDimensions.y * logoScale;
-            titleLogo.style.maxWidth = Length.Percent(68f);
-            titleLogo.style.maxHeight = Length.Percent(46f);
+            titleLogo.style.maxWidth = Length.Percent(80f);
+            titleLogo.style.maxHeight = Length.Percent(52f);
             titleLogo.style.flexShrink = 1f;
         }
     }
