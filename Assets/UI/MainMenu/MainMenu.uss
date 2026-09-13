@@ -19,19 +19,6 @@
 }
 
 
-/* Central Cosmic Nebula Glow (Matches Tutorial Prologue Ambiance) */
-.cosmic-nebula-glow {
-    position: absolute;
-    left: 10%;
-    top: 8%;
-    right: 10%;
-    bottom: 12%;
-    width: 80%;
-    height: 80%;
-    background-color: rgba(90, 22, 140, 0.16);
-    border-radius: 50%;
-}
-
 /* Completely Solid Deep Cosmic Void Background Layer */
 .menu-background-layer {
     position: absolute;

@@ -7,9 +7,6 @@
         <!-- Deep Grey Background Layer -->
         <ui:VisualElement name="bg-layer" class="menu-background-layer" picking-mode="Ignore" />
 
-        <!-- Central Cosmic Nebula Atmosphere Glow -->
-        <ui:VisualElement name="cosmic-nebula" class="cosmic-nebula-glow" picking-mode="Ignore" />
-
         <!-- Framing Corner Brackets -->
         <ui:VisualElement class="corner-bracket corner--tl" picking-mode="Ignore" />
         <ui:VisualElement class="corner-bracket corner--tr" picking-mode="Ignore" />
