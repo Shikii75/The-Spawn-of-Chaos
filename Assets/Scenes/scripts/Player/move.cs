@@ -99,14 +99,12 @@ public class move : MonoBehaviour
     public static move Instance { get; private set; }
 
     public static bool ExternalMovementLock = false;
-        InitVoiceAudio();
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetStatic()
     {
         Instance = null;
         ExternalMovementLock = false;
-        InitVoiceAudio();
     }
 
     void Awake()
