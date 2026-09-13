@@ -199,11 +199,11 @@ public class MainMenuUIToolkitController : MonoBehaviour
     // Deep cosmic purple and royal violet atmospheric lights matching Tutorial prologue
     private static readonly Color[] OrbColors = new Color[]
     {
-        new Color(0.48f, 0.08f, 0.92f, 0.85f), // Deep royal purple
-        new Color(0.58f, 0.14f, 0.96f, 0.88f), // Radiant cosmic violet
-        new Color(0.42f, 0.06f, 0.82f, 0.80f), // Deep amethyst void
-        new Color(0.66f, 0.20f, 0.98f, 0.86f), // Void violet
-        new Color(0.52f, 0.10f, 0.88f, 0.82f)  // Arcane purple
+        new Color(0.32f, 0.04f, 0.78f, 0.82f), // Deep cosmic royal violet
+        new Color(0.42f, 0.08f, 0.88f, 0.85f), // Luminous void purple
+        new Color(0.26f, 0.02f, 0.68f, 0.78f), // Deep abyss purple
+        new Color(0.48f, 0.12f, 0.94f, 0.84f), // Astral violet
+        new Color(0.36f, 0.06f, 0.82f, 0.80f)  // Arcane shadow purple
     };
 
     private void Awake()
@@ -393,12 +393,13 @@ public class MainMenuUIToolkitController : MonoBehaviour
         if (titleLogo != null)
         {
             if (logoScale > 1.4f) logoScale = 1.0f;
-            if (logoDimensions.x < 620f || logoDimensions.x > 800f) logoDimensions = new Vector2(720f, 405f);
+            if (logoDimensions.x < 400f || logoDimensions.x > 800f) logoDimensions = new Vector2(420f, 210f);
 
-            // Responsive sizing that respects viewport dimensions without overflowing
-            titleLogo.style.maxWidth = Length.Percent(72f * logoScale);
-            titleLogo.style.maxHeight = Length.Percent(48f * logoScale);
-            titleLogo.style.flexShrink = 1f;
+            // Compact responsive logo dimensions
+            titleLogo.style.width = logoDimensions.x * logoScale;
+            titleLogo.style.height = logoDimensions.y * logoScale;
+            titleLogo.style.maxWidth = Length.Percent(60f);
+            titleLogo.style.maxHeight = Length.Percent(40f);
         }
     }
 

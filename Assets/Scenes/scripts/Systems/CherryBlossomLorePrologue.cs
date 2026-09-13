@@ -92,6 +92,19 @@ public class CherryBlossomLorePrologue : MonoBehaviour
 
     void Awake()
     {
+        // Safety: Never run over the Main Menu / Title Screen
+        if (!MainMenuUIToolkitController.isPlaying)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        if (PlayerPrefs.GetInt("CherryBlossom_Prologue_Played", 0) == 1)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         Instance = this;
 
         // Immediately lock player movement during lore sequence
@@ -200,7 +213,7 @@ public class CherryBlossomLorePrologue : MonoBehaviour
 
         while (elapsed < slideFadeInDuration)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime;
             float t = Mathf.SmoothStep(0f, 1f, elapsed / slideFadeInDuration);
             slideCanvasGroup.alpha = t;
             slideContainerRT.anchoredPosition = Vector2.Lerp(startPos, endPos, t);
@@ -227,7 +240,7 @@ public class CherryBlossomLorePrologue : MonoBehaviour
 
         while (elapsed < slideFadeOutDuration)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime;
             float t = elapsed / slideFadeOutDuration;
             slideCanvasGroup.alpha = 1f - t;
             slideContainerRT.anchoredPosition = Vector2.Lerp(startPos, endPos, t);
@@ -260,6 +273,8 @@ public class CherryBlossomLorePrologue : MonoBehaviour
     {
         if (hasFinished) return;
         hasFinished = true;
+        PlayerPrefs.SetInt("CherryBlossom_Prologue_Played", 1);
+        PlayerPrefs.Save();
 
         if (currentTransitionCoroutine != null)
         {
@@ -278,7 +293,7 @@ public class CherryBlossomLorePrologue : MonoBehaviour
 
         while (elapsed < sceneAwakenDuration)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime;
             float t = elapsed / sceneAwakenDuration;
             if (canvasGroup != null) canvasGroup.alpha = 1f - t;
             if (audioSource != null) audioSource.volume = Mathf.Lerp(startMusicVol, 0f, t);
@@ -558,8 +573,8 @@ public class CherryBlossomLorePrologue : MonoBehaviour
 
     private void UpdateFloatingOrbs()
     {
-        float dt = Time.deltaTime;
-        float time = Time.time;
+        float dt = Time.unscaledDeltaTime;
+        float time = Time.unscaledTime;
 
         for (int i = 0; i < orbs.Count; i++)
         {
@@ -585,7 +600,7 @@ public class CherryBlossomLorePrologue : MonoBehaviour
 
     private void UpdateMagicalTextAtmosphere()
     {
-        float t = Time.time;
+        float t = Time.unscaledTime;
 
         // Gentle text float bobbing
         if (loreTextComp != null)
@@ -668,6 +683,18 @@ public class CherryBlossomLorePrologue : MonoBehaviour
         string sceneName = SceneManager.GetActiveScene().name;
         if (sceneName.Equals("SampleScene", System.StringComparison.OrdinalIgnoreCase))
         {
+            // CRITICAL: Never auto-init during Main Menu / Title Screen!
+            // Doing so overlays the menu at sortingOrder 950 and freezes while timeScale is 0.
+            if (!MainMenuUIToolkitController.isPlaying)
+            {
+                return;
+            }
+
+            if (PlayerPrefs.GetInt("CherryBlossom_Prologue_Played", 0) == 1)
+            {
+                return;
+            }
+
             if (FindFirstObjectByType<CherryBlossomLorePrologue>() == null)
             {
                 GameObject go = new GameObject("[CherryBlossomLorePrologue]");

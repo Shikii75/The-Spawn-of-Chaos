@@ -22,13 +22,13 @@
 /* Central Cosmic Nebula Glow (Matches Tutorial Prologue Ambiance) */
 .cosmic-nebula-glow {
     position: absolute;
-    left: 15%;
+    left: 20%;
     top: 15%;
-    right: 15%;
-    bottom: 15%;
-    width: 70%;
-    height: 70%;
-    background-color: rgba(76, 18, 120, 0.22);
+    right: 20%;
+    bottom: 20%;
+    width: 60%;
+    height: 60%;
+    background-color: rgba(65, 12, 110, 0.14);
     border-radius: 50%;
 }
 
@@ -109,35 +109,28 @@
     height: 100%;
     flex-direction: column;
     align-items: center;
-    justify-content: space-between;
-    padding-top: 2%;
-    padding-bottom: 3%;
-    padding-left: 2%;
-    padding-right: 2%;
+    justify-content: center;
+    padding: 10px 20px 10px 20px;
     overflow: visible;
 }
 
 /* ── Centerpiece Logo Artwork Area ── */
 .title-logo-container {
     cursor: link;
-    flex-grow: 1;
-    flex-shrink: 1;
-    width: 100%;
     align-items: center;
     justify-content: center;
-    margin-bottom: 4px;
+    margin-bottom: 8px;
     overflow: visible;
 }
 
 .title-logo-image {
     cursor: link;
-    width: 680px;
-    height: 382px;
-    max-width: 72%;
-    max-height: 48%;
+    width: 420px;
+    height: 210px;
+    max-width: 60%;
+    max-height: 40%;
     background-image: url('project://database/Assets/Scenes/animations/frames/keep-54947fd1/frame_001.png');
     -unity-background-scale-mode: scale-to-fit;
-    flex-shrink: 1;
     transition-property: scale;
     transition-duration: 0.15s;
 }
@@ -156,23 +149,24 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    margin-top: -6px;
-    margin-bottom: 24px;
+    width: 100%;
+    margin-top: 4px;
+    margin-bottom: 8px;
 }
 
 /* ── Procedural Cyber-Gothic Glassmorphic Buttons ── */
 .cyber-button {
-    width: 200px;
+    width: 155px;
     max-width: 18%;
-    height: 68px;
-    margin-left: 8px;
-    margin-right: 8px;
-    padding-left: 10px;
-    padding-right: 10px;
+    height: 52px;
+    margin-left: 5px;
+    margin-right: 5px;
+    padding-left: 6px;
+    padding-right: 6px;
     background-color: rgba(18, 19, 26, 0.96);
     border-color: rgba(168, 85, 247, 0.5);
     border-width: 1px;
-    border-radius: 6px 18px 6px 18px;
+    border-radius: 6px 14px 6px 14px;
     justify-content: space-between;
     align-items: stretch;
     overflow: hidden;
@@ -214,19 +208,20 @@
 }
 
 .btn-label {
-    font-size: 16px;
+    font-size: 13px;
     -unity-font-style: bold;
     color: #f1f5f9;
-    letter-spacing: 4px;
+    letter-spacing: 2px;
     transition-property: color;
     transition-duration: 0.22s;
 }
 
 .btn-hint {
-    margin-top: 3px;
-    font-size: 9px;
-    color: rgba(226, 232, 240, 0.55);
-    letter-spacing: 2px;
+    font-size: 8px;
+    color: #a78bfa;
+    letter-spacing: 1px;
+    margin-top: 1px;
+    opacity: 0.85;
 }
 
 .btn-rune {
