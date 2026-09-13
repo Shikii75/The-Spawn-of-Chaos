@@ -1014,7 +1014,7 @@ public class LumiSpearWeapon : MonoBehaviour
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(targetSlashPos, 2.5f);
         foreach (var col in hitEnemies)
         {
-            if (col.CompareTag("Enemy") || col.GetComponent<UniversalEnemy>() != null)
+            if ((col.CompareTag("enemy") || col.CompareTag("Enemy")) || col.GetComponent<UniversalEnemy>() != null)
             {
                 var health = col.GetComponent<Health>() ?? col.GetComponentInParent<Health>();
                 if (health != null)
@@ -1092,7 +1092,7 @@ public class LumiSpearWeapon : MonoBehaviour
             Collider2D[] hits = Physics2D.OverlapCircleAll(dup.transform.position, 0.6f);
             foreach (var hit in hits)
             {
-                if (hit.CompareTag("Enemy") || hit.GetComponent<UniversalEnemy>() != null)
+                if ((hit.CompareTag("enemy") || hit.CompareTag("Enemy")) || hit.GetComponent<UniversalEnemy>() != null)
                 {
                     var h = hit.GetComponent<Health>() ?? hit.GetComponentInParent<Health>();
                     if (h != null)
@@ -1113,7 +1113,7 @@ public class LumiSpearWeapon : MonoBehaviour
         Collider2D[] hits = Physics2D.OverlapCircleAll(impactPos, radius);
         foreach (var hit in hits)
         {
-            if (hit.CompareTag("Enemy") || hit.GetComponent<UniversalEnemy>() != null)
+            if ((hit.CompareTag("enemy") || hit.CompareTag("Enemy")) || hit.GetComponent<UniversalEnemy>() != null)
             {
                 var h = hit.GetComponent<Health>() ?? hit.GetComponentInParent<Health>();
                 if (h != null)
