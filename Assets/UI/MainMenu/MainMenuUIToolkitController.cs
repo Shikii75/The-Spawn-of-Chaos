@@ -237,6 +237,12 @@ public class MainMenuUIToolkitController : MonoBehaviour
 
     private void EnablePlayerGameplay(bool enable)
     {
+        if (enable)
+        {
+            move.ExternalMovementLock = false;
+            if (Time.timeScale == 0f) Time.timeScale = 1f;
+        }
+
         GameObject p = GameObject.FindGameObjectWithTag("Player");
         if (p == null) p = GameObject.Find("Player");
         if (p == null) p = GameObject.Find("BasePlayer");
@@ -267,10 +273,11 @@ public class MainMenuUIToolkitController : MonoBehaviour
 
     private void OnEnable()
     {
-        if (PlayerSpawnPointManager.isRespawning)
+        if (isPlaying || PlayerSpawnPointManager.isRespawning)
         {
             isPlaying = true;
             Time.timeScale = 1f;
+            EnablePlayerGameplay(true);
             if (uiDocument == null) uiDocument = GetComponent<UIDocument>();
             if (uiDocument != null && uiDocument.rootVisualElement != null)
             {
@@ -1051,6 +1058,31 @@ public class MainMenuUIToolkitController : MonoBehaviour
         isPlaying = true;
         Time.timeScale = 1f;
         EnablePlayerGameplay(true);
+
+        string currentScene = SceneManager.GetActiveScene().name;
+        if (currentScene.Equals(sceneToLoad, System.StringComparison.OrdinalIgnoreCase))
+        {
+            Debug.Log($"[MainMenu] Already in target scene '{sceneToLoad}'. Activating gameplay immediately.");
+            GameObject existingPlayer = GameObject.FindGameObjectWithTag("Player") ?? GameObject.Find("Player");
+            if (existingPlayer != null)
+            {
+                // Ensure player is at level spawn
+                if (sceneToLoad == "SampleScene")
+                {
+                    existingPlayer.transform.position = new Vector3(1125.6f, 287.4f, 0f);
+                }
+            }
+
+            if (HUDManager.Instance != null) HUDManager.Instance.UpdateVisibility();
+            if (SpawnOfChaos.Minigames.HUDOrbPanel.Instance != null) SpawnOfChaos.Minigames.HUDOrbPanel.Instance.UpdateVisibility();
+
+            LevelMusicPlayer lmp2 = FindFirstObjectByType<LevelMusicPlayer>();
+            if (lmp2 != null) lmp2.StartLevelMusic();
+
+            if (root != null) root.style.display = DisplayStyle.None;
+            gameObject.SetActive(false);
+            return;
+        }
 
         if (sceneToLoad == "TutorialScene")
         {

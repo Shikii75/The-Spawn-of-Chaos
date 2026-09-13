@@ -279,6 +279,9 @@ public class PlayerSceneSpawner : MonoBehaviour
     {
         if (player == null) return;
 
+        move.ExternalMovementLock = false;
+        if (Time.timeScale == 0f) Time.timeScale = 1f;
+
         // Movement
         move movement = player.GetComponent<move>();
         if (movement != null)
