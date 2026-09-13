@@ -106,7 +106,7 @@ public class LumiSpearWeapon : MonoBehaviour
     }
 
     [Header("Weapon Arsenal Integration")]
-    private WeaponID currentWeaponID = WeaponID.LumiSpear;
+    private WeaponID currentWeaponID = WeaponID.DarkSpear;
     private readonly List<GameObject> orbitingDaggerDuplicates = new List<GameObject>();
     private float orbitAngle = 0f;
     private bool isAutonomousSlashing = false;
@@ -118,7 +118,9 @@ public class LumiSpearWeapon : MonoBehaviour
         if (WeaponManager.Instance != null)
         {
             WeaponManager.Instance.OnWeaponEquipped += HandleWeaponEquipped;
-            ApplyWeaponConfiguration(WeaponManager.Instance.ActiveWeaponInfo);
+            // Force equip DarkSpear (the base spear)
+            WeaponManager.Instance.EquipWeapon(WeaponID.DarkSpear);
+            ApplyWeaponConfiguration(WeaponManager.Instance.GetWeaponInfo(WeaponID.DarkSpear));
         }
     }
 
@@ -239,10 +241,25 @@ public class LumiSpearWeapon : MonoBehaviour
         SetupMoteParticles();
     }
 
+    public static bool IsEnemyTarget(Collider2D col)
+    {
+        if (col == null) return false;
+        try
+        {
+            if (col.CompareTag("enemy")) return true;
+        }
+        catch {}
+        if (string.Equals(col.tag, "enemy", System.StringComparison.OrdinalIgnoreCase)) return true;
+        if (col.GetComponent<UniversalEnemy>() != null || col.GetComponentInParent<UniversalEnemy>() != null) return true;
+        return false;
+    }
+
     void LoadSpearSprite()
     {
         if (spearRenderer.sprite != null) return;
-        Sprite spearSprite = Resources.Load<Sprite>("LumiSpear") ??
+        Sprite spearSprite = Resources.Load<Sprite>("Weapons/DarkSpear") ??
+                             Resources.Load<Sprite>("DarkSpear") ??
+                             Resources.Load<Sprite>("LumiSpear") ??
                              Resources.Load<Sprite>("items/LumiSpear") ??
                              Resources.Load<Sprite>("Art/Items/LumiSpear");
         if (spearSprite != null)
@@ -1014,7 +1031,7 @@ public class LumiSpearWeapon : MonoBehaviour
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(targetSlashPos, 2.5f);
         foreach (var col in hitEnemies)
         {
-            if ((col.CompareTag("enemy") || col.CompareTag("Enemy")) || col.GetComponent<UniversalEnemy>() != null)
+            if (IsEnemyTarget(col))
             {
                 var health = col.GetComponent<Health>() ?? col.GetComponentInParent<Health>();
                 if (health != null)
@@ -1092,7 +1109,7 @@ public class LumiSpearWeapon : MonoBehaviour
             Collider2D[] hits = Physics2D.OverlapCircleAll(dup.transform.position, 0.6f);
             foreach (var hit in hits)
             {
-                if ((hit.CompareTag("enemy") || hit.CompareTag("Enemy")) || hit.GetComponent<UniversalEnemy>() != null)
+                if (IsEnemyTarget(hit))
                 {
                     var h = hit.GetComponent<Health>() ?? hit.GetComponentInParent<Health>();
                     if (h != null)
@@ -1113,7 +1130,7 @@ public class LumiSpearWeapon : MonoBehaviour
         Collider2D[] hits = Physics2D.OverlapCircleAll(impactPos, radius);
         foreach (var hit in hits)
         {
-            if ((hit.CompareTag("enemy") || hit.CompareTag("Enemy")) || hit.GetComponent<UniversalEnemy>() != null)
+            if (IsEnemyTarget(hit))
             {
                 var h = hit.GetComponent<Health>() ?? hit.GetComponentInParent<Health>();
                 if (h != null)

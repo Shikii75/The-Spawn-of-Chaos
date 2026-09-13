@@ -45,7 +45,10 @@ public class WebProjectile : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D other)
     {
         // Ignore other enemy/boss colliders
-        if ((other.CompareTag("enemy") || other.CompareTag("Enemy")) || other.name.Contains("Boss") || other.name.Contains("Tsuchigumo"))
+                bool isEnemyCollider = false;
+        try { isEnemyCollider = other.CompareTag("enemy"); } catch {}
+        if (!isEnemyCollider && string.Equals(other.tag, "enemy", System.StringComparison.OrdinalIgnoreCase)) isEnemyCollider = true;
+        if (isEnemyCollider || other.name.Contains("Boss") || other.name.Contains("Tsuchigumo"))
         {
             return;
         }

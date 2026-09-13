@@ -16,7 +16,7 @@ namespace SpawnOfChaos.Weapons
         public const string PREF_UNLOCKED_PREFIX = "Weapon_Unlocked_";
         public const string PREF_TIER_PREFIX = "Weapon_Tier_";
 
-        public WeaponID activeWeapon = WeaponID.LumiSpear;
+        public WeaponID activeWeapon = WeaponID.DarkSpear;
         public WeaponID ActiveWeapon => activeWeapon;
 
         public event Action<WeaponID> OnWeaponEquipped;
@@ -97,7 +97,7 @@ namespace SpawnOfChaos.Weapons
                 auraColor = new Color(0.6f, 0.1f, 0.95f, 1.0f),
                 trailColor = new Color(0.75f, 0.2f, 1.0f, 0.95f),
                 spriteResourcePath = "Weapons/DarkSpear",
-                unlockCost = 20,
+                unlockCost = 0,
                 tier2Cost = 45,
                 tier3Cost = 90
             };
@@ -122,27 +122,7 @@ namespace SpawnOfChaos.Weapons
                 tier2Cost = 60,
                 tier3Cost = 120
             };
-
-            // 3: Dark Dagger (Duplication Orbiters)
-            weaponDatabase[WeaponID.DarkDag] = new WeaponInfo
-            {
-                id = WeaponID.DarkDag,
-                displayName = "Shadow Daggers",
-                archetype = "Duplication Orbiters",
-                abilityType = WeaponAbilityType.DuplicationOrbiters,
-                abilityName = "Triple Shadow Orbit",
-                abilityDescription = "Duplicates into 3 shadow daggers orbiting the player. One is chosen at random when thrown while the other 2 float and shield the Drifter.",
-                baseDamage = 45,
-                explosionDamage = 80,
-                throwSpeed = 40f,
-                recallSpeed = 45f,
-                auraColor = new Color(0.4f, 0.05f, 0.8f, 1.0f),
-                trailColor = new Color(0.5f, 0.1f, 0.9f, 0.95f),
-                spriteResourcePath = "Weapons/DarkDag",
-                unlockCost = 25,
-                tier2Cost = 50,
-                tier3Cost = 100
-            };
+            // 3: Dark Dagger (Removed / Disabled for now)
 
             // 4: Lucky Dagger (1-in-3 Cheat-Death)
             weaponDatabase[WeaponID.DarkBladeSmall] = new WeaponInfo
@@ -189,21 +169,30 @@ namespace SpawnOfChaos.Weapons
 
         private void LoadState()
         {
-            int savedEquipped = PlayerPrefs.GetInt(PREF_EQUIPPED, 0);
+            int savedEquipped = PlayerPrefs.GetInt(PREF_EQUIPPED, (int)WeaponID.DarkSpear);
+            // If saved weapon was DarkDag (3) or not in database, reset to base spear (DarkSpear)
+            if (savedEquipped == (int)WeaponID.DarkDag || !weaponDatabase.ContainsKey((WeaponID)savedEquipped))
+            {
+                savedEquipped = (int)WeaponID.DarkSpear;
+                PlayerPrefs.SetInt(PREF_EQUIPPED, savedEquipped);
+                PlayerPrefs.Save();
+            }
             activeWeapon = (WeaponID)savedEquipped;
 
-            // Ensure starter weapon is unlocked
-            UnlockWeapon(WeaponID.LumiSpear);
+            // Ensure base spear (DarkSpear) is unlocked
+            UnlockWeapon(WeaponID.DarkSpear);
         }
 
         public bool IsUnlocked(WeaponID id)
         {
-            if (id == WeaponID.LumiSpear) return true;
+            if (id == WeaponID.DarkSpear) return true;
+            if (id == WeaponID.DarkDag) return false;
             return PlayerPrefs.GetInt(PREF_UNLOCKED_PREFIX + (int)id, 0) == 1;
         }
 
         public void UnlockWeapon(WeaponID id)
         {
+            if (id == WeaponID.DarkDag) return;
             PlayerPrefs.SetInt(PREF_UNLOCKED_PREFIX + (int)id, 1);
             if (GetTier(id) < 1) SetTier(id, 1);
             PlayerPrefs.Save();
@@ -232,13 +221,14 @@ namespace SpawnOfChaos.Weapons
 
         public void EquipWeapon(WeaponID id)
         {
+            if (id == WeaponID.DarkDag) return;
             if (!IsUnlocked(id)) return;
             activeWeapon = id;
             PlayerPrefs.SetInt(PREF_EQUIPPED, (int)id);
             PlayerPrefs.Save();
 
             OnWeaponEquipped?.Invoke(id);
-            Debug.Log($"[WeaponManager] Equipped weapon: {GetWeaponInfo(id).displayName}");
+            Debug.Log($"[WeaponManager] Equipped weapon: {GetWeaponInfo(id)?.displayName ?? id.ToString()}");
         }
 
         public WeaponInfo GetWeaponInfo(WeaponID id)
@@ -249,9 +239,13 @@ namespace SpawnOfChaos.Weapons
             {
                 return info;
             }
-            if (weaponDatabase.TryGetValue(WeaponID.LumiSpear, out WeaponInfo defaultInfo))
+            if (weaponDatabase.TryGetValue(WeaponID.DarkSpear, out WeaponInfo defaultInfo))
             {
                 return defaultInfo;
+            }
+            if (weaponDatabase.TryGetValue(WeaponID.LumiSpear, out WeaponInfo fallbackInfo))
+            {
+                return fallbackInfo;
             }
             return null;
         }
