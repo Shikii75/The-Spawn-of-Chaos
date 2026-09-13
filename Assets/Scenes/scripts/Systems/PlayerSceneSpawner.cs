@@ -41,6 +41,8 @@ public class PlayerSceneSpawner : MonoBehaviour
         PlayerSpawnPointManager.isRespawning = false;
 
         bool isTutorialScene = sceneName.Equals("TutorialScene", System.StringComparison.OrdinalIgnoreCase);
+        bool isSampleScene = sceneName.Equals("SampleScene", System.StringComparison.OrdinalIgnoreCase);
+        bool toriiIntroPending = isSampleScene && PlayerPrefs.GetInt(SampleSceneToriiIntroSequence.PREF_INTRO_COMPLETED, 0) == 0;
 
         // --- Step 1: Find the persistent player ---
         GameObject player = FindPersistentPlayer();
@@ -50,9 +52,9 @@ public class PlayerSceneSpawner : MonoBehaviour
         CleanupDuplicatePlayers(ref player);
 
         // In TutorialScene, enforce BasePlayer. If existing player is the Mage, remove it so BasePlayer spawns fresh!
-        if (isTutorialScene && player != null && !player.name.Contains("BasePlayer"))
+        if ((isTutorialScene || toriiIntroPending) && player != null && !player.name.Contains("BasePlayer"))
         {
-            Debug.Log($"[PlayerSceneSpawner] Clearing non-BasePlayer '{player.name}' to start Tutorial with BasePlayer.");
+            Debug.Log($"[PlayerSceneSpawner] Clearing non-BasePlayer '{player.name}' for BasePlayer sequence.");
             Destroy(player);
             player = null;
         }
@@ -96,6 +98,12 @@ public class PlayerSceneSpawner : MonoBehaviour
                     foundSpawnPoint = true;
                     Debug.Log($"[PlayerSceneSpawner] Snapped to DefaultSpawnPoint at {spawnPosition}");
                 }
+                else if (toriiIntroPending)
+                {
+                    spawnPosition = new Vector3(1070f, 167.5f, 0f);
+                    foundSpawnPoint = true;
+                    Debug.Log($"[PlayerSceneSpawner] Snapped to Torii Gate entrance at {spawnPosition}");
+                }
                 else if (isTutorialScene)
                 {
                     spawnPosition = new Vector3(-3378.2f, 518.5f, 0f);
@@ -114,7 +122,7 @@ public class PlayerSceneSpawner : MonoBehaviour
         if (player == null)
         {
             GameObject prefabToUse = playerPrefab;
-            if (prefabToUse == null || (isTutorialScene && !prefabToUse.name.Contains("BasePlayer")))
+            if (prefabToUse == null || ((isTutorialScene || toriiIntroPending) && !prefabToUse.name.Contains("BasePlayer")))
             {
                 prefabToUse = Resources.Load<GameObject>("Prefabs/BasePlayer");
 #if UNITY_EDITOR
