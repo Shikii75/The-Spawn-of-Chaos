@@ -119,16 +119,16 @@
     cursor: link;
     align-items: center;
     justify-content: center;
-    margin-bottom: 14px;
+    margin-bottom: 8px;
     overflow: visible;
 }
 
 .title-logo-image {
     cursor: link;
-    width: 920px;
-    height: 518px;
-    max-width: 80%;
-    max-height: 52%;
+    width: 1120px;
+    height: 630px;
+    max-width: 88%;
+    max-height: 65%;
     background-image: url('project://database/Assets/Scenes/animations/frames/keep-54947fd1/frame_001.png');
     -unity-background-scale-mode: scale-to-fit;
     flex-shrink: 1;
@@ -151,8 +151,8 @@
     justify-content: center;
     flex-shrink: 0;
     width: 100%;
-    margin-top: 10px;
-    margin-bottom: 12px;
+    margin-top: 6px;
+    margin-bottom: 8px;
 }
 
 /* ── Procedural Cyber-Gothic Glassmorphic Buttons ── */
