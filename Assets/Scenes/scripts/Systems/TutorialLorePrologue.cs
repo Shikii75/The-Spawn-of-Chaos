@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 /// <summary>
 /// TutorialLorePrologue - Atmospheric opening lore sequence for the Tutorial level.
@@ -18,6 +21,7 @@ using UnityEngine.SceneManagement;
 public class TutorialLorePrologue : MonoBehaviour
 {
     public static TutorialLorePrologue Instance { get; private set; }
+    public static bool IsPrologueActive { get; private set; }
 
     public enum AncientFontStyle
     {
@@ -34,6 +38,12 @@ public class TutorialLorePrologue : MonoBehaviour
     public AudioSource audioSource;
     public AudioClip prologueMusicTrack;
     [Range(0f, 1f)] public float musicVolume = 0.8f;
+
+    [Header("Voiceover Narration")]
+    public AudioSource narrationSource;
+    public AudioClip[] narrationClips = new AudioClip[7];
+    [Range(0f, 1f)] public float narrationVolume = 1f;
+    [Range(0f, 3f)] public float firstNarrationDelay = 0.7f;
 
     [Header("Cinematic Timing Settings")]
     public float slideFadeInDuration = 0.8f;
@@ -90,10 +100,13 @@ public class TutorialLorePrologue : MonoBehaviour
     private bool hasFinished = false;
     private Coroutine currentTransitionCoroutine;
     private float baseLoreY = -15f;
+    private List<AudioSource> mutedSceneAudioSources = new List<AudioSource>();
+    private List<float> mutedSceneAudioVolumes = new List<float>();
 
     void Awake()
     {
         Instance = this;
+        IsPrologueActive = true;
 
         // Ensure Lumi (the light orb) NEVER exists in TutorialScene
         PurgeLumiInstances();
@@ -136,6 +149,10 @@ public class TutorialLorePrologue : MonoBehaviour
         // Ensure Nyxaris Seal Breakdown sequence is active in TutorialScene
         NyxarisSealSequence.EnsureInstanceInScene();
 
+        EnsureNarrationSource();
+        EnsureNarrationClipsAssigned();
+        SilenceSceneAudioDuringLore();
+
         // Play optional music track if provided
         if (prologueMusicTrack != null)
         {
@@ -148,6 +165,213 @@ public class TutorialLorePrologue : MonoBehaviour
 
         // Begin with first slide fading in
         currentTransitionCoroutine = StartCoroutine(ShowSlideRoutine(0));
+    }
+
+    private void EnsureNarrationSource()
+    {
+        if (narrationSource == null)
+        {
+            narrationSource = GetComponent<AudioSource>();
+            if (narrationSource == null)
+            {
+                narrationSource = gameObject.AddComponent<AudioSource>();
+            }
+        }
+
+        narrationSource.loop = false;
+        narrationSource.playOnAwake = false;
+        narrationSource.volume = narrationVolume;
+
+        ApplyNarrationReverb();
+    }
+
+    private void ApplyNarrationReverb()
+    {
+        if (narrationSource == null)
+        {
+            return;
+        }
+
+        try
+        {
+            var filterType = System.Type.GetType("UnityEngine.AudioReverbFilter, UnityEngine");
+            if (filterType == null)
+            {
+                narrationSource.reverbZoneMix = 1.2f;
+                return;
+            }
+
+            var filter = narrationSource.GetComponent(filterType);
+            if (filter == null)
+            {
+                filter = narrationSource.gameObject.AddComponent(filterType);
+            }
+
+            var presetType = System.Type.GetType("UnityEngine.AudioReverbPreset, UnityEngine");
+            if (presetType != null)
+            {
+                var preset = System.Enum.Parse(presetType, "Cathedral");
+                var presetProp = filterType.GetProperty("reverbPreset");
+                if (presetProp != null && presetProp.PropertyType == presetType)
+                {
+                    presetProp.SetValue(filter, preset);
+                }
+            }
+
+            SetFloatProperty(filter, "dryLevel", 0f);
+            SetFloatProperty(filter, "room", -1000f);
+            SetFloatProperty(filter, "roomHF", -1000f);
+            SetFloatProperty(filter, "decayTime", 4.8f);
+            SetFloatProperty(filter, "decayHFRatio", 1.3f);
+            SetFloatProperty(filter, "reflections", 80f);
+            SetFloatProperty(filter, "reflectionsDelay", 0.03f);
+            SetFloatProperty(filter, "reverb", 2000f);
+            SetFloatProperty(filter, "reverbDelay", 0.06f);
+            SetFloatProperty(filter, "hfReference", 5000f);
+            SetFloatProperty(filter, "lfReference", 250f);
+            SetFloatProperty(filter, "diffusion", 100f);
+            SetFloatProperty(filter, "density", 100f);
+
+            var enabledProp = filterType.GetProperty("enabled");
+            if (enabledProp != null && enabledProp.PropertyType == typeof(bool))
+            {
+                enabledProp.SetValue(filter, true);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogWarning("[TutorialLorePrologue] Reverb setup unavailable in this Unity build: " + ex.Message);
+            narrationSource.reverbZoneMix = 1.2f;
+        }
+    }
+
+    private static void SetFloatProperty(Component target, string propertyName, float value)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        var prop = target.GetType().GetProperty(propertyName);
+        if (prop != null && prop.PropertyType == typeof(float))
+        {
+            prop.SetValue(target, value);
+        }
+    }
+
+    private void EnsureNarrationClipsAssigned()
+    {
+        bool hasAssignedClip = narrationClips != null && narrationClips.Length >= 7 && narrationClips[0] != null;
+        if (hasAssignedClip)
+        {
+            return;
+        }
+
+        narrationClips = new AudioClip[7];
+
+#if UNITY_EDITOR
+        string[] assetPaths = new[]
+        {
+            "Assets/Audio/Voice/openingsequence/prologue_slide_01.wav",
+            "Assets/Audio/Voice/openingsequence/prologue_slide_02.wav",
+            "Assets/Audio/Voice/openingsequence/prologue_slide_03.wav",
+            "Assets/Audio/Voice/openingsequence/prologue_slide_04.wav",
+            "Assets/Audio/Voice/openingsequence/prologue_slide_05.wav",
+            "Assets/Audio/Voice/openingsequence/prologue_slide_06.wav",
+            "Assets/Audio/Voice/openingsequence/prologue_slide_07.wav"
+        };
+
+        for (int i = 0; i < assetPaths.Length; i++)
+        {
+            narrationClips[i] = AssetDatabase.LoadAssetAtPath<AudioClip>(assetPaths[i]);
+            if (narrationClips[i] == null)
+            {
+                Debug.LogWarning($"[TutorialLorePrologue] Missing narration clip at path: {assetPaths[i]}");
+            }
+        }
+#endif
+
+        if (narrationClips[0] == null && narrationClips[1] == null && narrationClips[2] == null && narrationClips[3] == null && narrationClips[4] == null && narrationClips[5] == null && narrationClips[6] == null)
+        {
+            Debug.LogWarning("[TutorialLorePrologue] No prologue narration clips were assigned. Ensure the seven openingsequence wav files exist under Assets/Audio/Voice/openingsequence.");
+        }
+    }
+
+    private void SilenceSceneAudioDuringLore()
+    {
+        if (mutedSceneAudioSources.Count > 0)
+        {
+            return;
+        }
+
+        AudioSource[] allSources = FindObjectsByType<AudioSource>(FindObjectsSortMode.None);
+        for (int i = 0; i < allSources.Length; i++)
+        {
+            var source = allSources[i];
+            if (source == null || source == audioSource || source == narrationSource)
+            {
+                continue;
+            }
+
+            mutedSceneAudioSources.Add(source);
+            mutedSceneAudioVolumes.Add(source.volume);
+            source.mute = true;
+            source.Stop();
+        }
+    }
+
+    private void RestoreSceneAudioAfterLore()
+    {
+        for (int i = 0; i < mutedSceneAudioSources.Count; i++)
+        {
+            var source = mutedSceneAudioSources[i];
+            if (source != null)
+            {
+                source.mute = false;
+                source.volume = mutedSceneAudioVolumes[i];
+            }
+        }
+
+        mutedSceneAudioSources.Clear();
+        mutedSceneAudioVolumes.Clear();
+    }
+
+    private void PlayNarrationForSlide(int slideIndex)
+    {
+        if (narrationSource == null)
+        {
+            EnsureNarrationSource();
+        }
+
+        if (slideIndex < 0 || slideIndex >= 7 || narrationClips == null || slideIndex >= narrationClips.Length || narrationClips[slideIndex] == null)
+        {
+            if (narrationSource != null)
+            {
+                narrationSource.Stop();
+            }
+            Debug.LogWarning($"[TutorialLorePrologue] No narration clip available for slide {slideIndex}.");
+            return;
+        }
+
+        if (narrationSource.clip == narrationClips[slideIndex] && narrationSource.isPlaying)
+        {
+            return;
+        }
+
+        narrationSource.Stop();
+        narrationSource.clip = narrationClips[slideIndex];
+        narrationSource.volume = narrationVolume;
+        narrationSource.Play();
+    }
+
+    private IEnumerator DelayNarrationForFirstSlide()
+    {
+        if (firstNarrationDelay > 0f)
+        {
+            yield return new WaitForSeconds(firstNarrationDelay);
+        }
+
+        PlayNarrationForSlide(0);
     }
 
     void Update()
@@ -209,18 +433,40 @@ public class TutorialLorePrologue : MonoBehaviour
         isTransitioning = true;
         UpdatePromptState(false);
 
-        // Populate texts
-        loreTextComp.text = loreSlides[index];
         bool isTitleCard = (index == loreSlides.Length - 1);
+
+        // Populate texts
         if (isTitleCard)
         {
+            loreTextComp.text = "<size=62><color=#F2B8FF><b>THE SPAWN OF CHAOS</b></color></size>\n\n<size=34><color=#D47BFF><i>✦  Heir to the Void  ✦</i></color></size>";
+            loreTextComp.fontSize = 58;
             headerTextComp.text = "✦   The Multiverse Fractures   ✦";
             slideProgressTextComp.text = "✦   TITLE CARD   ✦";
         }
         else
         {
+            loreTextComp.text = loreSlides[index];
+            loreTextComp.fontSize = 42;
             headerTextComp.text = "✦   Chronicles of the Void   ✦";
             slideProgressTextComp.text = $"✦  Part {ToRomanNumeral(index + 1)}  ✦";
+        }
+
+        if (index == 0)
+        {
+            if (narrationSource != null)
+            {
+                narrationSource.Stop();
+                narrationSource.clip = null;
+            }
+            StartCoroutine(DelayNarrationForFirstSlide());
+        }
+        else if (index < 7)
+        {
+            PlayNarrationForSlide(index);
+        }
+        else if (narrationSource != null)
+        {
+            narrationSource.Stop();
         }
 
         // Fade In smoothly from alpha 0 to 1 with gentle upward floating rise
@@ -367,6 +613,7 @@ public class TutorialLorePrologue : MonoBehaviour
     {
         if (hasFinished) return;
         hasFinished = true;
+        IsPrologueActive = false;
 
         if (currentTransitionCoroutine != null) StopCoroutine(currentTransitionCoroutine);
         StartCoroutine(FadeOutAndAwakenWorld());
@@ -390,6 +637,13 @@ public class TutorialLorePrologue : MonoBehaviour
 
         if (canvasGroup != null) canvasGroup.alpha = 0f;
         if (audioSource != null) audioSource.Stop();
+        if (narrationSource != null)
+        {
+            narrationSource.Stop();
+            narrationSource.clip = null;
+        }
+        RestoreSceneAudioAfterLore();
+        IsPrologueActive = false;
 
         // Release player movement lock
         move.ExternalMovementLock = false;

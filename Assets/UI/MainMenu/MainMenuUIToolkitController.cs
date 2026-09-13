@@ -56,7 +56,7 @@ public class MainMenuUIToolkitController : MonoBehaviour
 
     [Header("Logo Frame Animation & Sizing")]
     [Tooltip("Dimensions of the logo in pixels (Width, Height).")]
-    public Vector2 logoDimensions = new Vector2(720f, 405f);
+    public Vector2 logoDimensions = new Vector2(560f, 315f);
     [Tooltip("Overall scale multiplier for the logo animation.")]
     [Range(0.2f, 2.5f)]
     public float logoScale = 1.0f;
@@ -86,7 +86,7 @@ public class MainMenuUIToolkitController : MonoBehaviour
     [Header("Gentle Fireflies (Bottom to Top)")]
     [Tooltip("Total number of gentle fireflies.")]
     [Range(10, 80)]
-    public int orbCount = 35;
+    public int orbCount = 38;
     [Tooltip("Upward drift speed multiplier.")]
     [Range(0.2f, 3f)]
     public float fallSpeedMultiplier = 1.0f;
@@ -199,11 +199,11 @@ public class MainMenuUIToolkitController : MonoBehaviour
     // Deep cosmic purple and royal violet atmospheric lights matching Tutorial prologue
     private static readonly Color[] OrbColors = new Color[]
     {
-        new Color(0.32f, 0.04f, 0.78f, 0.82f), // Deep cosmic royal violet
-        new Color(0.42f, 0.08f, 0.88f, 0.85f), // Luminous void purple
-        new Color(0.26f, 0.02f, 0.68f, 0.78f), // Deep abyss purple
-        new Color(0.48f, 0.12f, 0.94f, 0.84f), // Astral violet
-        new Color(0.36f, 0.06f, 0.82f, 0.80f)  // Arcane shadow purple
+        new Color(0.65f, 0.20f, 0.95f, 0.85f), // Radiant violet (Opening Scene)
+        new Color(0.85f, 0.35f, 1.00f, 0.88f), // Neon purple (Opening Scene)
+        new Color(0.92f, 0.50f, 0.98f, 0.82f), // Ethereal magenta (Opening Scene)
+        new Color(0.48f, 0.15f, 0.85f, 0.86f), // Deep amethyst (Opening Scene)
+        new Color(0.78f, 0.45f, 0.90f, 0.84f)  // Soft lilac (Opening Scene)
     };
 
     private void Awake()
@@ -393,13 +393,14 @@ public class MainMenuUIToolkitController : MonoBehaviour
         if (titleLogo != null)
         {
             if (logoScale > 1.4f) logoScale = 1.0f;
-            if (logoDimensions.x < 400f || logoDimensions.x > 800f) logoDimensions = new Vector2(420f, 210f);
+            logoDimensions = new Vector2(560f, 315f);
 
-            // Compact responsive logo dimensions
+            // Prominent 16:9 centerpiece logo scaling
             titleLogo.style.width = logoDimensions.x * logoScale;
             titleLogo.style.height = logoDimensions.y * logoScale;
-            titleLogo.style.maxWidth = Length.Percent(60f);
-            titleLogo.style.maxHeight = Length.Percent(40f);
+            titleLogo.style.maxWidth = Length.Percent(68f);
+            titleLogo.style.maxHeight = Length.Percent(46f);
+            titleLogo.style.flexShrink = 1f;
         }
     }
 
