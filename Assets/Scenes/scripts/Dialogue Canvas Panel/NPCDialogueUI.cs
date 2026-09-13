@@ -498,6 +498,13 @@ public class NPCDialogueUI : MonoBehaviour
         onComplete = onCompleteCallback;
         openedFrameCount = Time.frameCount;
 
+        // Play Mage talk voice reaction
+        move playerMove = FindFirstObjectByType<move>();
+        if (playerMove != null)
+        {
+            playerMove.PlayRandomTalkVoice();
+        }
+
         currentNameColor = nameCol;
         currentTextColor = textCol;
         typeSpeed = speed;

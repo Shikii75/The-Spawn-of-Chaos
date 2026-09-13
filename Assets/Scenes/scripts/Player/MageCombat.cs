@@ -16,6 +16,11 @@ using UnityEngine;
 /// </summary>
 public class MageCombat : MonoBehaviour
 {
+    [Header("Mage Combat Voice")]
+    [Tooltip("Audio clips for Mage attacking.")]
+    public AudioClip[] attackVoiceClips;
+    private AudioSource combatVoiceSource;
+
     public static MageCombat Instance { get; private set; }
 
     [Header("Melee Settings")]
@@ -101,6 +106,7 @@ public class MageCombat : MonoBehaviour
 
     void Start()
     {
+        InitCombatVoice();
         // Resolve actual clip durations from the animator controller at startup
         // so we don't rely on potentially stale GetCurrentAnimatorClipInfo during transitions
         if (animator != null && animator.runtimeAnimatorController != null)
@@ -270,6 +276,7 @@ public class MageCombat : MonoBehaviour
 
     private void PerformAttack1()
     {
+        PlayRandomAttackVoice();
         comboStep = 1;
         secondHitQueued = false;
         comboTimer = comboWindowDuration;
@@ -329,6 +336,7 @@ public class MageCombat : MonoBehaviour
 
     private void PerformSecondHit()
     {
+        PlayRandomAttackVoice();
         hitsThisSwing.Clear();
         comboStep = 2;
         secondHitQueued = false;
@@ -416,6 +424,7 @@ public class MageCombat : MonoBehaviour
 
     private void PerformRangedAttack()
     {
+        PlayRandomAttackVoice();
         currentMana -= projectileManaCost;
         nextRangedTime = Time.time + rangedCooldown;
 
@@ -551,4 +560,33 @@ public class MageCombat : MonoBehaviour
             }
         }
     }
+
+    private void InitCombatVoice()
+    {
+        combatVoiceSource = gameObject.GetComponent<AudioSource>();
+        if (combatVoiceSource == null)
+        {
+            combatVoiceSource = gameObject.AddComponent<AudioSource>();
+        }
+        combatVoiceSource.playOnAwake = false;
+        combatVoiceSource.spatialBlend = 0f;
+
+        if (attackVoiceClips == null || attackVoiceClips.Length == 0)
+        {
+            attackVoiceClips = Resources.LoadAll<AudioClip>("Voice/mage/attack");
+        }
+    }
+
+    public void PlayRandomAttackVoice()
+    {
+        if (attackVoiceClips == null || attackVoiceClips.Length == 0) return;
+        if (combatVoiceSource == null) InitCombatVoice();
+        AudioClip clip = attackVoiceClips[UnityEngine.Random.Range(0, attackVoiceClips.Length)];
+        if (clip != null)
+        {
+            float sfxVol = AudioManager.Instance != null ? AudioManager.Instance.GetRealSFXVolume() : 1.0f;
+            combatVoiceSource.PlayOneShot(clip, sfxVol);
+        }
+    }
+
 }

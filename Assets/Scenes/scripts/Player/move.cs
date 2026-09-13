@@ -2,6 +2,13 @@ using UnityEngine;
 
 public class move : MonoBehaviour
 {
+    [Header("Mage Voice Settings")]
+    [Tooltip("Audio clips for Mage jumping.")]
+    public AudioClip[] jumpVoiceClips;
+    [Tooltip("Audio clips for Mage talking during NPC dialogue.")]
+    public AudioClip[] talkVoiceClips;
+    private AudioSource voiceAudioSource;
+
     [Header("Virtual Touch Controls")]
     public float virtualHorizontalInput = 0f;
     public bool virtualJumpPressed = false;
@@ -92,12 +99,14 @@ public class move : MonoBehaviour
     public static move Instance { get; private set; }
 
     public static bool ExternalMovementLock = false;
+        InitVoiceAudio();
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetStatic()
     {
         Instance = null;
         ExternalMovementLock = false;
+        InitVoiceAudio();
     }
 
     void Awake()
@@ -109,6 +118,7 @@ public class move : MonoBehaviour
         }
         Instance = this;
         ExternalMovementLock = false;
+        InitVoiceAudio();
 
         // DontDestroyOnLoad only works on root GameObjects.
         // The Player may be parented under a holder object (e.g. "playerholder") in the scene.
@@ -773,6 +783,7 @@ public class move : MonoBehaviour
         virtualJumpPressed = false;
         if (jumpTriggered)
         {
+            PlayRandomJumpVoice();
             jumpLockoutTimer = jumpLockoutDuration; // Lockout ground checks for initial launch phase so full animation plays
             groundedGraceTimer = 0f; // Reset grace timer on jump
             isGrounded = false;
@@ -1294,6 +1305,51 @@ public class move : MonoBehaviour
         if (hit.collider.CompareTag("Player") || hit.collider.CompareTag("enemy")) return false;
         if (hit.collider.GetComponent<IDamageable>() != null) return false;
         return true;
+    }
+
+
+    private void InitVoiceAudio()
+    {
+        voiceAudioSource = gameObject.GetComponent<AudioSource>();
+        if (voiceAudioSource == null)
+        {
+            voiceAudioSource = gameObject.AddComponent<AudioSource>();
+        }
+        voiceAudioSource.playOnAwake = false;
+        voiceAudioSource.spatialBlend = 0f; // 2D Audio
+
+        if (jumpVoiceClips == null || jumpVoiceClips.Length == 0)
+        {
+            jumpVoiceClips = Resources.LoadAll<AudioClip>("Voice/mage/jump");
+        }
+        if (talkVoiceClips == null || talkVoiceClips.Length == 0)
+        {
+            talkVoiceClips = Resources.LoadAll<AudioClip>("Voice/mage/talk");
+        }
+    }
+
+    public void PlayRandomJumpVoice()
+    {
+        if (jumpVoiceClips == null || jumpVoiceClips.Length == 0) return;
+        if (voiceAudioSource == null) InitVoiceAudio();
+        AudioClip clip = jumpVoiceClips[UnityEngine.Random.Range(0, jumpVoiceClips.Length)];
+        if (clip != null)
+        {
+            float sfxVol = AudioManager.Instance != null ? AudioManager.Instance.GetRealSFXVolume() : 1.0f;
+            voiceAudioSource.PlayOneShot(clip, sfxVol);
+        }
+    }
+
+    public void PlayRandomTalkVoice()
+    {
+        if (talkVoiceClips == null || talkVoiceClips.Length == 0) return;
+        if (voiceAudioSource == null) InitVoiceAudio();
+        AudioClip clip = talkVoiceClips[UnityEngine.Random.Range(0, talkVoiceClips.Length)];
+        if (clip != null)
+        {
+            float sfxVol = AudioManager.Instance != null ? AudioManager.Instance.GetRealSFXVolume() : 1.0f;
+            voiceAudioSource.PlayOneShot(clip, sfxVol);
+        }
     }
 
 }

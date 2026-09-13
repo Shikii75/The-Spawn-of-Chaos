@@ -20,6 +20,7 @@ public class Health : MonoBehaviour, IDamageable
 
     void Start()
     {
+        InitHurtVoice();
         if (CompareTag("Player"))
         {
             maxHealth = 100; // Standard 100% health scale
@@ -65,10 +66,14 @@ public class Health : MonoBehaviour, IDamageable
         currentHealth = Mathf.Max(currentHealth, 0);
         Debug.Log($"{name} took {damage} damage. Health now {currentHealth}/{maxHealth}.");
 
-        if (CompareTag("Player") && playerSpriteRenderer != null)
+        if (CompareTag("Player"))
         {
-            if (flashCoroutine != null) StopCoroutine(flashCoroutine);
-            flashCoroutine = StartCoroutine(FlashPlayerRed());
+            PlayRandomHurtVoice();
+            if (playerSpriteRenderer != null)
+            {
+                if (flashCoroutine != null) StopCoroutine(flashCoroutine);
+                flashCoroutine = StartCoroutine(FlashPlayerRed());
+            }
         }
 
         EnemyPatrol2D enemy = GetComponent<EnemyPatrol2D>();
@@ -233,4 +238,33 @@ public class Health : MonoBehaviour, IDamageable
         PlayerSpawnPointManager.isRespawning = true;
         UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
     }
+
+    private void InitHurtVoice()
+    {
+        hurtVoiceSource = gameObject.GetComponent<AudioSource>();
+        if (hurtVoiceSource == null)
+        {
+            hurtVoiceSource = gameObject.AddComponent<AudioSource>();
+        }
+        hurtVoiceSource.playOnAwake = false;
+        hurtVoiceSource.spatialBlend = 0f;
+
+        if (hurtVoiceClips == null || hurtVoiceClips.Length == 0)
+        {
+            hurtVoiceClips = Resources.LoadAll<AudioClip>("Voice/mage/hurt");
+        }
+    }
+
+    public void PlayRandomHurtVoice()
+    {
+        if (hurtVoiceClips == null || hurtVoiceClips.Length == 0) return;
+        if (hurtVoiceSource == null) InitHurtVoice();
+        AudioClip clip = hurtVoiceClips[UnityEngine.Random.Range(0, hurtVoiceClips.Length)];
+        if (clip != null)
+        {
+            float sfxVol = AudioManager.Instance != null ? AudioManager.Instance.GetRealSFXVolume() : 1.0f;
+            hurtVoiceSource.PlayOneShot(clip, sfxVol);
+        }
+    }
+
 }
