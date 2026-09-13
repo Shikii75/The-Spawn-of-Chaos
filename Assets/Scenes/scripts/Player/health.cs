@@ -3,6 +3,11 @@ using UnityEngine;
 
 public class Health : MonoBehaviour, IDamageable
 {
+    [Header("Mage Hurt Voice")]
+    [Tooltip("Audio clips for Mage taking damage.")]
+    public AudioClip[] hurtVoiceClips;
+    private AudioSource hurtVoiceSource;
+
     public int maxHealth = 14;
     private int currentHealth;
 

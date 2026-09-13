@@ -191,8 +191,8 @@ public class AudioManager : MonoBehaviour
     }
 
     // Vol helpers
-    private float GetRealMusicVolume() => musicVolume * masterVolume;
-    private float GetRealSFXVolume() => sfxVolume * masterVolume;
+    public float GetRealMusicVolume() => musicVolume * masterVolume;
+    public float GetRealSFXVolume() => sfxVolume * masterVolume;
 
     public void SetMusicVolume(float volume)
     {
