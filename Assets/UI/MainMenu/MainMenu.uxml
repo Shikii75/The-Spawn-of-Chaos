@@ -20,7 +20,7 @@
         <ui:VisualElement name="main-layout" class="main-layout-container">
             
             <!-- Centerpiece Logo Artwork with Frame Animation -->
-            <ui:VisualElement name="title-container" class="title-logo-container">
+            <ui:VisualElement name="title-container" class="title-logo-container" picking-mode="Ignore">
                 <ui:VisualElement name="title-logo" class="title-logo-image" />
             </ui:VisualElement>
 
@@ -29,72 +29,72 @@
                 
                 <!-- Continue Button -->
                 <ui:Button name="btn-continue" class="cyber-button cyber-button--continue">
-                    <ui:VisualElement class="btn-top-accent" />
-                    <ui:VisualElement class="btn-content-row">
-                        <ui:Label text="✦" class="btn-rune btn-rune--left" />
-                        <ui:VisualElement class="btn-copy">
-                            <ui:Label text="CONTINUE" class="btn-label" />
-                            <ui:Label text="RESUME SAGA" class="btn-hint" />
+                    <ui:VisualElement class="btn-top-accent" picking-mode="Ignore" />
+                    <ui:VisualElement class="btn-content-row" picking-mode="Ignore">
+                        <ui:Label text="✦" class="btn-rune btn-rune--left" picking-mode="Ignore" />
+                        <ui:VisualElement class="btn-copy" picking-mode="Ignore">
+                            <ui:Label text="CONTINUE" class="btn-label" picking-mode="Ignore" />
+                            <ui:Label text="RESUME SAGA" class="btn-hint" picking-mode="Ignore" />
                         </ui:VisualElement>
-                        <ui:Label text="✦" class="btn-rune btn-rune--right" />
+                        <ui:Label text="✦" class="btn-rune btn-rune--right" picking-mode="Ignore" />
                     </ui:VisualElement>
-                    <ui:VisualElement class="btn-bottom-accent" />
+                    <ui:VisualElement class="btn-bottom-accent" picking-mode="Ignore" />
                 </ui:Button>
 
                 <!-- New Game Button -->
                 <ui:Button name="btn-new-game" class="cyber-button cyber-button--play">
-                    <ui:VisualElement class="btn-top-accent" />
-                    <ui:VisualElement class="btn-content-row">
-                        <ui:Label text="⚔" class="btn-rune btn-rune--left" />
-                        <ui:VisualElement class="btn-copy">
-                            <ui:Label text="NEW GAME" class="btn-label" />
-                            <ui:Label text="BEGIN DESCENT" class="btn-hint" />
+                    <ui:VisualElement class="btn-top-accent" picking-mode="Ignore" />
+                    <ui:VisualElement class="btn-content-row" picking-mode="Ignore">
+                        <ui:Label text="⚔" class="btn-rune btn-rune--left" picking-mode="Ignore" />
+                        <ui:VisualElement class="btn-copy" picking-mode="Ignore">
+                            <ui:Label text="NEW GAME" class="btn-label" picking-mode="Ignore" />
+                            <ui:Label text="BEGIN DESCENT" class="btn-hint" picking-mode="Ignore" />
                         </ui:VisualElement>
-                        <ui:Label text="⚔" class="btn-rune btn-rune--right" />
+                        <ui:Label text="⚔" class="btn-rune btn-rune--right" picking-mode="Ignore" />
                     </ui:VisualElement>
-                    <ui:VisualElement class="btn-bottom-accent" />
+                    <ui:VisualElement class="btn-bottom-accent" picking-mode="Ignore" />
                 </ui:Button>
 
                 <!-- Load Game (12 Slots) Button -->
                 <ui:Button name="btn-load-game" class="cyber-button cyber-button--load">
-                    <ui:VisualElement class="btn-top-accent" />
-                    <ui:VisualElement class="btn-content-row">
-                        <ui:Label text="❖" class="btn-rune btn-rune--left" />
-                        <ui:VisualElement class="btn-copy">
-                            <ui:Label text="LOAD GAME" class="btn-label" />
-                            <ui:Label text="12 MEMORY SLOTS" class="btn-hint" />
+                    <ui:VisualElement class="btn-top-accent" picking-mode="Ignore" />
+                    <ui:VisualElement class="btn-content-row" picking-mode="Ignore">
+                        <ui:Label text="❖" class="btn-rune btn-rune--left" picking-mode="Ignore" />
+                        <ui:VisualElement class="btn-copy" picking-mode="Ignore">
+                            <ui:Label text="LOAD GAME" class="btn-label" picking-mode="Ignore" />
+                            <ui:Label text="12 MEMORY SLOTS" class="btn-hint" picking-mode="Ignore" />
                         </ui:VisualElement>
-                        <ui:Label text="❖" class="btn-rune btn-rune--right" />
+                        <ui:Label text="❖" class="btn-rune btn-rune--right" picking-mode="Ignore" />
                     </ui:VisualElement>
-                    <ui:VisualElement class="btn-bottom-accent" />
+                    <ui:VisualElement class="btn-bottom-accent" picking-mode="Ignore" />
                 </ui:Button>
 
                 <!-- Options Button -->
                 <ui:Button name="btn-settings" class="cyber-button cyber-button--options">
-                    <ui:VisualElement class="btn-top-accent" />
-                    <ui:VisualElement class="btn-content-row">
-                        <ui:Label text="⚙" class="btn-rune btn-rune--left" />
-                        <ui:VisualElement class="btn-copy">
-                            <ui:Label text="OPTIONS" class="btn-label" />
-                            <ui:Label text="TUNE YOUR RITUAL" class="btn-hint" />
+                    <ui:VisualElement class="btn-top-accent" picking-mode="Ignore" />
+                    <ui:VisualElement class="btn-content-row" picking-mode="Ignore">
+                        <ui:Label text="⚙" class="btn-rune btn-rune--left" picking-mode="Ignore" />
+                        <ui:VisualElement class="btn-copy" picking-mode="Ignore">
+                            <ui:Label text="OPTIONS" class="btn-label" picking-mode="Ignore" />
+                            <ui:Label text="TUNE YOUR RITUAL" class="btn-hint" picking-mode="Ignore" />
                         </ui:VisualElement>
-                        <ui:Label text="⚙" class="btn-rune btn-rune--right" />
+                        <ui:Label text="⚙" class="btn-rune btn-rune--right" picking-mode="Ignore" />
                     </ui:VisualElement>
-                    <ui:VisualElement class="btn-bottom-accent" />
+                    <ui:VisualElement class="btn-bottom-accent" picking-mode="Ignore" />
                 </ui:Button>
 
                 <!-- Quit Button -->
                 <ui:Button name="btn-quit" class="cyber-button cyber-button--quit">
-                    <ui:VisualElement class="btn-top-accent" />
-                    <ui:VisualElement class="btn-content-row">
-                        <ui:Label text="✕" class="btn-rune btn-rune--left" />
-                        <ui:VisualElement class="btn-copy">
-                            <ui:Label text="QUIT" class="btn-label" />
-                            <ui:Label text="LEAVE THE REALM" class="btn-hint" />
+                    <ui:VisualElement class="btn-top-accent" picking-mode="Ignore" />
+                    <ui:VisualElement class="btn-content-row" picking-mode="Ignore">
+                        <ui:Label text="✕" class="btn-rune btn-rune--left" picking-mode="Ignore" />
+                        <ui:VisualElement class="btn-copy" picking-mode="Ignore">
+                            <ui:Label text="QUIT" class="btn-label" picking-mode="Ignore" />
+                            <ui:Label text="LEAVE THE REALM" class="btn-hint" picking-mode="Ignore" />
                         </ui:VisualElement>
-                        <ui:Label text="✕" class="btn-rune btn-rune--right" />
+                        <ui:Label text="✕" class="btn-rune btn-rune--right" picking-mode="Ignore" />
                     </ui:VisualElement>
-                    <ui:VisualElement class="btn-bottom-accent" />
+                    <ui:VisualElement class="btn-bottom-accent" picking-mode="Ignore" />
                 </ui:Button>
 
             </ui:VisualElement>

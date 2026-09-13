@@ -395,12 +395,16 @@ public class MainMenuUIToolkitController : MonoBehaviour
             if (logoScale > 2.0f) logoScale = 1.0f;
             logoDimensions = new Vector2(1120f, 630f);
 
-            // 2X Centerpiece logo scaling
+            // 2X Centerpiece logo scaling with responsive bounds so buttons are never obstructed
             titleLogo.style.width = logoDimensions.x * logoScale;
             titleLogo.style.height = logoDimensions.y * logoScale;
             titleLogo.style.maxWidth = Length.Percent(88f);
-            titleLogo.style.maxHeight = Length.Percent(65f);
+            titleLogo.style.maxHeight = Length.Percent(58f);
             titleLogo.style.flexShrink = 1f;
+        }
+        if (titleContainer != null)
+        {
+            titleContainer.pickingMode = PickingMode.Ignore;
         }
     }
 
@@ -714,10 +718,7 @@ public class MainMenuUIToolkitController : MonoBehaviour
         {
             titleLogo.RegisterCallback<ClickEvent>(OnLogoTapped);
         }
-        if (titleContainer != null)
-        {
-            titleContainer.RegisterCallback<ClickEvent>(OnLogoTapped);
-        }
+        // titleContainer ignores picking to avoid intercepting button clicks
         if (btnPlay != null) btnPlay.clicked += OnPlayClicked;
         if (btnContinue != null) btnContinue.clicked += OnContinueClicked;
         if (btnNewGame != null) btnNewGame.clicked += OnNewGameClicked;
@@ -783,7 +784,7 @@ public class MainMenuUIToolkitController : MonoBehaviour
     private void UnregisterCallbacks()
     {
         if (titleLogo != null) titleLogo.UnregisterCallback<ClickEvent>(OnLogoTapped);
-        if (titleContainer != null) titleContainer.UnregisterCallback<ClickEvent>(OnLogoTapped);
+
         if (btnPlay != null) btnPlay.clicked -= OnPlayClicked;
         if (btnContinue != null) btnContinue.clicked -= OnContinueClicked;
         if (btnNewGame != null) btnNewGame.clicked -= OnNewGameClicked;
@@ -819,6 +820,7 @@ public class MainMenuUIToolkitController : MonoBehaviour
     private void OpenModal(VisualElement modal)
     {
         if (modal == null) return;
+        Debug.Log($"[MainMenuUIToolkitController] OpenModal invoked for {modal.name}.");
         PlaySFX(modalOpenClip);
         modal.RemoveFromClassList("panel--hidden");
         modal.AddToClassList("panel--visible");
@@ -875,27 +877,32 @@ public class MainMenuUIToolkitController : MonoBehaviour
     {
         if (btnContinue == null) return;
         bool hasSave = SaveSlotManager.HasAnySave();
-        btnContinue.SetEnabled(hasSave);
-        btnContinue.style.opacity = hasSave ? 1.0f : 0.45f;
+        // Keep button interactive; adjust opacity to clearly show save state
+        btnContinue.SetEnabled(true);
+        btnContinue.style.opacity = hasSave ? 1.0f : 0.65f;
     }
 
     private void OnContinueClicked()
     {
+        Debug.Log("[MainMenuUIToolkitController] OnContinueClicked invoked.");
         PlaySFX(clickClip);
         int recentIdx = SaveSlotManager.GetMostRecentSlotIndex();
         SaveSlotData slot = SaveSlotManager.GetSlot(recentIdx);
         if (slot != null && !slot.isEmpty)
         {
+            Debug.Log($"[MainMenuUIToolkitController] Resuming save slot {recentIdx}...");
             LoadGameSlot(slot);
         }
         else
         {
+            Debug.Log("[MainMenuUIToolkitController] No prior saves found; falling back to New Game...");
             OnNewGameClicked();
         }
     }
 
     private void OnNewGameClicked()
     {
+        Debug.Log("[MainMenuUIToolkitController] OnNewGameClicked invoked.");
         PlaySFX(clickClip);
         int emptySlot = SaveSlotManager.FindFirstEmptySlotIndex();
         StartNewGameInSlot(emptySlot);
@@ -903,6 +910,7 @@ public class MainMenuUIToolkitController : MonoBehaviour
 
     private void OnLoadGameMenuClicked()
     {
+        Debug.Log("[MainMenuUIToolkitController] OnLoadGameMenuClicked invoked.");
         PlaySFX(modalOpenClip);
         PopulateSlotsGrid();
         OpenModal(modalLoadGame);
@@ -1092,6 +1100,7 @@ public class MainMenuUIToolkitController : MonoBehaviour
 
     private void OnQuitClicked()
     {
+        Debug.Log("[MainMenuUIToolkitController] OnQuitClicked invoked.");
         PlaySFX(clickClip);
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;

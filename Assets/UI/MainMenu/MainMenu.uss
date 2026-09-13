@@ -96,26 +96,27 @@
     height: 100%;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 10px 20px 10px 20px;
+    justify-content: space-between;
+    padding: 2% 20px 24px 20px;
     overflow: visible;
 }
 
 /* ── Centerpiece Logo Artwork Area ── */
 .title-logo-container {
-    cursor: link;
     align-items: center;
     justify-content: center;
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0;
     margin-bottom: 8px;
     overflow: visible;
 }
 
 .title-logo-image {
-    cursor: link;
     width: 1120px;
     height: 630px;
     max-width: 88%;
-    max-height: 65%;
+    max-height: 58%;
     background-image: url('project://database/Assets/Scenes/animations/frames/keep-54947fd1/frame_001.png');
     -unity-background-scale-mode: scale-to-fit;
     flex-shrink: 1;
@@ -137,6 +138,7 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    flex-grow: 0;
     width: 100%;
     margin-top: 6px;
     margin-bottom: 8px;
