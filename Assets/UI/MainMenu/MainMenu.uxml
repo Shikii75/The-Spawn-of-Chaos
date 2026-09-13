@@ -5,19 +5,19 @@
     <ui:VisualElement name="menu-root" class="menu-root">
         
         <!-- Deep Grey Background Layer -->
-        <ui:VisualElement name="bg-layer" class="menu-background-layer" />
+        <ui:VisualElement name="bg-layer" class="menu-background-layer" picking-mode="Ignore" />
 
         <!-- Central Cosmic Nebula Atmosphere Glow -->
-        <ui:VisualElement name="cosmic-nebula" class="cosmic-nebula-glow" />
+        <ui:VisualElement name="cosmic-nebula" class="cosmic-nebula-glow" picking-mode="Ignore" />
 
         <!-- Framing Corner Brackets -->
-        <ui:VisualElement class="corner-bracket corner--tl" />
-        <ui:VisualElement class="corner-bracket corner--tr" />
-        <ui:VisualElement class="corner-bracket corner--bl" />
-        <ui:VisualElement class="corner-bracket corner--br" />
+        <ui:VisualElement class="corner-bracket corner--tl" picking-mode="Ignore" />
+        <ui:VisualElement class="corner-bracket corner--tr" picking-mode="Ignore" />
+        <ui:VisualElement class="corner-bracket corner--bl" picking-mode="Ignore" />
+        <ui:VisualElement class="corner-bracket corner--br" picking-mode="Ignore" />
 
         <!-- Gentle Fireflies Overlay Layer (Bottom to Top) -->
-        <ui:VisualElement name="orbs-container" class="orbs-container" />
+        <ui:VisualElement name="orbs-container" class="orbs-container" picking-mode="Ignore" />
 
         <!-- Main Screen Layout (Centerpiece Logo + Horizontal Button Row) -->
         <ui:VisualElement name="main-layout" class="main-layout-container">

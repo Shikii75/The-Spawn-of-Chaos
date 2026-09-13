@@ -199,11 +199,11 @@ public class MainMenuUIToolkitController : MonoBehaviour
     // Deep cosmic purple and royal violet atmospheric lights matching Tutorial prologue
     private static readonly Color[] OrbColors = new Color[]
     {
-        new Color(0.50f, 0.10f, 0.92f, 0.82f), // Deep royal purple
-        new Color(0.62f, 0.16f, 0.96f, 0.85f), // Radiant violet
-        new Color(0.44f, 0.08f, 0.85f, 0.78f), // Deep amethyst void
-        new Color(0.70f, 0.22f, 0.98f, 0.84f), // Void violet
-        new Color(0.56f, 0.12f, 0.90f, 0.80f)  // Arcane purple
+        new Color(0.48f, 0.08f, 0.92f, 0.85f), // Deep royal purple
+        new Color(0.58f, 0.14f, 0.96f, 0.88f), // Radiant cosmic violet
+        new Color(0.42f, 0.06f, 0.82f, 0.80f), // Deep amethyst void
+        new Color(0.66f, 0.20f, 0.98f, 0.86f), // Void violet
+        new Color(0.52f, 0.10f, 0.88f, 0.82f)  // Arcane purple
     };
 
     private void Awake()
@@ -392,21 +392,13 @@ public class MainMenuUIToolkitController : MonoBehaviour
     {
         if (titleLogo != null)
         {
-            if (logoScale > 1.4f)
-            {
-                logoScale = 1.0f;
-            }
-            if (logoDimensions.x < 620f || logoDimensions.x > 800f)
-            {
-                logoDimensions = new Vector2(720f, 405f);
-            }
+            if (logoScale > 1.4f) logoScale = 1.0f;
+            if (logoDimensions.x < 620f || logoDimensions.x > 800f) logoDimensions = new Vector2(720f, 405f);
 
-            float w = logoDimensions.x * logoScale;
-            float h = logoDimensions.y * logoScale;
-            titleLogo.style.width = w;
-            titleLogo.style.height = h;
-            titleLogo.style.maxWidth = Length.Percent(75f);
-            titleLogo.style.maxHeight = Length.Percent(48f);
+            // Responsive sizing that respects viewport dimensions without overflowing
+            titleLogo.style.maxWidth = Length.Percent(72f * logoScale);
+            titleLogo.style.maxHeight = Length.Percent(48f * logoScale);
+            titleLogo.style.flexShrink = 1f;
         }
     }
 

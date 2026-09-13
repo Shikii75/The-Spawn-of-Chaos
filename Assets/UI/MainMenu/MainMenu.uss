@@ -30,7 +30,6 @@
     height: 70%;
     background-color: rgba(76, 18, 120, 0.22);
     border-radius: 50%;
-    picking-mode: ignore;
 }
 
 /* Completely Solid Deep Cosmic Void Background Layer */
@@ -56,12 +55,10 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
-    picking-mode: ignore;
 }
 
 .menu-firefly {
     position: absolute;
-    picking-mode: ignore;
     background-color: transparent;
 }
 
@@ -112,8 +109,11 @@
     height: 100%;
     flex-direction: column;
     align-items: center;
-    justify-content: space-evenly;
-    padding: 16px 30px 24px 30px;
+    justify-content: space-between;
+    padding-top: 2%;
+    padding-bottom: 3%;
+    padding-left: 2%;
+    padding-right: 2%;
     overflow: visible;
 }
 
@@ -133,7 +133,7 @@
     cursor: link;
     width: 680px;
     height: 382px;
-    max-width: 75%;
+    max-width: 72%;
     max-height: 48%;
     background-image: url('project://database/Assets/Scenes/animations/frames/keep-54947fd1/frame_001.png');
     -unity-background-scale-mode: scale-to-fit;
@@ -162,12 +162,13 @@
 
 /* ── Procedural Cyber-Gothic Glassmorphic Buttons ── */
 .cyber-button {
-    width: 220px;
-    height: 72px;
-    margin-left: 14px;
-    margin-right: 14px;
-    padding-left: 14px;
-    padding-right: 14px;
+    width: 200px;
+    max-width: 18%;
+    height: 68px;
+    margin-left: 8px;
+    margin-right: 8px;
+    padding-left: 10px;
+    padding-right: 10px;
     background-color: rgba(18, 19, 26, 0.96);
     border-color: rgba(168, 85, 247, 0.5);
     border-width: 1px;
@@ -175,6 +176,7 @@
     justify-content: space-between;
     align-items: stretch;
     overflow: hidden;
+    flex-shrink: 1;
     transition-property: all;
     transition-duration: 0.22s;
     transition-timing-function: ease-out;
@@ -473,13 +475,11 @@
 .panel--hidden {
     display: none;
     opacity: 0;
-    picking-mode: ignore;
 }
 
 .panel--visible {
     display: flex;
     opacity: 1;
-    picking-mode: position;
 }
 
 
@@ -590,7 +590,6 @@
 
 .slot-card--empty {
     opacity: 0.65;
-    border-style: dashed;
     border-color: rgba(168, 85, 247, 0.3);
 }
 
