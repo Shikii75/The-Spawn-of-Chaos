@@ -101,6 +101,12 @@ public class PlayerSceneSpawner : MonoBehaviour
                     spawnPosition = new Vector3(-3378.2f, 518.5f, 0f);
                     foundSpawnPoint = true;
                 }
+                else
+                {
+                    spawnPosition = transform.position;
+                    foundSpawnPoint = true;
+                    Debug.Log($"[PlayerSceneSpawner] Defaulted to spawner position at {spawnPosition}");
+                }
             }
         }
 

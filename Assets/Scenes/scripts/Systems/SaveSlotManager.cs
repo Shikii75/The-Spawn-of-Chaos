@@ -214,9 +214,59 @@ namespace SpawnOfChaos.Systems
                 case "Dojo1Scene": return "Strawhat Clan Dojo";
                 case "Dojo2Scene": return "Samurai Clan Dojo";
                 case "CaveScene": return "Subterranean Cavern & Boss";
-                case "SampleScene": return "Overworld Sanctuary";
+                case "SampleScene": return "Level 1: Cherry Blossom Forest";
                 default: return sceneName;
             }
         }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        public static void EnsureLevel1SlotAvailable()
+        {
+            SaveSlotData slot2 = GetSlot(2);
+            if (slot2 == null || slot2.isEmpty || slot2.sceneName == "TutorialScene")
+            {
+                SaveSlotData level1Slot = new SaveSlotData
+                {
+                    slotIndex = 2,
+                    isEmpty = false,
+                    locationName = "Level 1: Cherry Blossom Forest",
+                    sceneName = "SampleScene",
+                    posX = 1125.6f,
+                    posY = 287.4f,
+                    posZ = 0f,
+                    playerLevel = 1,
+                    coins = 50,
+                    currentWeapon = "DarkSpear",
+                    saveTimestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
+                    playTimeSeconds = 300f
+                };
+                SaveSlot(2, level1Slot);
+                Debug.Log("<color=#D47BFF>[SaveSlotManager] Pre-seeded Slot 2 with Level 1 (SampleScene).</color>");
+            }
+        }
+
+#if UNITY_EDITOR
+        [UnityEditor.MenuItem("Spawn of Chaos/Save Slots/Set Slot 2 to Level 1 (SampleScene)")]
+        public static void SeedSlot2ToLevel1()
+        {
+            SaveSlotData level1Slot = new SaveSlotData
+            {
+                slotIndex = 2,
+                isEmpty = false,
+                locationName = "Level 1: Cherry Blossom Forest",
+                sceneName = "SampleScene",
+                posX = 1125.6f,
+                posY = 287.4f,
+                posZ = 0f,
+                playerLevel = 1,
+                coins = 50,
+                currentWeapon = "DarkSpear",
+                saveTimestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
+                playTimeSeconds = 300f
+            };
+            SaveSlot(2, level1Slot);
+            Debug.Log("<color=#55FF88>[SaveSlotManager] Slot 2 set to Level 1 (SampleScene)!</color>");
+        }
+#endif
     }
 }
