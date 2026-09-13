@@ -8,6 +8,7 @@ using SpawnOfChaos.Systems;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
+using Random = UnityEngine.Random;
 
 /// <summary>
 /// High-aesthetic Controller for the UI Toolkit Main Menu.
@@ -195,13 +196,14 @@ public class MainMenuUIToolkitController : MonoBehaviour
     private readonly List<SpiritOrb> activeOrbs = new List<SpiritOrb>();
 
     // Warm, restrained lights that read as fireflies against the dark menu.
+    // Deep cosmic purple and royal violet atmospheric lights matching Tutorial prologue
     private static readonly Color[] OrbColors = new Color[]
     {
-        new Color(0.65f, 0.20f, 0.95f, 0.85f), // Radiant violet
-        new Color(0.85f, 0.35f, 1.00f, 0.90f), // Neon purple
-        new Color(0.92f, 0.50f, 0.98f, 0.85f), // Ethereal magenta
-        new Color(0.48f, 0.15f, 0.85f, 0.75f), // Deep amethyst
-        new Color(0.78f, 0.45f, 0.90f, 0.80f)  // Soft lilac
+        new Color(0.50f, 0.10f, 0.92f, 0.82f), // Deep royal purple
+        new Color(0.62f, 0.16f, 0.96f, 0.85f), // Radiant violet
+        new Color(0.44f, 0.08f, 0.85f, 0.78f), // Deep amethyst void
+        new Color(0.70f, 0.22f, 0.98f, 0.84f), // Void violet
+        new Color(0.56f, 0.12f, 0.90f, 0.80f)  // Arcane purple
     };
 
     private void Awake()
@@ -356,7 +358,11 @@ public class MainMenuUIToolkitController : MonoBehaviour
         titleContainer = root.Q<VisualElement>("title-container");
         ambientGlow = root.Q<VisualElement>("ambient-glow");
         orbsContainer = root.Q<VisualElement>("orbs-container");
-        if (orbsContainer != null) orbsContainer.style.display = DisplayStyle.Flex;
+        if (orbsContainer != null)
+        {
+            orbsContainer.pickingMode = PickingMode.Ignore;
+            orbsContainer.style.display = DisplayStyle.Flex;
+        }
 
         ApplyLogoSize();
 
@@ -399,9 +405,8 @@ public class MainMenuUIToolkitController : MonoBehaviour
             float h = logoDimensions.y * logoScale;
             titleLogo.style.width = w;
             titleLogo.style.height = h;
-            titleLogo.style.maxWidth = Length.Percent(78f);
-            titleLogo.style.maxHeight = Length.Percent(58f);
-            titleLogo.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
+            titleLogo.style.maxWidth = Length.Percent(75f);
+            titleLogo.style.maxHeight = Length.Percent(48f);
         }
     }
 
@@ -444,6 +449,7 @@ public class MainMenuUIToolkitController : MonoBehaviour
         SpiritOrb orb = new SpiritOrb();
         orb.element = new VisualElement();
         orb.element.AddToClassList("menu-firefly");
+        orb.element.pickingMode = PickingMode.Ignore;
 
         // Pure out-of-focus optical bokeh blur for all orbs
         orb.element.style.backgroundImage = new StyleBackground(s_blurryBokehTexture);

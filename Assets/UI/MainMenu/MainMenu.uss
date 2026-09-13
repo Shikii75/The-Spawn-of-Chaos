@@ -18,6 +18,21 @@
     overflow: hidden;
 }
 
+
+/* Central Cosmic Nebula Glow (Matches Tutorial Prologue Ambiance) */
+.cosmic-nebula-glow {
+    position: absolute;
+    left: 15%;
+    top: 15%;
+    right: 15%;
+    bottom: 15%;
+    width: 70%;
+    height: 70%;
+    background-color: rgba(76, 18, 120, 0.22);
+    border-radius: 50%;
+    picking-mode: ignore;
+}
+
 /* Completely Solid Deep Cosmic Void Background Layer */
 .menu-background-layer {
     position: absolute;
@@ -41,12 +56,12 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
-    pointer-events: none;
+    picking-mode: ignore;
 }
 
 .menu-firefly {
     position: absolute;
-    pointer-events: none;
+    picking-mode: ignore;
     background-color: transparent;
 }
 
@@ -88,13 +103,18 @@
 
 /* ── Main Layout (Center Column: Logo above + Buttons below) ── */
 .main-layout-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
     width: 100%;
     height: 100%;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 10px 40px 30px 40px;
-    overflow: hidden;
+    justify-content: space-evenly;
+    padding: 16px 30px 24px 30px;
+    overflow: visible;
 }
 
 /* ── Centerpiece Logo Artwork Area ── */
@@ -111,12 +131,13 @@
 
 .title-logo-image {
     cursor: link;
-    width: 720px;
-    height: 405px;
-    max-width: 78%;
-    max-height: 58%;
+    width: 680px;
+    height: 382px;
+    max-width: 75%;
+    max-height: 48%;
     background-image: url('project://database/Assets/Scenes/animations/frames/keep-54947fd1/frame_001.png');
     -unity-background-scale-mode: scale-to-fit;
+    flex-shrink: 1;
     transition-property: scale;
     transition-duration: 0.15s;
 }
@@ -292,7 +313,6 @@
     background-color: rgba(46, 20, 78, 0.98);
     border-color: #e9d5ff;
     border-width: 1px;
-    box-shadow: 0 0 28px rgba(192, 132, 252, 0.55);
 }
 
 .cyber-button:hover .btn-top-accent {
@@ -333,7 +353,6 @@
 
 .cyber-button:focus {
     border-color: #ffffff;
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2), 0 0 24px rgba(192, 132, 252, 0.5);
 }
 
 /* ── Modals (Settings & Options) ── */
@@ -358,7 +377,6 @@
     border-width: 1.5px;
     border-radius: 14px;
     padding: 30px;
-    box-shadow: 0 0 35px rgba(168, 85, 247, 0.4);
 }
 
 .modal-header {
@@ -455,13 +473,13 @@
 .panel--hidden {
     display: none;
     opacity: 0;
-    pointer-events: none;
+    picking-mode: ignore;
 }
 
 .panel--visible {
     display: flex;
     opacity: 1;
-    pointer-events: all;
+    picking-mode: position;
 }
 
 
