@@ -265,10 +265,10 @@ namespace SpawnOfChaos.Systems
                 Camera mainCam = Camera.main;
                 if (mainCam != null)
                 {
-                    var camFollow = mainCam.GetComponent<CameraFollowPlayer>();
+                    var camFollow = mainCam.GetComponent<CameraFollow>();
                     if (camFollow != null)
                     {
-                        camFollow.target = magePlayer.transform;
+                        camFollow.player = magePlayer.transform;
                     }
                 }
             }
