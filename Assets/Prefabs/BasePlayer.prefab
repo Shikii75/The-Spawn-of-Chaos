@@ -17,7 +17,7 @@ GameObject:
   - component: {fileID: 3898867202429371072}
   - component: {fileID: 489490232104038883}
   - component: {fileID: 2854372103908146495}
-  m_Layer: 0
+  m_Layer: 1
   m_Name: BasePlayer
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -34,7 +34,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 1.25, y: 1.25, z: 1.25}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5840267867343573237}
@@ -288,7 +288,7 @@ GameObject:
   - component: {fileID: 5840267867343573237}
   - component: {fileID: 1251707475216933540}
   - component: {fileID: 2909171799712606800}
-  m_Layer: 0
+  m_Layer: 1
   m_Name: hitbox
   m_TagString: Untagged
   m_Icon: {fileID: 0}

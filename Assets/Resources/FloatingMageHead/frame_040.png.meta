@@ -5,9 +5,6 @@ TextureImporter:
   - first:
       213: 5520811937742319804
     second: frame_040_0
-  - first:
-      213: 7121269502179195210
-    second: frame_040_1
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -37,7 +34,7 @@ TextureImporter:
   cubemapConvolution: 0
   seamlessCubemap: 0
   textureFormat: 1
-  maxTextureSize: 2048
+  maxTextureSize: 4096
   textureSettings:
     serializedVersion: 2
     filterMode: 1
@@ -65,7 +62,7 @@ TextureImporter:
   singleChannelComponent: 0
   flipbookRows: 1
   flipbookColumns: 1
-  maxTextureSizeSet: 0
+  maxTextureSizeSet: 1
   compressionQualitySet: 0
   textureFormatSet: 0
   ignorePngGamma: 0
@@ -75,7 +72,7 @@ TextureImporter:
   platformSettings:
   - serializedVersion: 4
     buildTarget: DefaultTexturePlatform
-    maxTextureSize: 2048
+    maxTextureSize: 4096
     resizeAlgorithm: 0
     textureFormat: -1
     textureCompression: 1
@@ -88,7 +85,7 @@ TextureImporter:
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 4
     buildTarget: Standalone
-    maxTextureSize: 2048
+    maxTextureSize: 4096
     resizeAlgorithm: 0
     textureFormat: -1
     textureCompression: 1
@@ -106,12 +103,12 @@ TextureImporter:
       name: frame_040_0
       rect:
         serializedVersion: 2
-        x: 358
-        y: 57
-        width: 555
-        height: 624
+        x: 0
+        y: 0
+        width: 1280
+        height: 720
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -120,28 +117,6 @@ TextureImporter:
       bones: []
       spriteID: cb0fdd4f43ddd9c40800000000000000
       internalID: 5520811937742319804
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: frame_040_1
-      rect:
-        serializedVersion: 2
-        x: 538
-        y: 48
-        width: 35
-        height: 46
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: a49b633d1e4d3d260800000000000000
-      internalID: 7121269502179195210
       vertices: []
       indices: 
       edges: []
@@ -161,7 +136,6 @@ TextureImporter:
       entries: []
     nameFileIdTable:
       frame_040_0: 5520811937742319804
-      frame_040_1: 7121269502179195210
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

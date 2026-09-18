@@ -172,10 +172,10 @@ public class GroundedTargetPlatform : MonoBehaviour
     {
         if (!IsPlayer(collision.collider)) return;
 
-        // Verify player is standing on top of platform (contact normal points downward relative to platform)
+        float minimumTopNormal = 0.5f;
         foreach (ContactPoint2D contact in collision.contacts)
         {
-            if (contact.normal.y < -0.5f)
+            if (Vector2.Dot(-contact.normal, transform.up) >= minimumTopNormal)
             {
                 isPlayerOnPlatform = true;
                 if (!isActivated)

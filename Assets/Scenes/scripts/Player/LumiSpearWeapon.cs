@@ -9,7 +9,8 @@ public enum SpearState
     ThrownFlight,
     Embedded,
     Recalling,
-    MeleeThrusting
+    MeleeThrusting,
+    MeleeSlashing
 }
 
 /// <summary>
@@ -273,16 +274,23 @@ public class LumiSpearWeapon : MonoBehaviour
         moteParticleSystem = GetComponent<ParticleSystem>();
         if (moteParticleSystem == null) moteParticleSystem = gameObject.AddComponent<ParticleSystem>();
 
+        ParticleSystemRenderer psRenderer = moteParticleSystem.GetComponent<ParticleSystemRenderer>();
+        if (psRenderer != null)
+        {
+            LowResBlackOrb.ConfigureParticleRenderer(psRenderer, 19, spearRenderer != null ? spearRenderer.sortingLayerName : "Default");
+        }
+
         var main = moteParticleSystem.main;
-        main.startColor = moteColor;
-        main.startSize = new ParticleSystem.MinMaxCurve(0.12f, 0.22f);
+        // Pitch-black void particles with retro low-res orb texture
+        main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.01f, 0.01f, 0.02f, 0.95f), new Color(0.04f, 0.04f, 0.06f, 0.85f));
+        main.startSize = new ParticleSystem.MinMaxCurve(0.18f, 0.30f);
         main.startSpeed = new ParticleSystem.MinMaxCurve(0.2f, 0.6f);
-        main.startLifetime = new ParticleSystem.MinMaxCurve(0.8f, 1.4f);
+        main.startLifetime = new ParticleSystem.MinMaxCurve(0.7f, 1.2f);
         main.loop = true;
         main.simulationSpace = ParticleSystemSimulationSpace.World;
 
         var emission = moteParticleSystem.emission;
-        emission.rateOverTime = 12f;
+        emission.rateOverTime = 14f;
 
         var shape = moteParticleSystem.shape;
         shape.shapeType = ParticleSystemShapeType.Box;
@@ -292,10 +300,14 @@ public class LumiSpearWeapon : MonoBehaviour
         colOverLifetime.enabled = true;
         Gradient grad = new Gradient();
         grad.SetKeys(
-            new GradientColorKey[] { new GradientColorKey(moteColor, 0f), new GradientColorKey(new Color(0.7f, 1f, 1f), 0.5f), new GradientColorKey(moteColor, 1f) },
-            new GradientAlphaKey[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(0.85f, 0.3f), new GradientAlphaKey(0f, 1f) }
+            new GradientColorKey[] { new GradientColorKey(new Color(0.02f, 0.02f, 0.03f), 0f), new GradientColorKey(new Color(0.01f, 0.01f, 0.01f), 1f) },
+            new GradientAlphaKey[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(0.90f, 0.25f), new GradientAlphaKey(0f, 1f) }
         );
         colOverLifetime.color = grad;
+
+        var sol = moteParticleSystem.sizeOverLifetime;
+        sol.enabled = true;
+        sol.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0f, 1f, 1f, 0.1f));
 
         moteParticleSystem.Play();
     }
@@ -418,8 +430,9 @@ public class LumiSpearWeapon : MonoBehaviour
         // Smoothly orient towards aim direction (safe from inf/NaN on touch/simulator)
         Vector2 aimDir = GetAimDirection();
         float targetAngle = Mathf.Atan2(aimDir.y, aimDir.x) * Mathf.Rad2Deg;
+        float tipOffset = SpearOrientationAnalyzer.GetTipAngleOffset(spearRenderer != null ? spearRenderer.sprite : null);
 
-        transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(0, 0, targetAngle), Time.deltaTime * 10f);
+        transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(0, 0, targetAngle - tipOffset), Time.deltaTime * 10f);
 
         if (spearRenderer != null && playerTransform != null)
         {
@@ -478,7 +491,8 @@ public class LumiSpearWeapon : MonoBehaviour
         if (dir.sqrMagnitude > 0.001f)
         {
             float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
-            transform.rotation = Quaternion.Euler(0, 0, angle);
+            float tipOffset = SpearOrientationAnalyzer.GetTipAngleOffset(spearRenderer != null ? spearRenderer.sprite : null);
+            transform.rotation = Quaternion.Euler(0, 0, angle - tipOffset);
         }
 
         if (Vector2.Distance(transform.position, returnTarget) < 1.0f)
@@ -502,7 +516,11 @@ public class LumiSpearWeapon : MonoBehaviour
         if (platformEffector != null) platformEffector.enabled = false;
 
         float angle = Mathf.Atan2(throwDirection.y, throwDirection.x) * Mathf.Rad2Deg;
-        transform.rotation = Quaternion.Euler(0, 0, angle);
+        float tipOffset = SpearOrientationAnalyzer.GetTipAngleOffset(spearRenderer != null ? spearRenderer.sprite : null);
+        transform.rotation = Quaternion.Euler(0, 0, angle - tipOffset);
+
+        // Jump voice used for spear travel
+        move.Instance?.PlayRandomJumpVoice();
 
         if (trailRenderer != null)
         {
@@ -541,6 +559,8 @@ public class LumiSpearWeapon : MonoBehaviour
     void StartAutoDrag()
     {
         if (playerTransform == null) return;
+        // Jump voice used for spear travel auto-drag
+        move.Instance?.PlayRandomJumpVoice();
 
         isAutoDragging = true;
         dragTimer = 0f;
@@ -729,69 +749,434 @@ public class LumiSpearWeapon : MonoBehaviour
     /// Auto-recalls spear if currently away, aligns horizontally, pierces forward dealing 75 damage
     /// with pure white impact flash and screen shake, and returns smoothly to Lumi.
     /// </summary>
-    public void ExecuteMeleeSpearThrust(float facingDirection)
+    [Header("Dynamic Afterimage Ghost Trail Settings")]
+    private Coroutine ghostTrailCoroutine;
+
+    private void StartGhostTrail(float duration, Color ghostColor)
     {
-        FindReferences();
-        if (meleeThrustCoroutine != null) StopCoroutine(meleeThrustCoroutine);
-        meleeThrustCoroutine = StartCoroutine(MeleeSpearThrustRoutine(facingDirection));
+        if (ghostTrailCoroutine != null) StopCoroutine(ghostTrailCoroutine);
+        ghostTrailCoroutine = StartCoroutine(GhostTrailRoutine(duration, ghostColor));
     }
 
-    private IEnumerator MeleeSpearThrustRoutine(float facingDirection)
+    private void StopGhostTrail()
     {
-        // 1. If currently embedded or dragging, cancel attachment immediately
+        if (ghostTrailCoroutine != null)
+        {
+            StopCoroutine(ghostTrailCoroutine);
+            ghostTrailCoroutine = null;
+        }
+    }
+
+    private IEnumerator GhostTrailRoutine(float duration, Color ghostColor)
+    {
+        float elapsed = 0f;
+        float interval = 0.012f; // Silky 83Hz high-density sampling for majestic continuous afterimage ribbon
+        float nextSpawn = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            if (elapsed >= nextSpawn && spearRenderer != null && spearRenderer.sprite != null)
+            {
+                nextSpawn = elapsed + interval;
+                SpawnGhostEcho(ghostColor);
+                SpawnTipGleam(ghostColor);
+            }
+            yield return null;
+        }
+
+        ghostTrailCoroutine = null;
+    }
+
+    private void SpawnGhostEcho(Color tint)
+    {
+        if (spearRenderer == null || spearRenderer.sprite == null) return;
+
+        // 1. Luminous Outer Motion-Blur Bloom Echo (Behind)
+        GameObject blurEcho = new GameObject("SpearBlurEcho");
+        blurEcho.transform.position = transform.position;
+        blurEcho.transform.rotation = transform.rotation;
+        blurEcho.transform.localScale = transform.localScale * 1.25f;
+
+        SpriteRenderer blurSr = blurEcho.AddComponent<SpriteRenderer>();
+        blurSr.sprite = spearRenderer.sprite;
+        blurSr.material = CreateUnlitMaterial(tint);
+        blurSr.sortingLayerID = spearRenderer.sortingLayerID;
+        blurSr.sortingOrder = Mathf.Max(0, spearRenderer.sortingOrder - 2);
+        StartCoroutine(AnimateGhostEcho(blurEcho, blurSr, tint, 0.26f, 0.50f, 1.40f));
+
+        // 2. Chromatic Prism Fringe Echo (Delicate prismatic color shift for stunning graphical depth)
+        Color chromaTint = new Color(tint.b, tint.r, tint.g, tint.a * 0.6f);
+        GameObject chromaEcho = new GameObject("SpearChromaEcho");
+        chromaEcho.transform.position = transform.position + (transform.up * 0.04f);
+        chromaEcho.transform.rotation = transform.rotation;
+        chromaEcho.transform.localScale = transform.localScale * 1.08f;
+
+        SpriteRenderer chromaSr = chromaEcho.AddComponent<SpriteRenderer>();
+        chromaSr.sprite = spearRenderer.sprite;
+        chromaSr.material = CreateUnlitMaterial(chromaTint);
+        chromaSr.sortingLayerID = spearRenderer.sortingLayerID;
+        chromaSr.sortingOrder = Mathf.Max(0, spearRenderer.sortingOrder - 1);
+        StartCoroutine(AnimateGhostEcho(chromaEcho, chromaSr, chromaTint, 0.19f, 0.45f, 1.18f));
+
+        // 3. Crisp Duplicate Spear Silhouette Echo
+        GameObject echo = new GameObject("SpearGhostEcho");
+        echo.transform.position = transform.position;
+        echo.transform.rotation = transform.rotation;
+        echo.transform.localScale = transform.localScale;
+
+        SpriteRenderer sr = echo.AddComponent<SpriteRenderer>();
+        sr.sprite = spearRenderer.sprite;
+        sr.material = CreateUnlitMaterial(tint);
+        sr.sortingLayerID = spearRenderer.sortingLayerID;
+        sr.sortingOrder = spearRenderer.sortingOrder;
+        StartCoroutine(AnimateGhostEcho(echo, sr, tint, 0.22f, 0.85f, 1.10f));
+    }
+
+    private void SpawnTipGleam(Color gleamColor)
+    {
+        if (spearRenderer == null || spearRenderer.sprite == null) return;
+
+        Vector3 tipPos = SpearOrientationAnalyzer.GetTipWorldPosition(transform, spearRenderer);
+        GameObject gleam = new GameObject("SpearTipGleam");
+        gleam.transform.position = tipPos;
+
+        SpriteRenderer gsr = gleam.AddComponent<SpriteRenderer>();
+        Texture2D gleamTex = new Texture2D(16, 16, TextureFormat.RGBA32, false);
+        for (int y = 0; y < 16; y++)
+        {
+            for (int x = 0; x < 16; x++)
+            {
+                float dist = Vector2.Distance(new Vector2(x, y), new Vector2(7.5f, 7.5f));
+                float a = Mathf.Clamp01(1f - (dist / 7.5f));
+                gleamTex.SetPixel(x, y, new Color(1f, 1f, 1f, a * a));
+            }
+        }
+        gleamTex.Apply();
+        gsr.sprite = Sprite.Create(gleamTex, new Rect(0, 0, 16, 16), new Vector2(0.5f, 0.5f), 32f);
+        gsr.color = Color.Lerp(gleamColor, Color.white, 0.6f);
+        gsr.sortingLayerID = spearRenderer.sortingLayerID;
+        gsr.sortingOrder = spearRenderer.sortingOrder + 1;
+
+        StartCoroutine(AnimateTipGleam(gleam, gsr));
+    }
+
+    private IEnumerator AnimateTipGleam(GameObject gleam, SpriteRenderer gsr)
+    {
+        float dur = 0.16f;
+        float elapsed = 0f;
+        Vector3 origScale = gleam.transform.localScale * 0.7f;
+        while (elapsed < dur)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / dur;
+            if (gleam != null && gsr != null)
+            {
+                gleam.transform.localScale = origScale * Mathf.Lerp(1.2f, 0.1f, t);
+                Color c = gsr.color;
+                c.a = Mathf.Lerp(1f, 0f, t * t);
+                gsr.color = c;
+            }
+            yield return null;
+        }
+        if (gleam != null) Destroy(gleam);
+    }
+
+    private IEnumerator AnimateGhostEcho(GameObject echo, SpriteRenderer sr, Color tint, float lifetime, float initialAlpha, float scaleMultiplier)
+    {
+        float elapsed = 0f;
+        Vector3 initialScale = echo.transform.localScale;
+        Vector3 targetScale = initialScale * scaleMultiplier;
+
+        while (elapsed < lifetime)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / lifetime);
+
+            if (echo != null && sr != null)
+            {
+                // Quadratic falloff: progressively softer & less visible the longer the trail is out
+                float alpha = Mathf.Lerp(initialAlpha, 0f, t * t);
+                Color c = tint;
+                c.a = alpha;
+                sr.color = c;
+
+                // Dynamic subtle motion blur expansion
+                echo.transform.localScale = Vector3.Lerp(initialScale, targetScale, Mathf.Sin(t * Mathf.PI * 0.5f));
+            }
+            yield return null;
+        }
+
+        if (echo != null) Destroy(echo);
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // PURE BLACK SPEAR SILHOUETTE MULTIPLYING TRAIL
+    // ══════════════════════════════════════════════════════════════
+    private static Material blackSilhouetteMat;
+
+    private Material GetBlackSilhouetteMaterial()
+    {
+        if (blackSilhouetteMat == null)
+        {
+            Shader s = Shader.Find("Sprites/Default") 
+                    ?? Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit") 
+                    ?? Shader.Find("Unlit/Color");
+            if (s != null)
+            {
+                blackSilhouetteMat = new Material(s) { hideFlags = HideFlags.DontSave };
+                blackSilhouetteMat.color = Color.white;
+            }
+        }
+        return blackSilhouetteMat;
+    }
+
+    private Transform darkTrailContainer;
+    private Transform GetDarkTrailContainer()
+    {
+        if (darkTrailContainer == null)
+        {
+            GameObject go = new GameObject("Spear_DarkTrail_Container");
+            darkTrailContainer = go.transform;
+        }
+        return darkTrailContainer;
+    }
+
+    private void EmitBlackSpearMotionTrail(ref Vector3 lastPos, ref Quaternion lastRot, ref bool hasLast, int step)
+    {
+        if (spearRenderer == null || spearRenderer.sprite == null) return;
+
+        Vector3 curPos = transform.position;
+        Quaternion curRot = transform.rotation;
+
+        if (!hasLast)
+        {
+            hasLast = true;
+            lastPos = curPos;
+            lastRot = curRot;
+            SpawnSingleBlackSpearEcho(curPos, curRot, step);
+            return;
+        }
+
+        float dist = Vector3.Distance(lastPos, curPos);
+        float angleDiff = Quaternion.Angle(lastRot, curRot);
+
+        // Sub-sample density: spawn an echo every 0.055 units or 2.8 degrees (seamless dense overlap)
+        int steps = Mathf.Clamp(Mathf.Max(Mathf.CeilToInt(dist / 0.055f), Mathf.CeilToInt(angleDiff / 2.8f)), 1, 10);
+
+        for (int i = 1; i <= steps; i++)
+        {
+            float t = (float)i / steps;
+            Vector3 interpPos = Vector3.Lerp(lastPos, curPos, t);
+            Quaternion interpRot = Quaternion.Slerp(lastRot, curRot, t);
+            SpawnSingleBlackSpearEcho(interpPos, interpRot, step);
+
+            // Scatter low-resolution black orbs along the spear's dynamic path
+            if (i % 3 == 0)
+            {
+                Transform container = GetDarkTrailContainer();
+                int order = spearRenderer != null ? spearRenderer.sortingOrder - 1 : 20;
+                LowResBlackOrb.SpawnOrb(interpPos + (Vector3)(Random.insideUnitCircle * 0.14f), Random.Range(0.24f, 0.38f), 0.20f, container, order);
+            }
+        }
+
+        lastPos = curPos;
+        lastRot = curRot;
+    }
+
+    private void SpawnSingleBlackSpearEcho(Vector3 pos, Quaternion rot, int step)
+    {
+        if (spearRenderer == null || spearRenderer.sprite == null) return;
+        Transform container = GetDarkTrailContainer();
+
+        // 1. Core Pitch-Black Silhouette Clone
+        GameObject echo = new GameObject("SpearDarkTrail");
+        if (container != null) echo.transform.SetParent(container, false);
+        echo.transform.position = pos;
+        echo.transform.rotation = rot;
+        echo.transform.localScale = transform.localScale;
+
+        SpriteRenderer sr = echo.AddComponent<SpriteRenderer>();
+        sr.sprite = spearRenderer.sprite;
+        sr.flipX = spearRenderer.flipX;
+        sr.flipY = spearRenderer.flipY;
+        sr.material = GetBlackSilhouetteMaterial();
+        sr.sortingLayerID = spearRenderer.sortingLayerID;
+        sr.sortingLayerName = spearRenderer.sortingLayerName;
+        sr.sortingOrder = Mathf.Max(0, spearRenderer.sortingOrder - 1);
+        Color coreCol = (step == 2)
+            ? new Color(0.04f, 0.005f, 0.015f, 0.88f) // Deep crimson void
+            : (step == 3 ? new Color(0.01f, 0.01f, 0.02f, 0.95f) : new Color(0.015f, 0.008f, 0.035f, 0.88f)); // Pure abyssal shadow
+        StartCoroutine(AnimateBlackSpearEcho(echo, sr, coreCol, 0.13f, 0.88f, 1.08f));
+
+        // 2. Soft Outer Void Blur Mote (blends discrete spear edges into a continuous ribbon wake)
+        GameObject blurEcho = new GameObject("SpearDarkBlur");
+        if (container != null) blurEcho.transform.SetParent(container, false);
+        blurEcho.transform.position = pos;
+        blurEcho.transform.rotation = rot;
+        blurEcho.transform.localScale = transform.localScale * 1.06f;
+
+        SpriteRenderer blurSr = blurEcho.AddComponent<SpriteRenderer>();
+        blurSr.sprite = spearRenderer.sprite;
+        blurSr.flipX = spearRenderer.flipX;
+        blurSr.flipY = spearRenderer.flipY;
+        blurSr.material = GetBlackSilhouetteMaterial();
+        blurSr.sortingLayerID = spearRenderer.sortingLayerID;
+        blurSr.sortingLayerName = spearRenderer.sortingLayerName;
+        blurSr.sortingOrder = Mathf.Max(0, spearRenderer.sortingOrder - 2);
+        Color blurCol = (step == 2)
+            ? new Color(0.03f, 0.01f, 0.02f, 0.35f)
+            : (step == 3 ? new Color(0.015f, 0.015f, 0.03f, 0.40f) : new Color(0.02f, 0.02f, 0.03f, 0.35f));
+        StartCoroutine(AnimateBlackSpearEcho(blurEcho, blurSr, blurCol, 0.15f, 0.35f, 1.20f));
+    }
+
+    private IEnumerator AnimateBlackSpearEcho(GameObject echo, SpriteRenderer sr, Color baseColor, float lifetime, float initialAlpha, float scaleMult)
+    {
+        float elapsed = 0f;
+        Vector3 initialScale = (echo != null) ? echo.transform.localScale : Vector3.one;
+        Vector3 targetScale = initialScale * scaleMult;
+
+        while (elapsed < lifetime)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / lifetime);
+
+            if (echo != null && sr != null)
+            {
+                // Rapid cubic fade out: solid at head, dissolves quickly into mist
+                float alpha = Mathf.Lerp(initialAlpha, 0f, t * t * t);
+                Color c = baseColor;
+                c.a = alpha;
+                sr.color = c;
+
+                // Gentle expansion that blurs into neighboring clones
+                echo.transform.localScale = Vector3.Lerp(initialScale, targetScale, Mathf.Sin(t * Mathf.PI * 0.5f));
+            }
+            yield return null;
+        }
+
+        if (echo != null) Destroy(echo);
+    }
+
+    [Header("Spear Swordsmanship Melee Combos")]
+    public int slash1Damage = 40;
+    public int slash2Damage = 55;
+
+    public void ExecuteMeleeSpearSlash1(float facingDirection)
+    {
+        FindReferences();
+        PlaySpearAttackVoice();
+        if (meleeThrustCoroutine != null) StopCoroutine(meleeThrustCoroutine);
+        StopGhostTrail();
+        meleeThrustCoroutine = StartCoroutine(MeleeSpearSlash1Routine(facingDirection));
+    }
+
+
+    private void PlaySpearAttackVoice()
+    {
+        if (MageCombat.Instance != null)
+        {
+            MageCombat.Instance.PlayRandomAttackVoice();
+        }
+        else if (playerTransform != null)
+        {
+            var vc = playerTransform.GetComponent<SpawnOfChaos.Entities.PlayerMageVoiceController>();
+            if (vc != null) vc.PlayAttackVoice();
+        }
+    }
+
+    /// <summary>
+    /// Evaluates hit detection across the ENTIRE length and width of the spear (from pommel/handle to tip).
+    /// Ensures that any enemy contacting any part of the blade, shaft, or head is hit cleanly.
+    /// </summary>
+    private Collider2D[] GetEntireSpearHits(float sampleRadius = 1.05f)
+    {
+        Vector3 tipPos = SpearOrientationAnalyzer.GetTipWorldPosition(transform, spearRenderer, 2.2f);
+        Vector3 toTip = tipPos - transform.position;
+        Vector3 buttPos = transform.position - toTip * 0.85f;
+
+        List<Collider2D> uniqueHits = new List<Collider2D>();
+        int sampleCount = 6;
+        for (int i = 0; i <= sampleCount; i++)
+        {
+            float t = (float)i / sampleCount;
+            Vector3 samplePoint = Vector3.Lerp(buttPos, tipPos, t);
+            Collider2D[] overlap = Physics2D.OverlapCircleAll(samplePoint, sampleRadius);
+            for (int j = 0; j < overlap.Length; j++)
+            {
+                Collider2D col = overlap[j];
+                if (col != null && !col.isTrigger && !col.CompareTag("Player") && !uniqueHits.Contains(col))
+                {
+                    uniqueHits.Add(col);
+                }
+            }
+        }
+
+        return uniqueHits.ToArray();
+    }
+
+    private IEnumerator MeleeSpearSlash1Routine(float facingDirection)
+    {
         if (platformCollider != null) platformCollider.enabled = false;
         if (platformEffector != null) platformEffector.enabled = false;
         attachedSurface = null;
         isAutoDragging = false;
         if (tetherLineRenderer != null) tetherLineRenderer.enabled = false;
 
-        CurrentState = SpearState.MeleeThrusting;
-
-        // 2. Snap to launch position slightly in front of Lumi/Player
-        Vector3 startPos;
-        if (lumi != null)
-        {
-            startPos = lumi.transform.position + new Vector3(facingDirection * 0.4f, 0f, 0f);
-        }
-        else if (playerTransform != null)
-        {
-            startPos = playerTransform.position + new Vector3(facingDirection * 0.8f, 0.2f, 0f);
-        }
-        else
-        {
-            startPos = transform.position;
-        }
-        startPos.z = 0f;
-        transform.position = startPos;
-
-        // Align horizontally
-        float targetAngle = (facingDirection < 0f) ? 180f : 0f;
-        transform.rotation = Quaternion.Euler(0f, 0f, targetAngle);
+        CurrentState = SpearState.MeleeSlashing;
 
         if (trailRenderer != null)
         {
-            trailRenderer.emitting = true;
-            trailRenderer.Clear();
+            // Old line trail disabled during melee combos in favor of stunning Ghost Spear duplicate trail
+            trailRenderer.emitting = false;
         }
 
-        SpawnSonicShockwave(startPos, facingDirection);
+        float dir = (facingDirection < 0f) ? -1f : 1f;
+        Vector3 pPos = playerTransform != null ? playerTransform.position : transform.position;
+        Vector3 slashCenter = pPos + new Vector3(dir * 0.85f, 0.15f, 0f);
 
-        // 3. High-Velocity Piercing Thrust Phase
-        Vector3 targetPos = startPos + new Vector3(facingDirection * meleeThrustDistance, 0f, 0f);
+        float startAngle = 65f;
+        float endAngle = -38f;
+        float slashDuration = 0.11f;
         float elapsed = 0f;
+        SpearSlashVFX slashVfx = SpearSlashVFX.GetOrCreate(playerTransform);
+        if (slashVfx != null) slashVfx.BeginComboSlash(1, dir, pPos);
+
+        Vector3 lastEchoPos = transform.position;
+        Quaternion lastEchoRot = transform.rotation;
+        bool hasLastEcho = false;
+
         var hitTargets = new System.Collections.Generic.HashSet<GameObject>();
 
-        while (elapsed < meleeThrustDuration)
+        while (elapsed < slashDuration)
         {
             elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / meleeThrustDuration);
-            // Snap forward with high acceleration curve
-            float curveT = Mathf.Sin(t * Mathf.PI * 0.5f);
-            Vector3 currentPos = Vector3.Lerp(startPos, targetPos, curveT);
-            transform.position = currentPos;
+            float t = Mathf.Clamp01(elapsed / slashDuration);
+            float smoothT = Mathf.Sin(t * Mathf.PI * 0.5f);
 
-            // Detect and pierce enemies along the thrust path
-            Collider2D[] hits = Physics2D.OverlapCircleAll(currentPos, 1.35f);
+            pPos = playerTransform != null ? playerTransform.position : transform.position;
+            slashCenter = pPos + new Vector3(dir * 0.85f, 0.15f, 0f);
+
+            float currentAngle = Mathf.Lerp(startAngle, endAngle, smoothT);
+            float radius = 1.45f;
+            float rad = currentAngle * Mathf.Deg2Rad;
+            Vector3 offset = new Vector3(Mathf.Cos(rad) * radius * dir, Mathf.Sin(rad) * radius, 0f);
+            transform.position = slashCenter + offset;
+
+            Vector2 spearDir = ((Vector2)transform.position - (Vector2)slashCenter).normalized;
+            float angle = Mathf.Atan2(spearDir.y, spearDir.x) * Mathf.Rad2Deg;
+            float tipOffset = SpearOrientationAnalyzer.GetTipAngleOffset(spearRenderer != null ? spearRenderer.sprite : null);
+            transform.rotation = Quaternion.Euler(0f, 0f, angle - tipOffset);
+
+            // Emit multiplied black spear silhouette motion trail
+            EmitBlackSpearMotionTrail(ref lastEchoPos, ref lastEchoRot, ref hasLastEcho, 1);
+
+            if (slashVfx != null)
+            {
+                slashVfx.OnArcProgress(1, dir, SpearOrientationAnalyzer.GetTipWorldPosition(transform, spearRenderer, 2.2f), slashCenter, t, angle);
+            }
+
+            Collider2D[] hits = GetEntireSpearHits(1.05f);
             foreach (var col in hits)
             {
                 if (col == null || col.isTrigger || col.CompareTag("Player")) continue;
@@ -806,51 +1191,265 @@ public class LumiSpearWeapon : MonoBehaviour
                     hitTargets.Add(rootTarget);
                     hitTargets.Add(col.gameObject);
 
-                    // Deal 75 Heavy Damage!
-                    if (damageable != null) damageable.TakeDamage(meleeThrustDamage);
-                    else if (health != null) health.TakeDamage(meleeThrustDamage);
+                    if (damageable != null) damageable.TakeDamage(slash1Damage);
+                    else if (health != null) health.TakeDamage(slash1Damage);
 
-                    // Trigger Pure White Impact Flash!
-                    SpawnOfChaos.Systems.ImpactFrameFX.Trigger(col.bounds.center, 0.07f, isNegativeInversion: false);
+                    HitFeedbackManager.TriggerHitFeedback(col.transform, col.bounds.center, slash1Damage, false, EnemyHitType.PhysicalMelee);
 
-                    // Directional Screen Shake & Hit Feedback
-                    HitFeedbackManager.TriggerHitFeedback(col.transform, col.bounds.center, meleeThrustDamage, true, EnemyHitType.PhysicalMelee);
-
-                    // Directional Knockback
-                    Rigidbody2D enemyRb = col.GetComponent<Rigidbody2D>() ?? col.GetComponentInParent<Rigidbody2D>();
-                    if (enemyRb != null && enemyRb.bodyType == RigidbodyType2D.Dynamic)
+                    if (PlayerCombatJuice.Instance != null)
                     {
-                        enemyRb.linearVelocity = new Vector2(facingDirection * 15f, 4.0f);
+                        PlayerCombatJuice.Instance.SpawnHitCollisionParticles(col.bounds.center, false);
                     }
 
-                    // Impact Magic Burst VFX
-                    SpawnBlueMagicBurst(col.bounds.center, 22, 1.2f);
+                    if (SpearSlashVFX.Instance != null)
+                    {
+                        SpearSlashVFX.Instance.OnSpearHitEnemy(col.bounds.center, 1, dir);
+                    }
                 }
             }
 
             yield return null;
         }
 
-        // 4. Brief Apex Linger
-        yield return new WaitForSeconds(0.04f);
+        if (trailRenderer != null) trailRenderer.emitting = false;
+        CurrentState = SpearState.CarriedByLumi;
+        meleeThrustCoroutine = null;
+    }
 
-        // 5. Smooth Retraction back to Lumi
-        elapsed = 0f;
-        Vector3 apexPos = transform.position;
-        while (elapsed < meleeThrustReturnDuration)
+    public void ExecuteMeleeSpearSlash2(float facingDirection)
+    {
+        FindReferences();
+        PlaySpearAttackVoice();
+        if (meleeThrustCoroutine != null) StopCoroutine(meleeThrustCoroutine);
+        StopGhostTrail();
+        meleeThrustCoroutine = StartCoroutine(MeleeSpearSlash2Routine(facingDirection));
+    }
+
+    private IEnumerator MeleeSpearSlash2Routine(float facingDirection)
+    {
+        if (platformCollider != null) platformCollider.enabled = false;
+        if (platformEffector != null) platformEffector.enabled = false;
+        attachedSurface = null;
+        isAutoDragging = false;
+        if (tetherLineRenderer != null) tetherLineRenderer.enabled = false;
+
+        CurrentState = SpearState.MeleeSlashing;
+
+        if (trailRenderer != null)
+        {
+            // Old line trail disabled during melee combos in favor of stunning Ghost Spear duplicate trail
+            trailRenderer.emitting = false;
+        }
+
+        float dir = (facingDirection < 0f) ? -1f : 1f;
+        Vector3 pPos = playerTransform != null ? playerTransform.position : transform.position;
+        Vector3 slashCenter = pPos + new Vector3(dir * 0.95f, 0.25f, 0f);
+
+        float startAngle = -42f;
+        float endAngle = 60f;
+        float slashDuration = 0.11f;
+        float elapsed = 0f;
+        SpearSlashVFX slashVfx = SpearSlashVFX.GetOrCreate(playerTransform);
+        if (slashVfx != null) slashVfx.BeginComboSlash(2, dir, pPos);
+
+        Vector3 lastEchoPos = transform.position;
+        Quaternion lastEchoRot = transform.rotation;
+        bool hasLastEcho = false;
+
+        var hitTargets = new System.Collections.Generic.HashSet<GameObject>();
+
+        while (elapsed < slashDuration)
         {
             elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / meleeThrustReturnDuration);
+            float t = Mathf.Clamp01(elapsed / slashDuration);
+            float smoothT = Mathf.Sin(t * Mathf.PI * 0.5f);
+
+            pPos = playerTransform != null ? playerTransform.position : transform.position;
+            slashCenter = pPos + new Vector3(dir * 0.95f, 0.25f, 0f);
+
+            float currentAngle = Mathf.Lerp(startAngle, endAngle, smoothT);
+            float radius = 1.55f;
+            float rad = currentAngle * Mathf.Deg2Rad;
+            Vector3 offset = new Vector3(Mathf.Cos(rad) * radius * dir, Mathf.Sin(rad) * radius, 0f);
+            transform.position = slashCenter + offset;
+
+            Vector2 spearDir = ((Vector2)transform.position - (Vector2)slashCenter).normalized;
+            float angle = Mathf.Atan2(spearDir.y, spearDir.x) * Mathf.Rad2Deg;
+            float tipOffset = SpearOrientationAnalyzer.GetTipAngleOffset(spearRenderer != null ? spearRenderer.sprite : null);
+            transform.rotation = Quaternion.Euler(0f, 0f, angle - tipOffset);
+
+            // Emit multiplied black spear silhouette motion trail
+            EmitBlackSpearMotionTrail(ref lastEchoPos, ref lastEchoRot, ref hasLastEcho, 2);
+
+            if (slashVfx != null)
+            {
+                slashVfx.OnArcProgress(2, dir, SpearOrientationAnalyzer.GetTipWorldPosition(transform, spearRenderer, 2.2f), slashCenter, t, angle);
+            }
+
+            Collider2D[] hits = GetEntireSpearHits(1.05f);
+            foreach (var col in hits)
+            {
+                if (col == null || col.isTrigger || col.CompareTag("Player")) continue;
+                GameObject rootTarget = col.transform.root.gameObject;
+                if (hitTargets.Contains(rootTarget) || hitTargets.Contains(col.gameObject)) continue;
+
+                var damageable = col.GetComponent<IDamageable>() ?? col.GetComponentInParent<IDamageable>();
+                var health = col.GetComponent<Health>() ?? col.GetComponentInParent<Health>();
+
+                if (damageable != null || health != null || col.CompareTag("enemy"))
+                {
+                    hitTargets.Add(rootTarget);
+                    hitTargets.Add(col.gameObject);
+
+                    if (damageable != null) damageable.TakeDamage(slash2Damage);
+                    else if (health != null) health.TakeDamage(slash2Damage);
+
+                    SpawnOfChaos.Systems.ImpactFrameFX.Trigger(col.bounds.center, 0.05f, isNegativeInversion: false);
+
+                    HitFeedbackManager.TriggerHitFeedback(col.transform, col.bounds.center, slash2Damage, true, EnemyHitType.PhysicalMelee);
+
+                    if (PlayerCombatJuice.Instance != null)
+                    {
+                        PlayerCombatJuice.Instance.SpawnHitCollisionParticles(col.bounds.center, true);
+                    }
+
+                    if (SpearSlashVFX.Instance != null)
+                    {
+                        SpearSlashVFX.Instance.OnSpearHitEnemy(col.bounds.center, 2, dir);
+                    }
+                }
+            }
+
+            yield return null;
+        }
+
+        if (trailRenderer != null) trailRenderer.emitting = false;
+        CurrentState = SpearState.CarriedByLumi;
+        meleeThrustCoroutine = null;
+    }
+
+    public void ExecuteMeleeSpearThrust(float facingDirection)
+    {
+        FindReferences();
+        PlaySpearAttackVoice();
+        if (meleeThrustCoroutine != null) StopCoroutine(meleeThrustCoroutine);
+        StopGhostTrail();
+        meleeThrustCoroutine = StartCoroutine(MeleeSpearThrustRoutine(facingDirection));
+    }
+
+    private IEnumerator MeleeSpearThrustRoutine(float facingDirection)
+    {
+        // 1. If currently embedded or dragging, cancel attachment immediately
+        if (platformCollider != null) platformCollider.enabled = false;
+        if (platformEffector != null) platformEffector.enabled = false;
+        attachedSurface = null;
+        isAutoDragging = false;
+        if (tetherLineRenderer != null) tetherLineRenderer.enabled = false;
+
+        CurrentState = SpearState.MeleeThrusting;
+
+        float dir = (facingDirection < 0f) ? -1f : 1f;
+        Vector3 pPos = playerTransform != null ? playerTransform.position : transform.position;
+        Vector3 startPos = pPos + new Vector3(dir * 0.75f, 0.15f, 0f);
+        startPos.z = 0f;
+        transform.position = startPos;
+        SpearSlashVFX slashVfx = SpearSlashVFX.GetOrCreate(playerTransform);
+        if (slashVfx != null) slashVfx.BeginComboSlash(3, dir, startPos);
+
+        // Align horizontally in the direction of the thrust with tip offset
+        float targetAngle = (dir < 0f) ? 180f : 0f;
+        float tipOffset = SpearOrientationAnalyzer.GetTipAngleOffset(spearRenderer != null ? spearRenderer.sprite : null);
+        transform.rotation = Quaternion.Euler(0f, 0f, targetAngle - tipOffset);
+        if (slashVfx != null) slashVfx.SpawnThrustFinisher(startPos, dir, meleeThrustDistance);
+
+        if (trailRenderer != null)
+        {
+            // Old line trail disabled during melee combos in favor of stunning Ghost Spear duplicate trail
+            trailRenderer.emitting = false;
+        }
+
+        SpawnSonicShockwave(startPos, dir);
+
+        // 3. High-Velocity Piercing Thrust Phase
+        Vector3 targetPos = startPos + new Vector3(dir * meleeThrustDistance, 0f, 0f);
+        float thrustElapsed = 0f;
+        var hitTargets = new System.Collections.Generic.HashSet<GameObject>();
+
+        Vector3 lastEchoPos = startPos;
+        Quaternion lastEchoRot = transform.rotation;
+        bool hasLastEcho = false;
+
+        while (thrustElapsed < meleeThrustDuration)
+        {
+            thrustElapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(thrustElapsed / meleeThrustDuration);
+            float smoothT = Mathf.Sin(t * Mathf.PI * 0.5f);
+            transform.position = Vector3.Lerp(startPos, targetPos, smoothT);
+
+            // Emit multiplied black spear silhouette motion trail
+            EmitBlackSpearMotionTrail(ref lastEchoPos, ref lastEchoRot, ref hasLastEcho, 3);
+
+            if (slashVfx != null)
+            {
+                slashVfx.OnArcProgress(3, dir, SpearOrientationAnalyzer.GetTipWorldPosition(transform, spearRenderer, 2.2f), startPos, t, targetAngle);
+            }
+
+            Collider2D[] hits = GetEntireSpearHits(1.15f);
+            foreach (var col in hits)
+            {
+                if (col == null || col.isTrigger || col.CompareTag("Player")) continue;
+                GameObject rootTarget = col.transform.root.gameObject;
+                if (hitTargets.Contains(rootTarget) || hitTargets.Contains(col.gameObject)) continue;
+
+                var damageable = col.GetComponent<IDamageable>() ?? col.GetComponentInParent<IDamageable>();
+                var health = col.GetComponent<Health>() ?? col.GetComponentInParent<Health>();
+
+                if (damageable != null || health != null || col.CompareTag("enemy"))
+                {
+                    hitTargets.Add(rootTarget);
+                    hitTargets.Add(col.gameObject);
+
+                    if (damageable != null) damageable.TakeDamage(meleeThrustDamage);
+                    else if (health != null) health.TakeDamage(meleeThrustDamage);
+
+                    SpawnOfChaos.Systems.ImpactFrameFX.Trigger(col.bounds.center, 0.07f, isNegativeInversion: false);
+
+                    HitFeedbackManager.TriggerHitFeedback(col.transform, col.bounds.center, meleeThrustDamage, true, EnemyHitType.PhysicalMelee);
+
+                    Rigidbody2D enemyRb = col.GetComponent<Rigidbody2D>() ?? col.GetComponentInParent<Rigidbody2D>();
+                    if (enemyRb != null && enemyRb.bodyType == RigidbodyType2D.Dynamic)
+                    {
+                        enemyRb.linearVelocity = new Vector2(dir * 15f, 4.0f);
+                    }
+
+                    if (PlayerCombatJuice.Instance != null)
+                    {
+                        PlayerCombatJuice.Instance.SpawnHitCollisionParticles(col.bounds.center, true);
+                    }
+
+                    if (SpearSlashVFX.Instance != null)
+                    {
+                        SpearSlashVFX.Instance.OnSpearHitEnemy(col.bounds.center, 3, dir);
+                    }
+                }
+            }
+
+            yield return null;
+        }
+
+        // 4. Smooth Retraction back to companion float
+        thrustElapsed = 0f;
+        Vector3 apexPos = transform.position;
+        while (thrustElapsed < meleeThrustReturnDuration)
+        {
+            thrustElapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(thrustElapsed / meleeThrustReturnDuration);
             Vector3 returnTarget = (lumi != null) ? lumi.transform.position : (playerTransform != null ? playerTransform.position : startPos);
             transform.position = Vector3.Lerp(apexPos, returnTarget, t * t);
             yield return null;
         }
 
-        if (trailRenderer != null)
-        {
-            trailRenderer.emitting = false;
-        }
-
+        if (trailRenderer != null) trailRenderer.emitting = false;
         CurrentState = SpearState.CarriedByLumi;
         meleeThrustCoroutine = null;
     }
@@ -862,21 +1461,31 @@ public class LumiSpearWeapon : MonoBehaviour
         waveGO.transform.rotation = Quaternion.Euler(0f, 0f, (facingDirection < 0f) ? 180f : 0f);
 
         ParticleSystem ps = waveGO.AddComponent<ParticleSystem>();
+        var psRenderer = waveGO.GetComponent<ParticleSystemRenderer>();
+        if (psRenderer != null)
+        {
+            LowResBlackOrb.ConfigureParticleRenderer(psRenderer, 22, spearRenderer != null ? spearRenderer.sortingLayerName : "Default");
+        }
+
         var main = ps.main;
-        main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.2f, 0.95f, 1.0f, 0.95f), Color.white);
-        main.startSize = 0.45f;
+        main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.01f, 0.01f, 0.02f, 0.95f), new Color(0.05f, 0.05f, 0.08f, 0.85f));
+        main.startSize = new ParticleSystem.MinMaxCurve(0.22f, 0.38f);
         main.startSpeed = 16f;
         main.startLifetime = 0.22f;
-        // Removed main.duration assignment to prevent Unity runtime error
         main.loop = false;
 
         var emission = ps.emission;
-        emission.SetBursts(new ParticleSystem.Burst[] { new ParticleSystem.Burst(0f, 26) });
+        emission.SetBursts(new ParticleSystem.Burst[] { new ParticleSystem.Burst(0f, 24) });
 
         var shape = ps.shape;
         shape.shapeType = ParticleSystemShapeType.Cone;
         shape.angle = 20f;
         shape.radius = 0.15f;
+        shape.rotation = new Vector3(0f, 90f, 0f);
+
+        var sol = ps.sizeOverLifetime;
+        sol.enabled = true;
+        sol.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0f, 1f, 1f, 0.1f));
 
         ps.Play();
         Destroy(waveGO, 0.5f);

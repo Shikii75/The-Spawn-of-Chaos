@@ -17,7 +17,7 @@ public class NyxarisFrameAnimator : MonoBehaviour
     public Image targetImage;
 
     [Header("Animation Settings")]
-    public float defaultFPS = 20f;
+    public float defaultFPS = 24f;
     public string defaultIdleAnimation = "nyxarisnuetral-411247bb";
 
     [System.Serializable]
@@ -175,17 +175,67 @@ public class NyxarisFrameAnimator : MonoBehaviour
         }
 
         string q = query.ToLower().Trim();
-        if (q == "neutral" || q == "nuetral")
+
+        // High priority semantic alias matching
+        if (q.Contains("stern") || q.Contains("warn") || q.Contains("grave") || q.Contains("serious"))
         {
-            if (sequenceDict.TryGetValue("nyxarisnuetral-411247bb", out var nList)) return nList;
-            if (sequenceDict.TryGetValue("nyxarisnuetralstare-14b61402", out var nList2)) return nList2;
+            if (sequenceDict.TryGetValue("nyxarissternorimportantwarning-534901f6", out var wList)) return wList;
+            if (sequenceDict.TryGetValue("sternorimportantwarning", out var wList2)) return wList2;
+            if (sequenceDict.TryGetValue("nyxarisworriedupsetthinkingmp4-bd2148fc", out var wList3)) return wList3;
         }
-        else if (q == "explaining" || q.Contains("explain"))
+        else if (q.Contains("angr") || q.Contains("rage") || q.Contains("piss") || q.Contains("fury"))
+        {
+            if (sequenceDict.TryGetValue("nyxarisangry-e56db4b1", out var aList)) return aList;
+            if (sequenceDict.TryGetValue("nyxarismildanger-3d4eb3ea", out var aList2)) return aList2;
+            if (sequenceDict.TryGetValue("nyxarispissed-7e387d67", out var aList3)) return aList3;
+            if (sequenceDict.TryGetValue("angry", out var aList4)) return aList4;
+        }
+        else if (q.Contains("spread") || q.Contains("armsspread") || q.Contains("gift"))
+        {
+            if (sequenceDict.TryGetValue("nyxarisexcitedarmsspreadexplaining-cb776e55", out var sList)) return sList;
+            if (sequenceDict.TryGetValue("excitedarmsspreadexplaining", out var sList2)) return sList2;
+            if (sequenceDict.TryGetValue("nyxarisexplaining0-c6c6f20e", out var sList3)) return sList3;
+        }
+        else if (q.Contains("excit") || q.Contains("power") || q.Contains("wrath"))
+        {
+            if (sequenceDict.TryGetValue("nyxarisexcited-f2ab5508", out var exList)) return exList;
+            if (sequenceDict.TryGetValue("nyxarisconfidently0-146ef255", out var exList2)) return exList2;
+            if (sequenceDict.TryGetValue("nyxarishappytosay-e0fd84be", out var exList3)) return exList3;
+            if (sequenceDict.TryGetValue("excited", out var exList4)) return exList4;
+        }
+        else if (q.Contains("confiden") || q.Contains("smug") || q.Contains("proud"))
+        {
+            if (sequenceDict.TryGetValue("nyxarisconfidently-64b9a921", out var cList)) return cList;
+            if (sequenceDict.TryGetValue("nyxarisconfidently0-146ef255", out var cList2)) return cList2;
+            if (sequenceDict.TryGetValue("confidently", out var cList3)) return cList3;
+        }
+        else if (q.Contains("happ") || q.Contains("smile") || q.Contains("glad"))
+        {
+            if (sequenceDict.TryGetValue("nyxarishappy-f4e5a565", out var hList)) return hList;
+            if (sequenceDict.TryGetValue("nyxarishappytosay-e0fd84be", out var hList2)) return hList2;
+            if (sequenceDict.TryGetValue("happy", out var hList3)) return hList3;
+        }
+        else if (q.Contains("explain") || q.Contains("talk"))
         {
             if (sequenceDict.TryGetValue("nyxarisexplaining0-c6c6f20e", out var exp0)) return exp0;
             if (sequenceDict.TryGetValue("nyxarisexplaining1-a4a19986", out var exp1)) return exp1;
             if (sequenceDict.TryGetValue("nyxarisexcitedarmsspreadexplaining-cb776e55", out var expSpread)) return expSpread;
             if (sequenceDict.TryGetValue("nyxaristalkingeyesclosed-a238b88a", out var talkClosed)) return talkClosed;
+            if (sequenceDict.TryGetValue("explaining", out var expAlias)) return expAlias;
+        }
+        else if (q.Contains("think"))
+        {
+            if (sequenceDict.TryGetValue("nyxaristhinking-616901a8", out var tList)) return tList;
+            if (sequenceDict.TryGetValue("nyxariscutelythinking-08686484", out var tList2)) return tList2;
+            if (sequenceDict.TryGetValue("nyxarishappythinking-bd1f19af", out var tList3)) return tList3;
+            if (sequenceDict.TryGetValue("nyxarisworriedupsetthinkingmp4-bd2148fc", out var tList4)) return tList4;
+            if (sequenceDict.TryGetValue("thinking", out var tList5)) return tList5;
+        }
+        else if (q.Contains("neutr") || q.Contains("nuetr"))
+        {
+            if (sequenceDict.TryGetValue("nyxarisnuetral-411247bb", out var nList)) return nList;
+            if (sequenceDict.TryGetValue("nyxarisnuetralstare-14b61402", out var nList2)) return nList2;
+            if (sequenceDict.TryGetValue("nuetral", out var nList3)) return nList3;
         }
 
         // 1. Direct match

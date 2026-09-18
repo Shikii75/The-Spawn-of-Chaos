@@ -262,6 +262,8 @@ public class Health : MonoBehaviour, IDamageable
 
     public void PlayRandomHurtVoice()
     {
+        var vc = GetComponent<SpawnOfChaos.Entities.PlayerMageVoiceController>() ?? GetComponentInParent<SpawnOfChaos.Entities.PlayerMageVoiceController>();
+        if (vc != null) { vc.PlayHurtVoice(); return; }
         if (hurtVoiceClips == null || hurtVoiceClips.Length == 0) return;
         if (hurtVoiceSource == null) InitHurtVoice();
         AudioClip clip = hurtVoiceClips[UnityEngine.Random.Range(0, hurtVoiceClips.Length)];

@@ -222,50 +222,73 @@ namespace SpawnOfChaos.Systems
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         public static void EnsureLevel1SlotAvailable()
         {
-            SaveSlotData slot2 = GetSlot(2);
-            if (slot2 == null || slot2.isEmpty || slot2.sceneName == "TutorialScene")
+            SaveSlotData slot1 = GetSlot(1);
+            if (slot1 == null || slot1.isEmpty || slot1.sceneName == "TutorialScene" || slot1.locationName != "Start Cherry Blossom")
             {
-                SaveSlotData level1Slot = new SaveSlotData
+                SaveSlotData cherrySlot1 = new SaveSlotData
+                {
+                    slotIndex = 1,
+                    isEmpty = false,
+                    locationName = "Start Cherry Blossom",
+                    sceneName = "SampleScene",
+                    posX = -33.4f,
+                    posY = -8.3f,
+                    posZ = 0f,
+                    playerLevel = 1,
+                    coins = 100,
+                    currentWeapon = "DarkSpear",
+                    saveTimestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
+                    playTimeSeconds = 60f
+                };
+                SaveSlot(1, cherrySlot1);
+            }
+
+            SaveSlotData slot2 = GetSlot(2);
+            if (slot2 == null || slot2.isEmpty || slot2.sceneName == "TutorialScene" || slot2.locationName != "Start Cherry Blossom")
+            {
+                SaveSlotData cherrySlot2 = new SaveSlotData
                 {
                     slotIndex = 2,
                     isEmpty = false,
-                    locationName = "Level 1: Cherry Blossom Forest",
+                    locationName = "Start Cherry Blossom",
                     sceneName = "SampleScene",
-                    posX = 1125.6f,
-                    posY = 287.4f,
+                    posX = -33.4f,
+                    posY = -8.3f,
                     posZ = 0f,
                     playerLevel = 1,
-                    coins = 50,
+                    coins = 100,
                     currentWeapon = "DarkSpear",
                     saveTimestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
-                    playTimeSeconds = 300f
+                    playTimeSeconds = 60f
                 };
-                SaveSlot(2, level1Slot);
-                Debug.Log("<color=#D47BFF>[SaveSlotManager] Pre-seeded Slot 2 with Level 1 (SampleScene).</color>");
+                SaveSlot(2, cherrySlot2);
             }
+            Debug.Log("<color=#55FF88>[SaveSlotManager] Save slots seeded with 'Start Cherry Blossom' (SampleScene at Torii Gate)!</color>");
         }
 
 #if UNITY_EDITOR
-        [UnityEditor.MenuItem("Spawn of Chaos/Save Slots/Set Slot 2 to Level 1 (SampleScene)")]
+        [UnityEditor.MenuItem("Spawn of Chaos/Save Slots/Set Slot to Start Cherry Blossom")]
         public static void SeedSlot2ToLevel1()
         {
-            SaveSlotData level1Slot = new SaveSlotData
+            SaveSlotData cherrySlot = new SaveSlotData
             {
-                slotIndex = 2,
+                slotIndex = 1,
                 isEmpty = false,
-                locationName = "Level 1: Cherry Blossom Forest",
+                locationName = "Start Cherry Blossom",
                 sceneName = "SampleScene",
-                posX = 1125.6f,
-                posY = 287.4f,
+                posX = -33.4f,
+                posY = -8.3f,
                 posZ = 0f,
                 playerLevel = 1,
-                coins = 50,
+                coins = 100,
                 currentWeapon = "DarkSpear",
                 saveTimestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
-                playTimeSeconds = 300f
+                playTimeSeconds = 60f
             };
-            SaveSlot(2, level1Slot);
-            Debug.Log("<color=#55FF88>[SaveSlotManager] Slot 2 set to Level 1 (SampleScene)!</color>");
+            SaveSlot(1, cherrySlot);
+            cherrySlot.slotIndex = 2;
+            SaveSlot(2, cherrySlot);
+            Debug.Log("<color=#55FF88>[SaveSlotManager] Slots 1 & 2 set to 'Start Cherry Blossom' (SampleScene)!</color>");
         }
 #endif
     }

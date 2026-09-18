@@ -123,7 +123,7 @@ public class NyxarisManager : MonoBehaviour
             mainInterfacePanel = gameObject;
         }
 
-        if (mainInterfacePanel != null && mainInterfacePanel != gameObject)
+        if (mainInterfacePanel != null)
         {
             mainInterfacePanel.SetActive(false);
         }
@@ -149,8 +149,8 @@ public class NyxarisManager : MonoBehaviour
         if (!IsCinematicPlaying)
         {
             CanvasGroup cg = GetComponent<CanvasGroup>();
-            if (cg != null) cg.alpha = 0f;
-            if (mainInterfacePanel != null && mainInterfacePanel != gameObject)
+            if (cg != null) { cg.alpha = 0f; cg.blocksRaycasts = false; cg.interactable = false; }
+            if (mainInterfacePanel != null)
             {
                 mainInterfacePanel.SetActive(false);
             }
@@ -256,7 +256,7 @@ public class NyxarisManager : MonoBehaviour
                 frameAnimator = portrait.gameObject.AddComponent<NyxarisFrameAnimator>();
             }
             frameAnimator.targetImage = portrait;
-            frameAnimator.PlayAnimation("nuetral", 12f);
+            frameAnimator.PlayAnimation("nuetral", 24f);
         }
     }
 
@@ -275,7 +275,7 @@ public class NyxarisManager : MonoBehaviour
             frameAnimator.targetImage = portrait;
             if (!frameAnimator.IsPlaying && !frameAnimator.IsFrozenOnLastFrame)
             {
-                frameAnimator.PlayAnimation("nuetral", 12f);
+                frameAnimator.PlayAnimation("nuetral", 24f);
             }
         }
         else if (portrait.sprite == null)
@@ -989,11 +989,18 @@ public class NyxarisManager : MonoBehaviour
     /// </summary>
     public void StartCinematicStoryDialogue(CinematicLine[] lines, System.Action onComplete)
     {
-        // 1. Stop any closing animations or coroutines immediately
+        if (HUDManager.IsInMainMenu())
+        {
+            Debug.LogWarning("[NyxarisManager] Blocked StartCinematicStoryDialogue: Main Menu is active!");
+            return;
+        }
+
+        // 1. Stop any closing animations or coroutines immediately and enable cinematic dialogue mode
         NyxarisUIStyler styler = GetStyler();
         if (styler != null)
         {
             styler.StopAllCoroutines();
+            styler.SetCinematicDialogueMode(true);
         }
 
         // 2. Ensure GameObject is fully active and scale is 1
@@ -1008,7 +1015,7 @@ public class NyxarisManager : MonoBehaviour
         {
             c.renderMode = RenderMode.ScreenSpaceOverlay;
             c.overrideSorting = true;
-            c.sortingOrder = 1000;
+            c.sortingOrder = 500;
         }
 
         // 4. Force all CanvasGroups to 100% opaque
@@ -1083,13 +1090,17 @@ public class NyxarisManager : MonoBehaviour
             EnsureDefaultPortrait();
 
             // Hide message input & buttons during cinematic dialogue
+            NyxarisUIStyler cineStyler = GetStyler();
+            if (cineStyler != null) cineStyler.SetCinematicDialogueMode(true);
             if (messageInput != null) messageInput.gameObject.SetActive(false);
 
             Transform uiSpace = mainInterfacePanel != null ? mainInterfacePanel.transform.Find("UIspace") : null;
             if (uiSpace != null)
             {
-                Transform sendBtn = uiSpace.Find("SendButton") ?? uiSpace.Find("SubmitButton");
+                Transform sendBtn = uiSpace.Find("SendButton") ?? uiSpace.Find("LowerPanel/SendButton") ?? uiSpace.Find("SubmitButton");
                 if (sendBtn != null) sendBtn.gameObject.SetActive(false);
+                Transform inGo = uiSpace.Find("MessageInput") ?? uiSpace.Find("LowerPanel/MessageInput");
+                if (inGo != null) inGo.gameObject.SetActive(false);
             }
 
             // Lock player movement during conversation
@@ -1102,7 +1113,7 @@ public class NyxarisManager : MonoBehaviour
                 // 1. Play Portrait Expression Animation
                 if (frameAnimator != null && !string.IsNullOrEmpty(line.animationKey))
                 {
-                    frameAnimator.PlayAnimation(line.animationKey, 14f);
+                    frameAnimator.PlayAnimation(line.animationKey, 24f);
                 }
                 else
                 {
@@ -1113,7 +1124,7 @@ public class NyxarisManager : MonoBehaviour
                 if (dialogueText != null) dialogueText.text = "";
                 string fullText = line.text;
                 int charIndex = 0;
-                float charInterval = 0.02f;
+                float charInterval = 0.007f;
 
                 while (charIndex < fullText.Length)
                 {
@@ -1153,6 +1164,8 @@ public class NyxarisManager : MonoBehaviour
         finally
         {
             cinematicCoroutine = null;
+            NyxarisUIStyler cineStyler = GetStyler();
+            if (cineStyler != null) cineStyler.SetCinematicDialogueMode(false);
             HideInterface();
             move.ExternalMovementLock = false;
             onComplete?.Invoke();

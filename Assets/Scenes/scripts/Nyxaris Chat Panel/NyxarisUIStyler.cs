@@ -345,7 +345,8 @@ public class NyxarisUIStyler : MonoBehaviour
         {
             if (dialoguePanelImage != null && nameText.transform.parent != dialoguePanelImage.transform)
             {
-                nameText.transform.SetParent(dialoguePanelImage.transform, false);
+                try { nameText.transform.SetParent(dialoguePanelImage.transform, false); }
+                catch (System.Exception) { }
             }
 
             nameText.color = accentCyan;
@@ -939,6 +940,66 @@ public class NyxarisUIStyler : MonoBehaviour
     public void SetActiveDot(int activeIndex, int totalDots = 3)
     {
     }
+
+    public void SetCinematicDialogueMode(bool isCinematic)
+    {
+        // 1. Make root canvas and background completely transparent so BasePlayer and level are 100% visible!
+        Image rootBg = GetComponent<Image>();
+        if (rootBg != null)
+        {
+            rootBg.color = isCinematic ? new Color(0f, 0f, 0f, 0f) : new Color(0.145f, 0.145f, 0.22f, 1f);
+            rootBg.raycastTarget = !isCinematic;
+        }
+
+        if (inputFieldImage != null)
+        {
+            inputFieldImage.gameObject.SetActive(!isCinematic);
+        }
+        if (sendButtonImage != null)
+        {
+            sendButtonImage.gameObject.SetActive(!isCinematic);
+        }
+
+        // Make full-screen UIspace background transparent during cinematic dialogue so level is visible!
+        Transform uiSpace = dialoguePanelImage != null ? dialoguePanelImage.transform.parent : transform.Find("UIspace");
+        if (uiSpace != null)
+        {
+            Image bg = uiSpace.GetComponent<Image>();
+            if (bg != null)
+            {
+                bg.color = isCinematic ? new Color(0f, 0f, 0f, 0f) : bodyBgColor;
+                bg.raycastTarget = !isCinematic;
+            }
+
+            Transform send = uiSpace.Find("SendButton") ?? uiSpace.Find("LowerPanel/SendButton");
+            if (send != null) send.gameObject.SetActive(!isCinematic);
+            Transform input = uiSpace.Find("MessageInput") ?? uiSpace.Find("LowerPanel/MessageInput");
+            if (input != null) input.gameObject.SetActive(!isCinematic);
+        }
+
+        if (dialogueText != null)
+        {
+            dialogueText.enableWordWrapping = true;
+            dialogueText.overflowMode = TextOverflowModes.Overflow;
+            dialogueText.fontSize = 24f;
+            dialogueText.color = new Color(0.95f, 0.92f, 1f, 1f);
+
+            RectTransform txtRt = dialogueText.rectTransform;
+            if (isCinematic)
+            {
+                // Full space in bottom panel for story dialogue
+                txtRt.anchorMin = Vector2.zero;
+                txtRt.anchorMax = Vector2.one;
+                txtRt.offsetMin = new Vector2(36f, 20f);
+                txtRt.offsetMax = new Vector2(-420f, -38f);
+            }
+            else
+            {
+                txtRt.offsetMin = new Vector2(dialogueLeftPad, dialogueBottomPad);
+                txtRt.offsetMax = new Vector2(dialogueRightPad, dialogueTopPad);
+            }
+        }
+    }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1029,4 +1090,7 @@ public class NyxarisBounceEffect : MonoBehaviour, IPointerEnterHandler, IPointer
 
         transform.localScale = targetScale;
     }
+
+
+
 }

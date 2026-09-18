@@ -5,12 +5,6 @@ TextureImporter:
   - first:
       213: -1307551117688303750
     second: frame_015_0
-  - first:
-      213: -4123866031982349015
-    second: frame_015_1
-  - first:
-      213: 1618199184845173428
-    second: frame_015_2
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -40,7 +34,7 @@ TextureImporter:
   cubemapConvolution: 0
   seamlessCubemap: 0
   textureFormat: 1
-  maxTextureSize: 2048
+  maxTextureSize: 4096
   textureSettings:
     serializedVersion: 2
     filterMode: 1
@@ -68,7 +62,7 @@ TextureImporter:
   singleChannelComponent: 0
   flipbookRows: 1
   flipbookColumns: 1
-  maxTextureSizeSet: 0
+  maxTextureSizeSet: 1
   compressionQualitySet: 0
   textureFormatSet: 0
   ignorePngGamma: 0
@@ -78,7 +72,7 @@ TextureImporter:
   platformSettings:
   - serializedVersion: 4
     buildTarget: DefaultTexturePlatform
-    maxTextureSize: 2048
+    maxTextureSize: 4096
     resizeAlgorithm: 0
     textureFormat: -1
     textureCompression: 1
@@ -91,7 +85,7 @@ TextureImporter:
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 4
     buildTarget: Standalone
-    maxTextureSize: 2048
+    maxTextureSize: 4096
     resizeAlgorithm: 0
     textureFormat: -1
     textureCompression: 1
@@ -109,12 +103,12 @@ TextureImporter:
       name: frame_015_0
       rect:
         serializedVersion: 2
-        x: 354
-        y: 71
-        width: 563
-        height: 614
+        x: 0
+        y: 0
+        width: 1280
+        height: 720
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -123,50 +117,6 @@ TextureImporter:
       bones: []
       spriteID: a7f0688af25aadde0800000000000000
       internalID: -1307551117688303750
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: frame_015_1
-      rect:
-        serializedVersion: 2
-        x: 582
-        y: 57
-        width: 12
-        height: 9
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 925746e61b515c6c0800000000000000
-      internalID: -4123866031982349015
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: frame_015_2
-      rect:
-        serializedVersion: 2
-        x: 650
-        y: 58
-        width: 16
-        height: 11
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 4b2f584c59ff47610800000000000000
-      internalID: 1618199184845173428
       vertices: []
       indices: 
       edges: []
@@ -186,8 +136,6 @@ TextureImporter:
       entries: []
     nameFileIdTable:
       frame_015_0: -1307551117688303750
-      frame_015_1: -4123866031982349015
-      frame_015_2: 1618199184845173428
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

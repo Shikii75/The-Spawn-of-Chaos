@@ -45,14 +45,14 @@ public class AtmosphericVoidOrbSpawner : MonoBehaviour
     public int nebulaSortingOrder = -100;
     public int orbSortingOrder = -90;
 
-    // Rich Purple/Amethyst/Magenta Palette matching Title Screen & Opening Prologue
+    // Dark Void Obsidian Palette replacing legacy purple
     private static readonly Color[] OrbPalette = new Color[]
     {
-        new Color(0.65f, 0.20f, 0.95f), // Radiant violet
-        new Color(0.85f, 0.35f, 1.00f), // Neon purple
-        new Color(0.92f, 0.50f, 0.98f), // Ethereal magenta
-        new Color(0.48f, 0.15f, 0.85f), // Deep amethyst
-        new Color(0.78f, 0.45f, 0.90f)  // Soft lilac
+        new Color(0.015f, 0.012f, 0.025f), // Deep pitch void
+        new Color(0.035f, 0.030f, 0.045f), // Abyssal obsidian
+        new Color(0.060f, 0.055f, 0.080f), // Charcoal shadow
+        new Color(0.020f, 0.018f, 0.030f), // Dark singularity
+        new Color(0.045f, 0.040f, 0.060f)  // Dim twilight void
     };
 
     private class WorldOrb
@@ -187,34 +187,7 @@ public class AtmosphericVoidOrbSpawner : MonoBehaviour
     {
         if (s_opticalBokehSprite == null)
         {
-            int size = 256;
-            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
-            tex.wrapMode = TextureWrapMode.Clamp;
-            tex.filterMode = FilterMode.Bilinear;
-            Vector2 center = new Vector2((size - 1) * 0.5f, (size - 1) * 0.5f);
-            float maxRadius = size * 0.49f;
-
-            for (int y = 0; y < size; y++)
-            {
-                for (int x = 0; x < size; x++)
-                {
-                    float dist = Vector2.Distance(new Vector2(x, y), center) / maxRadius;
-                    if (dist >= 1.0f)
-                    {
-                        tex.SetPixel(x, y, Color.clear);
-                        continue;
-                    }
-
-                    // Pure out-of-focus optical bokeh Gaussian blur with smooth zero-falloff edge
-                    float edgeFactor = Mathf.Clamp01(1.0f - dist);
-                    float smoothEdge = edgeFactor * edgeFactor * (3.0f - 2.0f * edgeFactor);
-                    // Ultra-diffuse wide Gaussian curve - soft, misty, ethereal glow
-                    float alpha = Mathf.Exp(-1.9f * dist * dist) * smoothEdge;
-                    tex.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
-                }
-            }
-            tex.Apply();
-            s_opticalBokehSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+            s_opticalBokehSprite = LowResBlackOrb.GetSprite();
         }
 
         if (s_nebulaGlowSprite == null)

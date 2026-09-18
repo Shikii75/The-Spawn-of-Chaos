@@ -1,0 +1,345 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &8668547715065357304
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6630735414579842525}
+  - component: {fileID: 7422461942609964980}
+  - component: {fileID: 7798940184734335544}
+  - component: {fileID: 8069206559612875801}
+  - component: {fileID: 4269524731623521933}
+  m_Layer: 0
+  m_Name: Dara
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6630735414579842525
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8668547715065357304}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.52, y: 0.52, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!212 &7422461942609964980
+SpriteRenderer:
+  serializedVersion: 2
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8668547715065357304}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 5
+  m_MaskInteraction: 0
+  m_Sprite: {fileID: -1974267942269126528, guid: 2640c28974651b649b5b8e3cf6ab5c55, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 4.84, y: 8.96}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_SpriteSortPoint: 0
+--- !u!61 &7798940184734335544
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8668547715065357304}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0.5, y: 0.5}
+    oldSize: {x: 4.84, y: 8.96}
+    newSize: {x: 4.84, y: 8.96}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Size: {x: 2.6, y: 4.6}
+  m_EdgeRadius: 0
+--- !u!82 &8069206559612875801
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8668547715065357304}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 0
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0.5
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+--- !u!114 &4269524731623521933
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8668547715065357304}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9946ea3dcb444ef835f42a7bc4a0270, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DaraNPC
+  characterName: Dara
+  characterTitle: "\u2726 Follower of Nyxaris"
+  nameColor: {r: 0.86, g: 0.62, b: 1, a: 1}
+  titleColor: {r: 0.68, g: 0.55, b: 0.9, a: 0.85}
+  bodyTextColor: {r: 0.96, g: 0.94, b: 1, a: 1}
+  bubbleBgColor: {r: 0.07, g: 0.04, b: 0.14, a: 0.95}
+  telepathyDialogueLines:
+  - "Oh! Wait\u2014you can actually hear my thoughts?! Okay, huge relief. Hi! I'm
+    Dara. Devoted follower of Lady Nyxaris, though currently\u2026 an extremely stressed-out
+    wife."
+  - You must be the warrior Nyxaris sent to investigate the massacre of our people.
+    I felt that dark shockwave rip through the realm. Honestly? It broke my heart...
+  - If you're looking for answers on who butchered our brothers and sisters, you
+    need to head straight into the Cherry Blossom Forest in the mountains.
+  - 'There are two rival clans up there who despise each other: the Strawhat Clan
+    in Dojo 1 and the Samurai Clan in Dojo 2. Word on the street is the killer is
+    a high-ranking warrior belonging to one of those clans!'
+  - "Which brings me to my missing hubby\u2026 That adorable idiot went up the mountain
+    three days ago with a bamboo stick to investigate the giant spiders swarming
+    around the regional caves, and hasn't returned!"
+  - No note, no text, nothing! Classic him, zero self-preservation. If you head up
+    to the dojos or delve into that creepy cave, could you pretty please keep an
+    eye out for him? And kick whoever started this into next week!
+  confusedDialogueLines:
+  - "\u2026\u3048\u3063\uFF1F \u4F55\u8A00\u3063\u3066\u308B\u306E\u304B\u5168\u7136\u5206\u304B\u3093\u306A\u3044\u3093\u3060\u3051\u3069\u2026\uFF1F\n<color=#D47BFF><i>[She
+    tilts her head in utter confusion, mumbling in an unfamiliar tongue...]</i></color>"
+  - "\uFF08\u56F0\u60D1\u3057\u305F\u3088\u3046\u306B\u8EAB\u632F\u308A\u624B\u632F\u308A\u3057\u3066\u3044\u308B\u2026
+    \u8A00\u8449\u304C\u901A\u3058\u306A\u3044\u3088\u3046\u3060\u3002\uFF09\n<color=#D47BFF><i>[Her
+    celestial mindwaves are out of phase! You need the Telepathy Orb to decipher
+    her thoughts.]</i></color>"
+  - "\u2026\u3042\u306E\u3001Nyxaris\u69D8\u306E\u304A\u544A\u3052\u2026\uFF1F \u3046\u3046\u3093\u3001\u3054\u3081\u3093\u306D\u3001\u5168\u7136\u805E\u304D\u53D6\u308C\u306A\u3044\u3088\u3049\u2026\n<color=#D47BFF><i>[Search
+    the region for the Telepathy Orb to understand Nyxaris's followers.]</i></color>"
+  idleFrames:
+  - {fileID: -1974267942269126528, guid: 2640c28974651b649b5b8e3cf6ab5c55, type: 3}
+  - {fileID: 2536910936557558875, guid: aece6bb22a26c964cb74b2bb6fc1a72b, type: 3}
+  - {fileID: 1399413676680894907, guid: 9602f3ac51f076b41ac48bf32469bf0f, type: 3}
+  - {fileID: 6636361135747025162, guid: 4fd360c522d150049b27759330f43c19, type: 3}
+  - {fileID: -3229540774608315921, guid: 500b91f6598fad74eb84abb71fe0bde3, type: 3}
+  - {fileID: -8556153337439913670, guid: c9cc27a7acefe7349bb19bc4bfec1143, type: 3}
+  - {fileID: 6806514638545688161, guid: 1b8371444b2004c4db615a4916e4935e, type: 3}
+  - {fileID: 9129153061814148694, guid: 6a97ab6dbbfa6504492c339bede34785, type: 3}
+  - {fileID: -5081542999072728518, guid: fdb436d8233d05e4da4d2903fb1e98a3, type: 3}
+  - {fileID: 4520904317959053790, guid: a214c1a56ba5f204ebcc044950667dc8, type: 3}
+  - {fileID: 2322682147697601876, guid: aa88f78e432f613419b507921048a93a, type: 3}
+  - {fileID: 3821608149902857604, guid: deb789bc3d934ec4a88c5f35a40ccf55, type: 3}
+  - {fileID: 7591575736208656583, guid: 0c1e68b96a8d4504593d0c7143a20319, type: 3}
+  - {fileID: -1307551117688303750, guid: 616bc75a29b511b40835e927e204a653, type: 3}
+  - {fileID: 462379283006482115, guid: 81daeb7c8bdf01b4e823d686a58cb729, type: 3}
+  - {fileID: 3161044957347714238, guid: 92a59d317f5bf92439c3f58d4075c67e, type: 3}
+  - {fileID: -8312946514707724896, guid: cffa84bfa492e83409ebd9153a7bd3ce, type: 3}
+  - {fileID: -8161875296251981334, guid: 00f1dd47de02b9c41bb349931c63d468, type: 3}
+  - {fileID: 6840564828551953541, guid: 8aa0fff288ce861468a44228a3c31bb3, type: 3}
+  - {fileID: -3260046926899513037, guid: 02f448436dfe17f4fa56b65016f7fee7, type: 3}
+  - {fileID: 5751856313770149850, guid: 42de6d69c8efc5f4aac92c857373e0ad, type: 3}
+  - {fileID: 6234571145473264597, guid: feded4f09824a21419be2306b42c1c81, type: 3}
+  - {fileID: 1298467723289835777, guid: f92d61892477a094999e944f5af3d46a, type: 3}
+  - {fileID: 2358859151894055172, guid: 334a4638c4efe61408bdf99e34a86bb0, type: 3}
+  - {fileID: -6668484977387978136, guid: 4a7b3cc3f1d3d5f4183a4c2e110c6dc1, type: 3}
+  - {fileID: -6864567656012732988, guid: 6c01ce38a05794f42aa5657c08a4daf7, type: 3}
+  talkFrames:
+  - {fileID: -4005827079733373722, guid: 270e565fe5a64204ead2af39842de487, type: 3}
+  - {fileID: -8735307735794765025, guid: 8e4c5cdd64026474eb51dd5577ef28a4, type: 3}
+  - {fileID: -1765240197280933245, guid: 040b14d7770efe64db62918297adedd4, type: 3}
+  - {fileID: 2643206577420180900, guid: a39213027af82c9499c15ccb4e588aa6, type: 3}
+  - {fileID: 1521400363544377418, guid: 666ae0382a6b8e64e922940303a3a41a, type: 3}
+  - {fileID: 6771540048699066786, guid: 88f2b9f085b838844b80f391b40d7afe, type: 3}
+  - {fileID: -4237664848467394651, guid: 8d667cbe9c4809641a527085cead2407, type: 3}
+  - {fileID: 8672583971190245199, guid: 9ebe42bdaaa0a04408ef6791fa98f6d7, type: 3}
+  - {fileID: -405223811757784493, guid: 7c442d0441e83144b8a8e11d8fabdfa8, type: 3}
+  - {fileID: -5188515448371832455, guid: 01d1e020bc96d08478ef8952d3048c70, type: 3}
+  - {fileID: 2322682147697601876, guid: f1294aa5d744dbb49b4abdd2c949f177, type: 3}
+  - {fileID: -8156386102531454665, guid: e1be1cb68de7a7a43824636b762f5ba5, type: 3}
+  - {fileID: 529698510099187759, guid: 19ade2875542796478d5c16b9f8c3db3, type: 3}
+  - {fileID: -4123866031982349015, guid: e43bfebf15d5b8440abadc3370c4f7ec, type: 3}
+  - {fileID: -1476357904484662748, guid: 3ea35635df4290d44850da5cf9e8fb12, type: 3}
+  - {fileID: 1624133315616199465, guid: dff062e1f45f161438597c1579a4a5b6, type: 3}
+  fps: 18
+  confusedMageClips:
+  - {fileID: 8300000, guid: 2f792e04dee0aa841bd38e4b0483c806, type: 3}
+  - {fileID: 8300000, guid: 31c72e2c629f517418c555c9b671ef2d, type: 3}
+  - {fileID: 8300000, guid: f7a68981ba516674f810a7b6369036ec, type: 3}
+  - {fileID: 8300000, guid: 05fe9924f65e3b54d8c7ac5b92ec664f, type: 3}
+  - {fileID: 8300000, guid: 2fc5d069090afe742a6c8d36b9628621, type: 3}
+  - {fileID: 8300000, guid: 3e3870e91956d464f88a7a120419647f, type: 3}
+  - {fileID: 8300000, guid: f59d94011fbc58042ac77d7193af7793, type: 3}
+  - {fileID: 8300000, guid: 346dcb33185f3f840ba01d05c3ae62e6, type: 3}
+  textBeepSound: {fileID: 0}
+  voicePitch: 1.15
+  interactRange: 3.5
+  interactKey: 101
+  typeSpeed: 0.025
+  bubbleHeightAboveNPC: 3.2
+  bubbleWidth: 720
+  bubbleHeight: 240

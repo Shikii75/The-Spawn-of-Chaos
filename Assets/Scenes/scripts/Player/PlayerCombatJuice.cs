@@ -32,6 +32,9 @@ public class PlayerCombatJuice : MonoBehaviour
 
     private static Sprite circleParticleSprite;
     private static Sprite slashArcSprite;
+    private static Sprite slashGlowSprite;
+    private static Sprite sparkleShardSprite;
+    private static Sprite pierceShockSprite;
 
     void Awake()
     {
@@ -295,21 +298,18 @@ public class PlayerCombatJuice : MonoBehaviour
         ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
 
         ParticleSystemRenderer psRenderer = burstObj.GetComponent<ParticleSystemRenderer>();
-        psRenderer.material = new Material(Shader.Find("Sprites/Default"));
+        LowResBlackOrb.ConfigureParticleRenderer(psRenderer, 22);
 
         var main = ps.main;
-        // Removed main.duration assignment to prevent Unity runtime error
         main.loop = false;
         main.startLifetime = isHeavy ? 0.28f : 0.18f;
         main.startSpeed = isHeavy ? 12f : 7f;
-        main.startSize = isHeavy ? 0.22f : 0.14f;
+        main.startSize = isHeavy ? 0.26f : 0.18f;
         main.simulationSpace = ParticleSystemSimulationSpace.World;
-        main.gravityModifier = 1.8f;
+        main.gravityModifier = 1.4f;
 
-        // Color gradient: Arcane Violet to Bright Spark White
-        main.startColor = isHeavy
-            ? new ParticleSystem.MinMaxGradient(new Color(1.0f, 0.5f, 0.1f), new Color(0.9f, 0.2f, 1.0f))
-            : new ParticleSystem.MinMaxGradient(new Color(0.7f, 0.4f, 1.0f), new Color(1.0f, 1.0f, 0.9f));
+        // Low-resolution black orbs with subtle dark glints
+        main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.01f, 0.01f, 0.02f, 0.95f), new Color(0.06f, 0.06f, 0.09f, 0.85f));
 
         var emission = ps.emission;
         emission.enabled = true;
@@ -328,58 +328,324 @@ public class PlayerCombatJuice : MonoBehaviour
         Destroy(burstObj, 0.4f);
     }
 
+    /// <summary>
+    /// Spawns high-end GPU-style satisfying slash VFX for spear and swordmanship combos.
+    /// comboStep 1: Sweeping horizontal crescent slash (Electric Cyan / Neon White core).
+    /// comboStep 2: Reverse rising diagonal upper cut (Neon Magenta / Electric Violet with spark fountain).
+    /// comboStep 3: Sonic Piercing Thrust & Finisher Shockwave (Massive piercing wedge + dual shockwave rings).
+    /// </summary>
+    public void SpawnGpuSlashVFX(Vector3 position, float facingDirection, int comboStep)
+    {
+        EnsureSpritesGenerated();
+
+        float dir = (facingDirection < 0f) ? -1f : 1f;
+        float yOffset = (comboStep == 2) ? 0.28f : ((comboStep == 1) ? 0.12f : 0.08f);
+        Vector3 spawnPos = position + new Vector3(dir * 1.25f, yOffset, 0f);
+
+        float rotZ;
+        float baseScale;
+        Color bladeColor;
+        Color glowColor;
+        Color sparkColor;
+        Color shardColor;
+
+        if (comboStep == 1)
+        {
+            // Step 1: Celestial Azure Blade + Warm Solar Amber Glow (Harmonious Complementary Duo)
+            rotZ = -14f;
+            baseScale = 2.1f;
+            bladeColor = new Color(0.35f, 0.95f, 1.0f, 1.0f); // Bright Diamond Cyan
+            glowColor  = new Color(1.0f, 0.72f, 0.15f, 0.75f); // Radiant Solar Gold
+            sparkColor = new Color(0.2f, 0.9f, 1.0f, 1.0f);
+            shardColor = new Color(1.0f, 0.92f, 0.5f, 0.95f);
+        }
+        else if (comboStep == 2)
+        {
+            // Step 2: Void Magenta Blade + Luminescent Emerald Mint Glow (Exotic Complementary Duo)
+            rotZ = 34f;
+            baseScale = 2.35f;
+            bladeColor = new Color(1.0f, 0.25f, 0.75f, 1.0f); // Vivid Neon Magenta
+            glowColor  = new Color(0.1f, 1.0f, 0.65f, 0.72f); // Luminous Emerald Mint
+            sparkColor = new Color(0.85f, 0.2f, 1.0f, 1.0f);
+            shardColor = new Color(0.4f, 1.0f, 0.8f, 0.95f);
+        }
+        else
+        {
+            // Step 3: Supernova Finisher (Prismatic Pure White + Cosmic Indigo & Solar Flare)
+            rotZ = 0f;
+            baseScale = 2.9f;
+            bladeColor = new Color(1.0f, 1.0f, 1.0f, 1.0f); // Pure Prismatic White
+            glowColor  = new Color(0.55f, 0.25f, 1.0f, 0.85f); // Deep Cosmic Indigo
+            sparkColor = new Color(1.0f, 0.85f, 0.3f, 1.0f);
+            shardColor = new Color(1.0f, 1.0f, 1.0f, 1.0f);
+        }
+
+        // --- 1. Secondary Luminous Glow Envelope (Behind Sharp Arc) ---
+        GameObject glowObj = new GameObject($"SlashGlow_Step{comboStep}");
+        glowObj.transform.position = spawnPos;
+        glowObj.transform.rotation = Quaternion.Euler(0f, 0f, rotZ);
+        glowObj.transform.localScale = new Vector3(dir * baseScale * 1.15f, baseScale * 1.15f, 1f);
+
+        SpriteRenderer glowSr = glowObj.AddComponent<SpriteRenderer>();
+        glowSr.sprite = (comboStep == 3) ? (pierceShockSprite ?? slashGlowSprite) : slashGlowSprite;
+        glowSr.color = glowColor;
+        glowSr.sortingOrder = 74;
+        StartCoroutine(AnimateGpuSlashArc(glowObj, glowSr, baseScale * 1.15f, comboStep, 0.18f, true));
+
+        // --- 2. Primary Razor Blade Arc (Foreground Sharp Core) ---
+        GameObject arcObj = new GameObject($"SlashArc_Step{comboStep}");
+        arcObj.transform.position = spawnPos;
+        arcObj.transform.rotation = Quaternion.Euler(0f, 0f, rotZ);
+        arcObj.transform.localScale = new Vector3(dir * baseScale, baseScale, 1f);
+
+        SpriteRenderer arcSr = arcObj.AddComponent<SpriteRenderer>();
+        arcSr.sprite = (comboStep == 3) ? (pierceShockSprite ?? slashArcSprite) : slashArcSprite;
+        arcSr.color = bladeColor;
+        arcSr.sortingOrder = 76;
+        StartCoroutine(AnimateGpuSlashArc(arcObj, arcSr, baseScale, comboStep, 0.15f, false));
+
+        // --- 3. Floating Arcane Sparkle Shards / Star Runes ---
+        SpawnArcShards(spawnPos, dir, rotZ, comboStep, shardColor);
+
+        // --- 4. Directional High-Velocity Kinetic Spark Fountain ---
+        SpawnGpuSparkSpray(spawnPos, dir, comboStep, sparkColor, rotZ);
+
+        // --- 5. Expanding Distortion Shockwave Ring (Step 3 or Crits) ---
+        if (comboStep == 3)
+        {
+            SpawnShockwaveRing(spawnPos, 1, new Color(1.0f, 0.85f, 0.3f, 0.9f));
+            SpawnShockwaveRing(spawnPos + new Vector3(dir * 0.5f, 0f, 0f), 2, new Color(0.4f, 0.95f, 1.0f, 0.85f));
+        }
+        else
+        {
+            SpawnShockwaveRing(spawnPos, comboStep, glowColor);
+        }
+    }
+
+    private void SpawnArcShards(Vector3 center, float facingDir, float rotZ, int comboStep, Color shardColor)
+    {
+        EnsureSpritesGenerated();
+        int count = (comboStep == 3) ? 6 : 4;
+        float radius = 1.1f;
+
+        for (int i = 0; i < count; i++)
+        {
+            float t = (float)i / (count - 1);
+            float angleOffset = Mathf.Lerp(-40f, 40f, t);
+            float rad = (rotZ + angleOffset) * Mathf.Deg2Rad;
+            Vector3 offset = new Vector3(Mathf.Cos(rad) * radius * facingDir, Mathf.Sin(rad) * radius, 0f);
+
+            GameObject shard = new GameObject("ArcShard");
+            shard.transform.position = center + offset;
+            float initialScale = UnityEngine.Random.Range(0.45f, 0.75f);
+            shard.transform.localScale = new Vector3(initialScale, initialScale, 1f);
+            shard.transform.rotation = Quaternion.Euler(0f, 0f, UnityEngine.Random.Range(0f, 360f));
+
+            SpriteRenderer sr = shard.AddComponent<SpriteRenderer>();
+            sr.sprite = sparkleShardSprite;
+            sr.color = shardColor;
+            sr.sortingOrder = 78;
+
+            StartCoroutine(AnimateShardRoutine(shard, sr, initialScale));
+        }
+    }
+
+    private IEnumerator AnimateShardRoutine(GameObject shard, SpriteRenderer sr, float initialScale)
+    {
+        float duration = 0.22f;
+        float elapsed = 0f;
+        Vector3 startPos = shard.transform.position;
+        Vector3 drift = UnityEngine.Random.insideUnitCircle * 0.4f;
+        Color startCol = sr.color;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = elapsed / duration;
+            if (shard != null)
+            {
+                shard.transform.position = startPos + drift * t;
+                float currentScale = Mathf.Lerp(initialScale, initialScale * 1.35f, t);
+                shard.transform.localScale = new Vector3(currentScale, currentScale, 1f);
+                shard.transform.Rotate(0f, 0f, 180f * Time.unscaledDeltaTime);
+
+                Color c = startCol;
+                c.a = Mathf.Lerp(startCol.a, 0f, t * t);
+                sr.color = c;
+            }
+            yield return null;
+        }
+
+        if (shard != null) Destroy(shard);
+    }
+
+    private IEnumerator AnimateGpuSlashArc(GameObject arcObj, SpriteRenderer sr, float baseScale, int comboStep, float customDuration, bool isGlow)
+    {
+        float duration = customDuration;
+        float elapsed = 0f;
+        Vector3 initialScale = arcObj.transform.localScale;
+        Vector3 targetScale = initialScale * (isGlow ? 1.45f : 1.25f);
+        Color startColor = sr.color;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = elapsed / duration;
+            if (arcObj != null)
+            {
+                float scaleT = Mathf.Sin(t * Mathf.PI * 0.5f);
+                arcObj.transform.localScale = Vector3.Lerp(initialScale, targetScale, scaleT);
+
+                Color c = startColor;
+                c.a = Mathf.Lerp(startColor.a, 0f, t * t);
+                sr.color = c;
+            }
+            yield return null;
+        }
+
+        if (arcObj != null) Destroy(arcObj);
+    }
+
+    private void SpawnGpuSparkSpray(Vector3 position, float facingDirection, int comboStep, Color sparkColor, float rotZ)
+    {
+        GameObject burstObj = new GameObject($"GpuSparks_Step{comboStep}");
+        burstObj.transform.position = position;
+
+        ParticleSystem ps = burstObj.AddComponent<ParticleSystem>();
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+        ParticleSystemRenderer psRenderer = burstObj.GetComponent<ParticleSystemRenderer>();
+        psRenderer.material = new Material(Shader.Find("Sprites/Default"));
+
+        var main = ps.main;
+        main.loop = false;
+        main.startLifetime = (comboStep == 3) ? 0.32f : 0.22f;
+        main.startSpeed = (comboStep == 3) ? 22f : 15f;
+        main.startSize = (comboStep == 3) ? 0.22f : 0.16f;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        main.gravityModifier = 1.0f;
+
+        Color hotWhite = Color.white;
+        main.startColor = new ParticleSystem.MinMaxGradient(sparkColor, hotWhite);
+
+        var emission = ps.emission;
+        emission.enabled = true;
+        emission.rateOverTime = 0;
+        int sparkCount = (comboStep == 3) ? 42 : (comboStep == 2 ? 30 : 25);
+        emission.SetBursts(new ParticleSystem.Burst[] { new ParticleSystem.Burst(0f, (short)sparkCount) });
+
+        var shape = ps.shape;
+        shape.shapeType = ParticleSystemShapeType.Cone;
+        shape.angle = (comboStep == 3) ? 14f : 30f;
+        shape.radius = 0.08f;
+        float forwardRotY = (facingDirection < 0f) ? -90f : 90f;
+        float forwardRotZ = (facingDirection < 0f) ? -rotZ : rotZ;
+        shape.rotation = new Vector3(0f, forwardRotY, forwardRotZ);
+
+        var sizeOverLifetime = ps.sizeOverLifetime;
+        sizeOverLifetime.enabled = true;
+        sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1.1f, 0f);
+
+        ps.Play();
+        Destroy(burstObj, 0.5f);
+    }
+
+    private void SpawnShockwaveRing(Vector3 position, int comboStep, Color ringColor)
+    {
+        EnsureSpritesGenerated();
+        GameObject ringObj = new GameObject("ShockwaveRing");
+        ringObj.transform.position = position;
+        ringObj.transform.localScale = Vector3.zero;
+
+        SpriteRenderer sr = ringObj.AddComponent<SpriteRenderer>();
+        sr.sprite = circleParticleSprite;
+        sr.color = new Color(ringColor.r, ringColor.g, ringColor.b, 0.75f);
+        sr.sortingOrder = 72;
+
+        float targetDiameter = (comboStep == 3) ? 3.4f : ((comboStep == 2) ? 2.4f : 1.9f);
+        StartCoroutine(AnimateShockwaveRing(ringObj, sr, targetDiameter));
+    }
+
+    private IEnumerator AnimateShockwaveRing(GameObject ringObj, SpriteRenderer sr, float targetDiameter)
+    {
+        float duration = 0.16f;
+        float elapsed = 0f;
+        Color startCol = sr.color;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = elapsed / duration;
+            if (ringObj != null)
+            {
+                float currentScale = Mathf.Lerp(0.2f, targetDiameter, Mathf.Sin(t * Mathf.PI * 0.5f));
+                ringObj.transform.localScale = new Vector3(currentScale, currentScale, 1f);
+                Color c = startCol;
+                c.a = Mathf.Lerp(startCol.a, 0f, t * t);
+                sr.color = c;
+            }
+            yield return null;
+        }
+
+        if (ringObj != null) Destroy(ringObj);
+    }
+
     private static void EnsureSpritesGenerated()
     {
-        if (circleParticleSprite != null && slashArcSprite != null) return;
+        if (circleParticleSprite != null && slashArcSprite != null && slashGlowSprite != null &&
+            sparkleShardSprite != null && pierceShockSprite != null) return;
 
-        // 1. Circle Particle Sprite (Soft Radial Gradient)
-        int size = 32;
-        Texture2D circleTex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        // 1. Circle Particle Sprite (64x64 Soft Radial Glow)
+        int cSize = 64;
+        Texture2D circleTex = new Texture2D(cSize, cSize, TextureFormat.RGBA32, false);
         circleTex.filterMode = FilterMode.Bilinear;
-        Vector2 center = new Vector2(size * 0.5f, size * 0.5f);
-        float radius = size * 0.48f;
+        Vector2 center = new Vector2(cSize * 0.5f, cSize * 0.5f);
+        float radius = cSize * 0.48f;
 
-        Color[] pixels = new Color[size * size];
-        for (int y = 0; y < size; y++)
+        Color[] cPixels = new Color[cSize * cSize];
+        for (int y = 0; y < cSize; y++)
         {
-            for (int x = 0; x < size; x++)
+            for (int x = 0; x < cSize; x++)
             {
                 float dist = Vector2.Distance(new Vector2(x, y), center);
                 if (dist <= radius)
                 {
                     float alpha = Mathf.SmoothStep(1f, 0f, dist / radius);
-                    pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
+                    cPixels[y * cSize + x] = new Color(1f, 1f, 1f, alpha);
                 }
                 else
                 {
-                    pixels[y * size + x] = Color.clear;
+                    cPixels[y * cSize + x] = Color.clear;
                 }
             }
         }
-        circleTex.SetPixels(pixels);
+        circleTex.SetPixels(cPixels);
         circleTex.Apply();
-        circleParticleSprite = Sprite.Create(circleTex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 32f);
+        circleParticleSprite = Sprite.Create(circleTex, new Rect(0, 0, cSize, cSize), new Vector2(0.5f, 0.5f), 64f);
 
-        // 2. Crescent Slash Arc Sprite
-        int arcW = 64;
-        int arcH = 64;
+        // 2. High-Definition Razor Curved Crescent Slash Arc Sprite (128x128)
+        int arcW = 128;
+        int arcH = 128;
         Texture2D arcTex = new Texture2D(arcW, arcH, TextureFormat.RGBA32, false);
         arcTex.filterMode = FilterMode.Bilinear;
         Color[] arcPixels = new Color[arcW * arcH];
-        Vector2 arcCenter = new Vector2(arcW * 0.2f, arcH * 0.5f);
+        Vector2 arcCenter = new Vector2(arcW * 0.12f, arcH * 0.5f);
 
         for (int y = 0; y < arcH; y++)
         {
             for (int x = 0; x < arcW; x++)
             {
                 float dist = Vector2.Distance(new Vector2(x, y), arcCenter);
-                // Crescent ring between radius 20 and 30
-                if (dist >= 18f && dist <= 32f && x >= arcW * 0.2f)
+                float angle = Mathf.Atan2(y - arcCenter.y, x - arcCenter.x) * Mathf.Rad2Deg;
+                if (dist >= 32f && dist <= 76f && angle >= -76f && angle <= 76f)
                 {
-                    float ringCenter = 25f;
+                    float ringCenter = 56f;
                     float ringDist = Mathf.Abs(dist - ringCenter);
-                    float alpha = Mathf.SmoothStep(1f, 0f, ringDist / 7f);
-                    arcPixels[y * arcW + x] = new Color(1f, 1f, 1f, alpha);
+                    float crossAlpha = Mathf.Pow(Mathf.Clamp01(1f - (ringDist / 18f)), 1.5f);
+                    float angleAlpha = Mathf.Pow(Mathf.Clamp01(Mathf.Cos(angle * Mathf.Deg2Rad * (90f / 76f))), 0.7f);
+                    float alpha = Mathf.Clamp01(crossAlpha * angleAlpha);
+                    float coreBoost = (ringDist <= 3.5f) ? 1.0f : 0.92f;
+                    arcPixels[y * arcW + x] = new Color(coreBoost, coreBoost, coreBoost, alpha);
                 }
                 else
                 {
@@ -389,6 +655,97 @@ public class PlayerCombatJuice : MonoBehaviour
         }
         arcTex.SetPixels(arcPixels);
         arcTex.Apply();
-        slashArcSprite = Sprite.Create(arcTex, new Rect(0, 0, arcW, arcH), new Vector2(0.3f, 0.5f), 64f);
+        slashArcSprite = Sprite.Create(arcTex, new Rect(0, 0, arcW, arcH), new Vector2(0.12f, 0.5f), 64f);
+
+        // 3. High-Definition Soft Chromatic Bloom Envelope Sprite (128x128)
+        Texture2D glowTex = new Texture2D(arcW, arcH, TextureFormat.RGBA32, false);
+        glowTex.filterMode = FilterMode.Bilinear;
+        Color[] glowPixels = new Color[arcW * arcH];
+
+        for (int y = 0; y < arcH; y++)
+        {
+            for (int x = 0; x < arcW; x++)
+            {
+                float dist = Vector2.Distance(new Vector2(x, y), arcCenter);
+                float angle = Mathf.Atan2(y - arcCenter.y, x - arcCenter.x) * Mathf.Rad2Deg;
+                if (dist >= 18f && dist <= 90f && angle >= -82f && angle <= 82f)
+                {
+                    float ringCenter = 56f;
+                    float ringDist = Mathf.Abs(dist - ringCenter);
+                    float crossAlpha = Mathf.Pow(Mathf.Clamp01(1f - (ringDist / 34f)), 2.0f);
+                    float angleAlpha = Mathf.Pow(Mathf.Clamp01(Mathf.Cos(angle * Mathf.Deg2Rad * (90f / 82f))), 1.1f);
+                    float alpha = Mathf.Clamp01(crossAlpha * angleAlpha * 0.85f);
+                    glowPixels[y * arcW + x] = new Color(1f, 1f, 1f, alpha);
+                }
+                else
+                {
+                    glowPixels[y * arcW + x] = Color.clear;
+                }
+            }
+        }
+        glowTex.SetPixels(glowPixels);
+        glowTex.Apply();
+        slashGlowSprite = Sprite.Create(glowTex, new Rect(0, 0, arcW, arcH), new Vector2(0.12f, 0.5f), 64f);
+
+        // 4. Sparkling Diamond Star / Crystal Shard Sprite (64x64)
+        int sSize = 64;
+        Texture2D shardTex = new Texture2D(sSize, sSize, TextureFormat.RGBA32, false);
+        shardTex.filterMode = FilterMode.Bilinear;
+        Color[] sPixels = new Color[sSize * sSize];
+        float halfS = sSize * 0.5f;
+
+        for (int y = 0; y < sSize; y++)
+        {
+            for (int x = 0; x < sSize; x++)
+            {
+                float dx = Mathf.Abs(x - halfS) / (sSize * 0.44f);
+                float dy = Mathf.Abs(y - halfS) / (sSize * 0.44f);
+                float val = dx + dy;
+                if (val <= 1.0f)
+                {
+                    float alpha = Mathf.Pow(1f - val, 1.4f);
+                    float core = (val < 0.2f) ? 1.0f : 0.88f;
+                    sPixels[y * sSize + x] = new Color(core, core, core, Mathf.Clamp01(alpha));
+                }
+                else
+                {
+                    sPixels[y * sSize + x] = Color.clear;
+                }
+            }
+        }
+        shardTex.SetPixels(sPixels);
+        shardTex.Apply();
+        sparkleShardSprite = Sprite.Create(shardTex, new Rect(0, 0, sSize, sSize), new Vector2(0.5f, 0.5f), 64f);
+
+        // 5. High-Definition Sonic Piercing Shock Sprite (128x128)
+        int pW = 128;
+        int pH = 128;
+        Texture2D pTex = new Texture2D(pW, pH, TextureFormat.RGBA32, false);
+        pTex.filterMode = FilterMode.Bilinear;
+        Color[] pPixels = new Color[pW * pH];
+        Vector2 pCenter = new Vector2(pW * 0.1f, pH * 0.5f);
+
+        for (int y = 0; y < pH; y++)
+        {
+            for (int x = 0; x < pW; x++)
+            {
+                float dx = x - pCenter.x;
+                float dy = Mathf.Abs(y - pCenter.y);
+                if (dx > 0f && dy <= (dx * 0.45f) && dx <= 112f)
+                {
+                    float t = dx / 112f;
+                    float lateralDist = dy / (dx * 0.45f);
+                    float alpha = (1f - lateralDist) * Mathf.Sin(t * Mathf.PI);
+                    pPixels[y * pW + x] = new Color(1f, 1f, 1f, Mathf.Clamp01(alpha));
+                }
+                else
+                {
+                    pPixels[y * pW + x] = Color.clear;
+                }
+            }
+        }
+        pTex.SetPixels(pPixels);
+        pTex.Apply();
+        pierceShockSprite = Sprite.Create(pTex, new Rect(0, 0, pW, pH), new Vector2(0.1f, 0.5f), 64f);
     }
 }

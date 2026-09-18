@@ -61,7 +61,11 @@ public class PlayerSceneSpawner : MonoBehaviour
         }
 
         // --- Step 3: Resolve spawn point name & position ---
-        if (string.IsNullOrEmpty(targetName))
+        if (isSampleScene && (toriiIntroPending || string.IsNullOrEmpty(targetName) || targetName == "DefaultSpawnPoint" || targetName == "PlayerSceneSpawner"))
+        {
+            targetName = "PlayerSceneSpawner";
+        }
+        else if (string.IsNullOrEmpty(targetName))
         {
             targetName = isTutorialScene ? "DefaultSpawnPoint" : defaultSpawnPointName;
             Debug.Log($"[PlayerSceneSpawner] Using default spawn point: '{targetName}'");
@@ -99,11 +103,11 @@ public class PlayerSceneSpawner : MonoBehaviour
                     foundSpawnPoint = true;
                     Debug.Log($"[PlayerSceneSpawner] Snapped to DefaultSpawnPoint at {spawnPosition}");
                 }
-                else if (toriiIntroPending)
+                else if (isSampleScene)
                 {
-                    spawnPosition = new Vector3(1070f, 167.5f, 0f);
+                    spawnPosition = new Vector3(-33.4f, -8.3f, 0f);
                     foundSpawnPoint = true;
-                    Debug.Log($"[PlayerSceneSpawner] Snapped to Torii Gate entrance at {spawnPosition}");
+                    Debug.Log($"[PlayerSceneSpawner] Snapped SampleScene to Torii Gate entrance at {spawnPosition}");
                 }
                 else if (isTutorialScene)
                 {
@@ -259,6 +263,17 @@ public class PlayerSceneSpawner : MonoBehaviour
         {
             Debug.LogError("[PlayerSceneSpawner] ActivateAndSetupPlayer called with null player!");
             return;
+        }
+
+        // Enforce Layer 1 and Sorting Order 1 on both BasePlayer and Mage
+        player.layer = 1;
+        foreach (Transform t in player.GetComponentsInChildren<Transform>(true))
+        {
+            t.gameObject.layer = 1;
+        }
+        foreach (SpriteRenderer psr in player.GetComponentsInChildren<SpriteRenderer>(true))
+        {
+            psr.sortingOrder = 1;
         }
 
         // Ensure the GameObject is active

@@ -48,6 +48,8 @@ public class Attack : MonoBehaviour
 
     void AttackNow()
     {
+        var vc = GetComponent<SpawnOfChaos.Entities.PlayerMageVoiceController>() ?? GetComponentInParent<SpawnOfChaos.Entities.PlayerMageVoiceController>();
+        if (vc != null) { vc.PlayAttackVoice(); }
         if (attackCollider != null)
         {
             attackCollider.enabled = true;

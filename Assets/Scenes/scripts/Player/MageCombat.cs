@@ -49,14 +49,15 @@ public class MageCombat : MonoBehaviour
     private float nextRangedTime;
 
     // Combo & Queue State
-    private int comboStep = 0; // 0 = Idle, 1 = Attack 1 (playing/completed), 2 = Second Hit (playing)
+    private int comboStep = 0; // 0 = Idle, 1 = Spear Crescent Slash, 2 = Spear Rising Slash, 3 = Sonic Thrust Finisher
     private float comboTimer = 0f;
     private bool secondHitQueued = false;
     private float attack1StartTime = -10f;
     private float secondHitStartTime = -10f;
+    private float stepStartTime = -10f;
 
     // Cached clip durations (resolved once at startup to avoid per-frame lookups)
-    private float attack1ClipDuration = 0.866f;
+    private float attack1ClipDuration = 0.45f;
     private float followupClipDuration = 1.716f;
 
     // Attack state hash cache
@@ -70,11 +71,12 @@ public class MageCombat : MonoBehaviour
     /// </summary>
     public bool IsAttacking
     {
-        get { return comboStep == 1 && IsAttack1Playing(); }
+        get { return comboStep > 0 && (Time.time - stepStartTime < 0.35f); }
     }
 
     void Awake()
     {
+        SpawnOfChaos.Entities.PlayerMageVoiceController.EnsureAttached(gameObject);
         if (Instance == null)
         {
             Instance = this;
@@ -86,6 +88,11 @@ public class MageCombat : MonoBehaviour
         if (GetComponent<PlayerCombatJuice>() == null)
         {
             gameObject.AddComponent<PlayerCombatJuice>();
+        }
+
+        if (GetComponent<SpearSlashVFX>() == null)
+        {
+            gameObject.AddComponent<SpearSlashVFX>();
         }
 
         if (meleeAttackCollider == null)
@@ -139,77 +146,48 @@ public class MageCombat : MonoBehaviour
         if (NPCDialogueUI.Instance != null && NPCDialogueUI.Instance.IsDialogueActive) return;
         if (move.Instance != null && move.Instance.IsDashing) return;
 
-        bool isAttack1Active = IsAttack1Playing();
-        bool isSecondHitActive = IsSecondHitPlaying();
-
-        // 1. Process queued second hit as soon as Attack 1 finishes playing!
-        if (comboStep == 1 && secondHitQueued && !isAttack1Active)
-        {
-            PerformSecondHit();
-            return;
-        }
-
-        // 2. When Attack 1 finishes and no second hit was queued:
-        // Make sword disappear immediately and prevent lingering movement in attack direction!
-        if (comboStep == 1 && !isAttack1Active && !secondHitQueued)
-        {
-            if (animator != null)
-            {
-                var cur = animator.GetCurrentAnimatorStateInfo(0);
-                if (cur.IsName("Attack") || cur.IsName("attack"))
-                {
-                    animator.Play("idle", 0, 0f);
-                }
-            }
-
-            var pRb = GetComponent<Rigidbody2D>();
-            if (pRb != null)
-            {
-                pRb.linearVelocity = new Vector2(0f, pRb.linearVelocity.y);
-            }
-
-            ResetCombo();
-        }
-
-        // 3. Manage combo window expiration
+        // Manage combo window expiration
         if (comboStep > 0)
         {
             comboTimer -= Time.deltaTime;
-            if (!isAttack1Active && !isSecondHitActive && comboTimer <= 0f)
+            if (comboTimer <= 0f)
             {
                 ResetCombo();
             }
         }
 
-        // 3. Melee Attack Input (J Key or Left Mouse Click)
+        // Melee Attack Input (J Key or Left Mouse Click) - Fluid 3-Hit Spear Swordsmanship Combo
         bool attackPressed = Input.GetKeyDown(KeyCode.J) ||
             (Input.GetMouseButtonDown(0) && (UnityEngine.EventSystems.EventSystem.current == null || !UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()));
         if (attackPressed)
         {
-            if (comboStep == 0 && !isAttack1Active && !isSecondHitActive)
+            float facing = GetCurrentFacing();
+            float h = Input.GetAxisRaw("Horizontal");
+            if (Mathf.Abs(h) > 0.1f)
             {
-                // First Attack
-                PerformAttack1();
+                facing = Mathf.Sign(h);
+                if (move.Instance != null)
+                {
+                    move.Instance.lastFacingSign = facing;
+                    move.Instance.FaceTarget(transform.position + new Vector3(facing * 5f, 0f, 0f));
+                }
+            }
+
+            if (comboStep == 0)
+            {
+                PerformSpearComboStep(1, facing);
             }
             else if (comboStep == 1)
             {
-                if (isAttack1Active)
-                {
-                    // Attack 1 is still playing -> Queue the second hit!
-                    // Do NOT interrupt Attack 1; wait for it to complete.
-                    secondHitQueued = true;
-                    comboTimer = comboWindowDuration;
-                }
-                else
-                {
-                    // Attack 1 already finished -> Execute second hit immediately!
-                    PerformSecondHit();
-                }
+                PerformSpearComboStep(2, facing);
             }
-            else if (comboStep == 2 && !isSecondHitActive)
+            else if (comboStep == 2)
             {
-                // After combo finishes, allow starting Attack 1 again
-                PerformAttack1();
+                PerformSpearComboStep(3, facing);
+            }
+            else
+            {
+                PerformSpearComboStep(1, facing);
             }
         }
 
@@ -272,117 +250,91 @@ public class MageCombat : MonoBehaviour
         }
     }
 
-    private Coroutine shadowVFXCoroutine;
-
-    private void PerformAttack1()
+    /// <summary>
+    /// Executes a dynamic 3-hit spear and swordsmanship combo with GPU graphics slash VFX and mage vocal effort.
+    /// Step 1: Sweeping horizontal crescent slash.
+    /// Step 2: Ascending reverse diagonal upper cut.
+    /// Step 3: Sonic Piercing Thrust & Finisher Blast.
+    /// </summary>
+    public float GetCurrentFacing()
     {
-        PlayRandomAttackVoice();
-        comboStep = 1;
-        secondHitQueued = false;
-        comboTimer = comboWindowDuration;
-        attack1StartTime = Time.time;
+        if (move.Instance != null && Mathf.Abs(move.Instance.LastFacingSign) > 0.1f)
+        {
+            return (move.Instance.LastFacingSign < 0f) ? -1f : 1f;
+        }
+        return (transform.localScale.x < 0f) ? -1f : 1f;
+    }
+
+    public void PerformSpearComboStep(int step, float facing)
+    {
+        comboStep = step;
+        comboTimer = (step == 3) ? 0.45f : 0.75f; // Generous combo window to chain strikes
+        stepStartTime = Time.time;
 
         if (move.Instance != null)
         {
             move.Instance.ResetPlayerScaleToNormal();
         }
-
-        hitsThisSwing.Clear();
-        if (animator != null)
-        {
-            // 1. Clear ALL attack triggers to prevent queued trigger buildup
-            ResetAllAttackTriggers();
-
-            // 2. Force-play the Attack state at frame 0 with NO cross-fade blending.
-            animator.Play("Attack", 0, 0f);
-            animator.SetTrigger("Attack");
-        }
-
-        if (PlayerCombatJuice.Instance != null)
-        {
-            float dir = (transform.localScale.x < 0f) ? -1f : 1f;
-            PlayerCombatJuice.Instance.SpawnSlashArc(transform.position, dir, false);
-        }
-
-        if (shadowVFXCoroutine != null) StopCoroutine(shadowVFXCoroutine);
-        shadowVFXCoroutine = StartCoroutine(Attack1ShadowFXRoutine());
-
-        EnableMeleeCollider(meleeDamage);
-    }
-
-    private IEnumerator Attack1ShadowFXRoutine()
-    {
-        // Punch 1 apex (Frames 4-5 @ 16 FPS = 0.25s)
-        yield return new WaitForSeconds(0.25f);
-        if (comboStep == 1 && PlayerCombatJuice.Instance != null)
-        {
-            float dir = (transform.localScale.x < 0f) ? -1f : 1f;
-            Vector3 fist1Pos = transform.position + new Vector3(dir * 1.15f, 0.2f, 0f);
-            PlayerCombatJuice.Instance.SpawnShadowPunchVFX(fist1Pos, dir, isHeavy: false);
-            // Attack squash removed
-        }
-
-        // Punch 2 apex (Frames 9-10 @ 16 FPS = 0.56s from start, +0.31s delta)
-        yield return new WaitForSeconds(0.31f);
-        if (comboStep == 1 && PlayerCombatJuice.Instance != null)
-        {
-            float dir = (transform.localScale.x < 0f) ? -1f : 1f;
-            Vector3 fist2Pos = transform.position + new Vector3(dir * 1.35f, 0.25f, 0f);
-            PlayerCombatJuice.Instance.SpawnShadowPunchVFX(fist2Pos, dir, isHeavy: true);
-            // Attack squash removed
-        }
-        shadowVFXCoroutine = null;
-    }
-
-    private void PerformSecondHit()
-    {
+        // Attack sound when attacking
         PlayRandomAttackVoice();
-        hitsThisSwing.Clear();
-        comboStep = 2;
-        secondHitQueued = false;
-        comboTimer = 0.35f;
-        secondHitStartTime = Time.time;
 
-        if (move.Instance != null)
+        // Apply swordsmanship forward micro-lunge for satisfying momentum
+        var rb = GetComponent<Rigidbody2D>();
+        if (rb != null)
         {
-            move.Instance.ResetPlayerScaleToNormal();
+            float lunge = (step == 3) ? 4.2f : (step == 2 ? 3.0f : 2.4f);
+            rb.linearVelocity = new Vector2(facing * lunge, rb.linearVelocity.y);
         }
 
-        // 1. Clear all attack triggers so no attack animation is played on the player
-        ResetAllAttackTriggers();
+        // 1. Old slash arc VFX removed in favor of stunning dynamic Ghost Spear afterimage trail graphics
 
-        // 2. Ensure player returns cleanly to idle (no attack animation on the player)
-        if (animator != null)
+        // 2. Physical Spear Swordsmanship Strike
+        if (LumiSpearWeapon.Instance != null)
         {
-            var curState = animator.GetCurrentAnimatorStateInfo(0);
-            if (curState.IsName("Attack") || curState.IsName("attack") || 
-                curState.IsName("secondhit") || curState.IsName("followupAttack"))
+            if (step == 1)
             {
-                animator.Play("idle", 0, 0f);
+                LumiSpearWeapon.Instance.ExecuteMeleeSpearSlash1(facing);
+            }
+            else if (step == 2)
+            {
+                LumiSpearWeapon.Instance.ExecuteMeleeSpearSlash2(facing);
+            }
+            else
+            {
+                LumiSpearWeapon.Instance.ExecuteMeleeSpearThrust(facing);
             }
         }
 
-        // 3. Execute the high-impact Spear Sonic Piercing Thrust!
-        float facing = (transform.localScale.x < 0f) ? -1f : 1f;
-        if (LumiSpearWeapon.Instance != null)
+        // 3. Player Character Attack Pose (no locking)
+        hitsThisSwing.Clear();
+        if (animator != null)
         {
-            LumiSpearWeapon.Instance.ExecuteMeleeSpearThrust(facing);
+            ResetAllAttackTriggers();
+            if (animator.HasState(0, Animator.StringToHash("Attack")))
+            {
+                animator.Play("Attack", 0, 0f);
+            }
+            else if (animator.HasState(0, Animator.StringToHash("attack")))
+            {
+                animator.Play("attack", 0, 0f);
+            }
         }
 
-        EnableMeleeCollider(secondHitDamage);
+        // 4. Hitbox Collider Enable
+        int dmg = (step == 3) ? 75 : (step == 2 ? secondHitDamage : meleeDamage);
+        EnableMeleeCollider(dmg);
     }
 
-    private IEnumerator SecondHitShadowFXRoutine()
+    public void PerformAttack1()
     {
-        yield return new WaitForSeconds(0.18f);
-        if (comboStep == 2 && PlayerCombatJuice.Instance != null)
-        {
-            float dir = (transform.localScale.x < 0f) ? -1f : 1f;
-            Vector3 fistPos = transform.position + new Vector3(dir * 1.4f, 0.3f, 0f);
-            PlayerCombatJuice.Instance.SpawnShadowPunchVFX(fistPos, dir, isHeavy: true);
-            // Attack squash removed
-        }
-        shadowVFXCoroutine = null;
+        float facing = GetCurrentFacing();
+        PerformSpearComboStep(1, facing);
+    }
+
+    public void PerformSecondHit()
+    {
+        float facing = GetCurrentFacing();
+        PerformSpearComboStep(2, facing);
     }
 
     private void ResetCombo()
@@ -390,12 +342,6 @@ public class MageCombat : MonoBehaviour
         comboStep = 0;
         secondHitQueued = false;
         comboTimer = 0f;
-
-        if (shadowVFXCoroutine != null)
-        {
-            StopCoroutine(shadowVFXCoroutine);
-            shadowVFXCoroutine = null;
-        }
 
         // Clean up any lingering triggers when combo window expires
         ResetAllAttackTriggers();
@@ -579,6 +525,12 @@ public class MageCombat : MonoBehaviour
 
     public void PlayRandomAttackVoice()
     {
+        var vc = GetComponent<SpawnOfChaos.Entities.PlayerMageVoiceController>() ?? GetComponentInParent<SpawnOfChaos.Entities.PlayerMageVoiceController>();
+        if (vc != null) { vc.PlayAttackVoice(); return; }
+        if (attackVoiceClips == null || attackVoiceClips.Length == 0)
+        {
+            attackVoiceClips = Resources.LoadAll<AudioClip>("Voice/mage/attack");
+        }
         if (attackVoiceClips == null || attackVoiceClips.Length == 0) return;
         if (combatVoiceSource == null) InitCombatVoice();
         AudioClip clip = attackVoiceClips[UnityEngine.Random.Range(0, attackVoiceClips.Length)];

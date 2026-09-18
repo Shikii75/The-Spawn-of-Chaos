@@ -195,28 +195,24 @@ public class HitFeedbackManager : MonoBehaviour
         ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear); // Stop immediately before configuring main module
 
         ParticleSystemRenderer psRenderer = burstObj.GetComponent<ParticleSystemRenderer>();
-        
-        // Set material
-        Material sparkMat = new Material(Shader.Find("Sprites/Default"));
-        psRenderer.material = sparkMat;
+        LowResBlackOrb.ConfigureParticleRenderer(psRenderer, 22);
 
         var main = ps.main;
-        // Removed main.duration assignment to prevent Unity runtime error
         main.loop = false;
         main.startLifetime = isHeavyHit ? 0.3f : 0.2f;
         main.startSpeed = isHeavyHit ? 10f : 6f;
-        main.startSize = isHeavyHit ? 0.18f : 0.12f;
+        main.startSize = isHeavyHit ? 0.22f : 0.15f;
         main.simulationSpace = ParticleSystemSimulationSpace.World;
-        main.gravityModifier = 1.5f;
+        main.gravityModifier = 1.3f;
 
-        // Color theme by hit type
+        // Color theme by hit type - clean void black orbs replace purple squares
         if (hitType == EnemyHitType.MagicSpell)
         {
-            main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.2f, 0.8f, 1.0f), new Color(0.9f, 0.3f, 1.0f)); // Cyan to Magenta magic
+            main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.01f, 0.01f, 0.02f, 0.95f), new Color(0.06f, 0.06f, 0.09f, 0.85f));
         }
         else if (hitType == EnemyHitType.ShadowWisp || hitType == EnemyHitType.SpiderVenom)
         {
-            main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.3f, 0.0f, 0.5f), new Color(0.1f, 0.7f, 0.2f)); // Dark Shadow & Poison Green
+            main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.01f, 0.01f, 0.02f, 0.95f), new Color(0.04f, 0.04f, 0.07f, 0.85f));
         }
         else if (isHeavyHit)
         {

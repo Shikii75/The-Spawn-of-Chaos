@@ -315,6 +315,14 @@ public static class AIEditorBridge
                     TutorialLevelBuilder.BuildCompleteTutorialLevel();
                     return new CommandResponse { status = "success", message = "Complete Tutorial Level structures built in active scene." };
 
+                case "build_dara_prefab":
+                    DaraPrefabBuilder.BuildPrefab();
+                    return new CommandResponse { status = "success", message = "Dara NPC Prefab built successfully." };
+
+                case "execute_menu_item":
+                    EditorApplication.ExecuteMenuItem(cmd.targetName);
+                    return new CommandResponse { status = "success", message = $"Executed menu item '{cmd.targetName}'" };
+
                 default:
                     return new CommandResponse { status = "error", message = $"Unknown action: '{cmd.action}'" };
             }

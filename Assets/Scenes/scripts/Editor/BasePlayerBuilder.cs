@@ -242,6 +242,7 @@ public class BasePlayerBuilder
         // 3. Assemble BasePlayer GameObject & Prefab
         GameObject basePlayerGO = new GameObject("BasePlayer");
         basePlayerGO.tag = "Player";
+        basePlayerGO.transform.localScale = new Vector3(1.25f, 1.25f, 1.25f);
 
         PhysicsMaterial2D noFrictionMat = new PhysicsMaterial2D("BasePlayerNoFriction") { friction = 0f, bounciness = 0f };
 

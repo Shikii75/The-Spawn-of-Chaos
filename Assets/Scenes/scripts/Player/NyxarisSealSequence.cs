@@ -805,7 +805,11 @@ public class NyxarisSealSequence : MonoBehaviour
         PlayerPrefs.SetInt("NyxarisFreed", 1);
         PlayerPrefs.SetInt("TutorialCompleted", 1);
         PlayerPrefs.SetString("CurrentLevel", "SampleScene");
+        // Ensure Torii Gate opening intro sequence plays upon entering SampleScene!
+        PlayerPrefs.SetInt(SpawnOfChaos.Systems.SampleSceneToriiIntroSequence.PREF_INTRO_COMPLETED, 0);
+        PlayerPrefs.DeleteKey("LastDoorID");
+        PlayerSpawnPointManager.targetSpawnPointName = "";
         PlayerPrefs.Save();
-        Debug.Log("<color=#55FF88>[NyxarisSealSequence] Progress saved successfully! Checkpoint set to SampleScene.</color>");
+        Debug.Log("<color=#55FF88>[NyxarisSealSequence] Progress saved successfully! Checkpoint set to SampleScene with Torii Intro ready.</color>");
     }
 }

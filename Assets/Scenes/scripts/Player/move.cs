@@ -96,7 +96,7 @@ public class move : MonoBehaviour
     private System.Collections.Generic.List<MonoBehaviour> disabledComponentsInBlob = new System.Collections.Generic.List<MonoBehaviour>();
     private bool wasBlobFormLastFrame = false;
 
-    public static move Instance { get; private set; }
+    public static move Instance { get; set; }
 
     public static bool ExternalMovementLock = false;
 
@@ -109,6 +109,7 @@ public class move : MonoBehaviour
 
     void Awake()
     {
+        SpawnOfChaos.Entities.PlayerMageVoiceController.EnsureAttached(gameObject);
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -132,6 +133,23 @@ public class move : MonoBehaviour
         anim = GetComponent<Animator>();
         dissolveFX = GetComponent<PlayerPixelDissolveFX>();
         if (dissolveFX == null) dissolveFX = gameObject.AddComponent<PlayerPixelDissolveFX>();
+
+        // Layer both players at layer 1
+        gameObject.layer = 1;
+        foreach (Transform t in GetComponentsInChildren<Transform>(true))
+        {
+            t.gameObject.layer = 1;
+        }
+        foreach (SpriteRenderer sr in GetComponentsInChildren<SpriteRenderer>(true))
+        {
+            sr.sortingOrder = 1;
+        }
+
+        // Auto-check Teleport Jump when using the Mage (BasePlayer uses standard jump)
+        if (!gameObject.name.Contains("BasePlayer"))
+        {
+            useTeleportJump = true;
+        }
         rb.gravityScale = gravityScale;
         if (rb != null)
         {
@@ -471,6 +489,7 @@ public class move : MonoBehaviour
             {
                 isDoubleTapRunning = true;
                 isDashing = true;
+                PlayRandomJumpVoice();
                 dashTimeLeft = dashDuration;
                 dashCooldownTimer = dashCooldown;
                 rb.gravityScale = 0f;
@@ -505,6 +524,7 @@ public class move : MonoBehaviour
             {
                 isDoubleTapRunning = true;
                 isDashing = true;
+                PlayRandomJumpVoice();
                 dashTimeLeft = dashDuration;
                 dashCooldownTimer = dashCooldown;
                 rb.gravityScale = 0f;
@@ -596,6 +616,7 @@ public class move : MonoBehaviour
         if (dashTriggered)
         {
             isDashing = true;
+            PlayRandomJumpVoice();
             dashTimeLeft = dashDuration;
             dashCooldownTimer = dashCooldown;
             rb.gravityScale = 0f; // Disable gravity during dash
@@ -1328,6 +1349,8 @@ public class move : MonoBehaviour
 
     public void PlayRandomJumpVoice()
     {
+        var vc = GetComponent<SpawnOfChaos.Entities.PlayerMageVoiceController>() ?? GetComponentInParent<SpawnOfChaos.Entities.PlayerMageVoiceController>();
+        if (vc != null) { vc.PlayJumpVoice(); return; }
         if (jumpVoiceClips == null || jumpVoiceClips.Length == 0) return;
         if (voiceAudioSource == null) InitVoiceAudio();
         AudioClip clip = jumpVoiceClips[UnityEngine.Random.Range(0, jumpVoiceClips.Length)];
@@ -1340,6 +1363,8 @@ public class move : MonoBehaviour
 
     public void PlayRandomTalkVoice()
     {
+        var vc = GetComponent<SpawnOfChaos.Entities.PlayerMageVoiceController>() ?? GetComponentInParent<SpawnOfChaos.Entities.PlayerMageVoiceController>();
+        if (vc != null) { vc.PlayTalkVoice(); return; }
         if (talkVoiceClips == null || talkVoiceClips.Length == 0) return;
         if (voiceAudioSource == null) InitVoiceAudio();
         AudioClip clip = talkVoiceClips[UnityEngine.Random.Range(0, talkVoiceClips.Length)];

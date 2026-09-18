@@ -26,6 +26,7 @@ public class MainMenuUIToolkitController : MonoBehaviour
     /// Global state to track if gameplay is active or title menu is showing.
     /// </summary>
     public static bool isPlaying = false;
+    public static bool IsAnyMenuOpen() => !isPlaying;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void InitStaticState()
@@ -219,12 +220,21 @@ public class MainMenuUIToolkitController : MonoBehaviour
         }
 
         uiDocument = GetComponent<UIDocument>();
+        if (uiDocument != null)
+        {
+            uiDocument.sortingOrder = 30000f; // Layer Main Menu above all canvases and game elements
+        }
         LoadFramesIfNeeded();
         EnsureTitleMusicAssigned();
     }
 
     private void Start()
     {
+        if (uiDocument == null) uiDocument = GetComponent<UIDocument>();
+        if (uiDocument != null)
+        {
+            uiDocument.sortingOrder = 30000f;
+        }
         if (!isPlaying)
         {
             Time.timeScale = 0f;
@@ -295,6 +305,20 @@ public class MainMenuUIToolkitController : MonoBehaviour
 
         if (uiDocument == null)
             uiDocument = GetComponent<UIDocument>();
+
+        if (uiDocument != null)
+        {
+            uiDocument.sortingOrder = 30000f;
+        }
+
+        // Guarantee no Nyxaris dialogue or canvas covers the Main Menu
+        var allNyxaris = Object.FindObjectsByType<NyxarisManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var nm in allNyxaris)
+        {
+            if (nm != null) nm.HideInterface();
+        }
+        GameObject mi = GameObject.Find("MainInterface");
+        if (mi != null) mi.SetActive(false);
 
         if (uiDocument == null) return;
 
@@ -1042,6 +1066,11 @@ public class MainMenuUIToolkitController : MonoBehaviour
     {
         SaveSlotManager.ActiveSlotIndex = data.slotIndex;
         SaveSlotManager.LastPlayedSlotIndex = data.slotIndex;
+        if (data.locationName.Contains("Cherry Blossom") || data.sceneName == "SampleScene")
+        {
+            PlayerPrefs.SetInt(SampleSceneToriiIntroSequence.PREF_INTRO_COMPLETED, 0);
+            PlayerPrefs.Save();
+        }
         ExecuteGameLaunch(data.sceneName);
     }
 
@@ -1063,14 +1092,14 @@ public class MainMenuUIToolkitController : MonoBehaviour
         if (currentScene.Equals(sceneToLoad, System.StringComparison.OrdinalIgnoreCase))
         {
             Debug.Log($"[MainMenu] Already in target scene '{sceneToLoad}'. Activating gameplay immediately.");
+            // Hide Main Menu UI completely first
+            if (root != null) root.style.display = DisplayStyle.None;
+            gameObject.SetActive(false);
+
             GameObject existingPlayer = GameObject.FindGameObjectWithTag("Player") ?? GameObject.Find("Player");
             if (existingPlayer != null)
             {
-                // Ensure player is at level spawn
-                if (sceneToLoad == "SampleScene")
-                {
-                    existingPlayer.transform.position = new Vector3(1125.6f, 287.4f, 0f);
-                }
+                existingPlayer.transform.position = SampleSceneToriiIntroSequence.GetToriiGateSpawnPosition();
             }
 
             if (HUDManager.Instance != null) HUDManager.Instance.UpdateVisibility();
@@ -1079,8 +1108,20 @@ public class MainMenuUIToolkitController : MonoBehaviour
             LevelMusicPlayer lmp2 = FindFirstObjectByType<LevelMusicPlayer>();
             if (lmp2 != null) lmp2.StartLevelMusic();
 
-            if (root != null) root.style.display = DisplayStyle.None;
-            gameObject.SetActive(false);
+            // Trigger Torii intro sequence in gameplay if entering SampleScene
+            if (sceneToLoad == "SampleScene")
+            {
+                bool introDone = PlayerPrefs.GetInt(SampleSceneToriiIntroSequence.PREF_INTRO_COMPLETED, 0) == 1;
+                if (!introDone)
+                {
+                    SampleSceneToriiIntroSequence.EnsureExists();
+                    if (SampleSceneToriiIntroSequence.Instance != null)
+                    {
+                        SampleSceneToriiIntroSequence.Instance.ForcePlayIntro();
+                    }
+                }
+            }
+
             return;
         }
 

@@ -36,10 +36,19 @@ namespace SpawnOfChaos.Entities
             circleCol = GetComponent<CircleCollider2D>();
 
             circleCol.isTrigger = true;
-            circleCol.radius = 1.1f;
+            if (circleCol.radius <= 0.01f)
+            {
+                circleCol.radius = 1.1f;
+            }
 
-            spriteRenderer.sortingLayerName = "Default";
-            spriteRenderer.sortingOrder = 60; // Render cleanly in front of world environment
+            if (string.IsNullOrEmpty(spriteRenderer.sortingLayerName))
+            {
+                spriteRenderer.sortingLayerName = "Default";
+            }
+            if (spriteRenderer.sortingOrder == 0)
+            {
+                spriteRenderer.sortingOrder = 60; // Render cleanly in front of world environment
+            }
 
             basePosition = transform.position;
             LoadFrames();
@@ -73,7 +82,20 @@ namespace SpawnOfChaos.Entities
 
             if (frames != null && frames.Length > 0)
             {
-                spriteRenderer.sprite = frames[0];
+                List<Sprite> cleanList = new List<Sprite>();
+                foreach (var s in frames)
+                {
+                    if (s == null) continue;
+                    if (s.name.EndsWith("_1") || s.name.EndsWith("_2") || s.name.EndsWith("_3")) continue;
+                    cleanList.Add(s);
+                }
+                cleanList.Sort((a, b) => string.Compare(a.name, b.name, StringComparison.OrdinalIgnoreCase));
+                frames = cleanList.ToArray();
+
+                if (frames.Length > 0)
+                {
+                    spriteRenderer.sprite = frames[0];
+                }
             }
         }
 
