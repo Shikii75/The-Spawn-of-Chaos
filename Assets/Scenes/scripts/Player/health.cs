@@ -235,6 +235,13 @@ public class Health : MonoBehaviour, IDamageable
     {
         currentHealth = Mathf.Min(currentHealth + amount, maxHealth);
         onDamageTaken?.Invoke(0); // trigger UI redraw
+
+        // Trigger Dark Orbs Gathering healing effect when player is healed
+        if (CompareTag("Player"))
+        {
+            DarkHealingVFX.TriggerGather(transform, Mathf.Clamp(Mathf.RoundToInt(amount * 0.4f), 8, 14));
+        }
+
         Debug.Log($"{name} healed by {amount}. Health now {currentHealth}/{maxHealth}.");
     }
 

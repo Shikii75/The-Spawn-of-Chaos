@@ -74,7 +74,7 @@ public class LightOrbCompanion : MonoBehaviour
     public Color colorIdle = new Color(1.0f, 1.0f, 1.0f, 1.0f);
     public Color colorGlowIdle = new Color(0.4f, 0.90f, 1.0f, 1.0f);
     public Color colorShield = new Color(0.0f, 0.45f, 1.0f, 1.0f);
-    public Color colorHeal = new Color(0.0f, 1.0f, 0.4f, 1.0f);
+    public Color colorHeal = new Color(0.68f, 0.15f, 0.95f, 1.0f); // Dark Abyssal Void Violet
     public Color colorSpear = new Color(1.0f, 0.78f, 0.0f, 1.0f);
     public Color colorGrapple = new Color(0.1f, 1.0f, 0.85f, 1.0f);  // Radiant Cyan Grapple
     public Color colorPanic = new Color(1.0f, 0.05f, 0.2f, 1.0f);
@@ -1272,7 +1272,8 @@ public class LightOrbCompanion : MonoBehaviour
             playerCombat.currentMana = 0f;
             Debug.Log($"Lumi: Healed Player by {healAmount} HP and drained MP to 0!");
 
-            StartCoroutine(PlayerHealingGlowRoutine(1.5f));
+            // Trigger dark orbs gathering at the player
+            DarkHealingVFX.TriggerGather(playerTransform, 14);
 
             if (HUDOrbPanel.Instance != null)
             {
@@ -1285,52 +1286,8 @@ public class LightOrbCompanion : MonoBehaviour
     private IEnumerator PlayerHealingGlowRoutine(float duration)
     {
         if (playerTransform == null) yield break;
-
-        GameObject healAuraGO = new GameObject("PlayerHealAura");
-        healAuraGO.transform.SetParent(playerTransform, false);
-        healAuraGO.transform.localPosition = new Vector3(0f, 0f, -0.2f);
-
-        SpriteRenderer auraSr = healAuraGO.AddComponent<SpriteRenderer>();
-        auraSr.sharedMaterial = CreateAdditiveMaterial();
-        auraSr.sprite = CreateForcefieldDomeSprite(256);
-        auraSr.color = new Color(colorHeal.r, colorHeal.g, colorHeal.b, 0.85f);
-        auraSr.sortingOrder = 24;
-
-        Light healLight = healAuraGO.AddComponent<Light>();
-        if (healLight != null)
-        {
-            healLight.type = LightType.Point;
-            healLight.range = 9.0f;
-            healLight.color = colorHeal;
-            healLight.intensity = 3.5f;
-        }
-
-        Color originalPlayerColor = Color.white;
-        if (playerSpriteRenderer != null) originalPlayerColor = playerSpriteRenderer.color;
-
-        float elapsed = 0f;
-        while (elapsed < duration)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / duration;
-
-            float scale = Mathf.Lerp(0.5f, 2.5f, t);
-            healAuraGO.transform.localScale = Vector3.one * scale;
-
-            float alpha = Mathf.Sin(t * Mathf.PI);
-            auraSr.color = new Color(colorHeal.r, colorHeal.g, colorHeal.b, alpha * 0.9f);
-            if (healLight != null) healLight.intensity = alpha * 3.5f;
-
-            if (playerSpriteRenderer != null)
-            {
-                playerSpriteRenderer.color = Color.Lerp(originalPlayerColor, colorHeal, alpha * 0.85f);
-            }
-
-            yield return null;
-        }
-
-        if (playerSpriteRenderer != null) playerSpriteRenderer.color = originalPlayerColor;
-        Destroy(healAuraGO);
+        DarkHealingVFX.TriggerGather(playerTransform, 14);
+        yield return null;
     }
 
     // Legacy light spear purged
