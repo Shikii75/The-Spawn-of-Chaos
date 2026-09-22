@@ -106,6 +106,7 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
 
     // Animator Hashes
     private static readonly int AnimIsRunning = Animator.StringToHash("isRunning");
+    private static readonly int AnimIsWalking = Animator.StringToHash("isWalking");
     private static readonly int AnimAttack = Animator.StringToHash("Attack");
     private static readonly int AnimParry = Animator.StringToHash("Parry");
 
@@ -270,20 +271,8 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
 
         // Sprint towards player
         float dir = player.position.x > transform.position.x ? 1f : -1f;
-        if (!IsWallAhead(dir))
-        {
-            SetRunningAnimation(true);
-            rb.linearVelocity = new Vector2(dir * runSpeed, rb.linearVelocity.y);
-        }
-        else
-        {
-            SetRunningAnimation(false);
-            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
-            if (Time.time >= lastAttackTime + attackCooldown)
-            {
-                StartAction(ExecuteVaultSlamSequence());
-            }
-        }
+        SetRunningAnimation(true);
+        rb.linearVelocity = new Vector2(dir * runSpeed, rb.linearVelocity.y);
     }
 
     private void UpdateCooldown()
@@ -828,7 +817,11 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
         isFacingRight = right;
         if (spriteRenderer != null)
         {
-            spriteRenderer.flipX = right;
+            // The raw frames are drawn facing RIGHT.
+            // Therefore:
+            // - Facing Right -> flipX = false
+            // - Facing Left -> flipX = true
+            spriteRenderer.flipX = !right;
         }
     }
 
@@ -837,6 +830,7 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
         if (anim != null)
         {
             anim.SetBool(AnimIsRunning, isRunning);
+            anim.SetBool(AnimIsWalking, isRunning);
         }
     }
 

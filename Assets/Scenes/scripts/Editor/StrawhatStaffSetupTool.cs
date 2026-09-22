@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEditor.Animations;
@@ -6,9 +7,11 @@ using UnityEngine;
 
 /// <summary>
 /// Editor setup tool to configure the Staff Strawhat Mob:
-/// 1. Verifies animation clips.
+/// 1. Generates animation clips directly via Unity Editor API using ONLY:
+///    - Assets/Scenes/animations/frames/newfemalestrawstaffrun-80c96966
+///    - Assets/Scenes/animations/frames/newfemalestrawstaffattack-1f468d59
 /// 2. Creates the AnimatorController with fluid state transitions.
-/// 3. Builds and saves the complete mob Prefab at:
+/// 3. Builds and saves the complete mob Prefabs at:
 ///    - Assets/Prefabs/Enemies/StrawhatStaffMob.prefab
 ///    - Assets/Resources/Prefabs/Enemies/StrawhatStaffMob.prefab
 /// 
@@ -19,19 +22,15 @@ public static class StrawhatStaffSetupTool
     private const string ANIM_DIR = "Assets/Scenes/animations/animators";
     private const string PREFAB_DIR = "Assets/Prefabs/Enemies";
     private const string RESOURCES_PREFAB_DIR = "Assets/Resources/Prefabs/Enemies";
-
-    private static bool hasRun = false;
+    private const string RUN_FRAMES_DIR = "Assets/Scenes/animations/frames/newfemalestrawstaffrun-80c96966";
+    private const string ATTACK_FRAMES_DIR = "Assets/Scenes/animations/frames/newfemalestrawstaffattack-1f468d59";
 
     [InitializeOnLoadMethod]
-    private static void AutoRunIfPending()
+    private static void AutoRunOnCompile()
     {
         EditorApplication.delayCall += () =>
         {
-            if (!hasRun)
-            {
-                hasRun = true;
-                SetupMob();
-            }
+            SetupMob();
         };
     }
 
@@ -43,29 +42,42 @@ public static class StrawhatStaffSetupTool
         EnsureFolderExists("Assets/Prefabs", "Enemies");
         EnsureFolderExists("Assets/Resources/Prefabs", "Enemies");
 
-        // Load Animation Clips
-        AnimationClip idleClip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{ANIM_DIR}/StrawhatStaffIdle.anim");
-        AnimationClip runClip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{ANIM_DIR}/StrawhatStaffRun.anim");
-        AnimationClip attackClip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{ANIM_DIR}/StrawhatStaffAttack.anim");
+        // 1. Generate Run Clip (14 fps, looping)
+        AnimationClip runClip = BuildSpriteAnimationClip(
+            $"{ANIM_DIR}/StrawhatStaffRun.anim",
+            RUN_FRAMES_DIR,
+            14,
+            true
+        );
+
+        // 2. Generate Attack Clip (18 fps, non-looping)
+        AnimationClip attackClip = BuildSpriteAnimationClip(
+            $"{ANIM_DIR}/StrawhatStaffAttack.anim",
+            ATTACK_FRAMES_DIR,
+            18,
+            false
+        );
+
+        // 3. Generate Idle Clip (uses staff guard frame_001 from attack folder, looping)
+        AnimationClip idleClip = BuildSingleSpriteIdleClip(
+            $"{ANIM_DIR}/StrawhatStaffIdle.anim",
+            $"{ATTACK_FRAMES_DIR}/frame_001.png"
+        );
 
         if (idleClip == null || runClip == null || attackClip == null)
         {
-            Debug.LogError("[StrawhatStaffSetupTool] Failed to find one or more AnimationClips! Run anim generation first.");
+            Debug.LogError("[StrawhatStaffSetupTool] Failed to build animation clips!");
             return;
         }
 
-        // Create Animator Controller
+        // 4. Create Animator Controller
         string controllerPath = $"{ANIM_DIR}/StrawhatStaffController.controller";
         AnimatorController controller = CreateAnimatorController(controllerPath, idleClip, runClip, attackClip);
 
-        // Load Initial Sprite (Staff guard stance from newfemalestrawstaffattack-1f468d59)
-        Sprite initialSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Scenes/animations/frames/newfemalestrawstaffattack-1f468d59/frame_001.png");
-        if (initialSprite == null)
-        {
-            initialSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Scenes/animations/frames/newfemalestrawstaffrun-80c96966/frame_001.png");
-        }
+        // 5. Load Initial Sprite (Staff guard stance from newfemalestrawstaffattack-1f468d59)
+        Sprite initialSprite = AssetDatabase.LoadAssetAtPath<Sprite>($"{ATTACK_FRAMES_DIR}/frame_001.png");
 
-        // Assemble and save prefabs
+        // 6. Assemble and save prefabs
         string prefabPath1 = $"{PREFAB_DIR}/StrawhatStaffMob.prefab";
         string prefabPath2 = $"{RESOURCES_PREFAB_DIR}/StrawhatStaffMob.prefab";
 
@@ -75,7 +87,7 @@ public static class StrawhatStaffSetupTool
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
 
-        Debug.Log("<color=#55FF88>[StrawhatStaffSetupTool] Setup Complete! Staff Strawhat Mob created at: " + prefabPath1 + "</color>");
+        Debug.Log("<color=#55FF88>[StrawhatStaffSetupTool] Setup Complete! Staff Strawhat Mob successfully created and bound.</color>");
     }
 
     private static void EnsureFolderExists(string parent, string sub)
@@ -85,6 +97,101 @@ public static class StrawhatStaffSetupTool
         {
             AssetDatabase.CreateFolder(parent, sub);
         }
+    }
+
+    private static AnimationClip BuildSpriteAnimationClip(string clipPath, string folderPath, int sampleRate, bool loop)
+    {
+        string[] files = Directory.GetFiles(folderPath, "*.png");
+        System.Array.Sort(files);
+
+        List<Sprite> sprites = new List<Sprite>();
+        foreach (var file in files)
+        {
+            string unityPath = file.Replace('\\', '/');
+            Sprite s = AssetDatabase.LoadAssetAtPath<Sprite>(unityPath);
+            if (s != null)
+            {
+                sprites.Add(s);
+            }
+        }
+
+        if (sprites.Count == 0)
+        {
+            Debug.LogError($"[StrawhatStaffSetupTool] No sprites found in {folderPath}!");
+            return null;
+        }
+
+        AnimationClip clip = new AnimationClip();
+        clip.frameRate = sampleRate;
+
+        EditorCurveBinding binding = new EditorCurveBinding
+        {
+            type = typeof(SpriteRenderer),
+            path = "",
+            propertyName = "m_Sprite"
+        };
+
+        ObjectReferenceKeyframe[] keyframes = new ObjectReferenceKeyframe[sprites.Count];
+        for (int i = 0; i < sprites.Count; i++)
+        {
+            keyframes[i] = new ObjectReferenceKeyframe
+            {
+                time = (float)i / sampleRate,
+                value = sprites[i]
+            };
+        }
+
+        AnimationUtility.SetObjectReferenceCurve(clip, binding, keyframes);
+
+        AnimationClipSettings settings = AnimationUtility.GetAnimationClipSettings(clip);
+        settings.loopTime = loop;
+        AnimationUtility.SetAnimationClipSettings(clip, settings);
+
+        if (File.Exists(clipPath))
+        {
+            AssetDatabase.DeleteAsset(clipPath);
+        }
+
+        AssetDatabase.CreateAsset(clip, clipPath);
+        return clip;
+    }
+
+    private static AnimationClip BuildSingleSpriteIdleClip(string clipPath, string spritePath)
+    {
+        Sprite s = AssetDatabase.LoadAssetAtPath<Sprite>(spritePath);
+        if (s == null)
+        {
+            Debug.LogError($"[StrawhatStaffSetupTool] Sprite not found at {spritePath}!");
+            return null;
+        }
+
+        AnimationClip clip = new AnimationClip();
+        clip.frameRate = 2;
+
+        EditorCurveBinding binding = new EditorCurveBinding
+        {
+            type = typeof(SpriteRenderer),
+            path = "",
+            propertyName = "m_Sprite"
+        };
+
+        ObjectReferenceKeyframe[] keyframes = new ObjectReferenceKeyframe[2];
+        keyframes[0] = new ObjectReferenceKeyframe { time = 0f, value = s };
+        keyframes[1] = new ObjectReferenceKeyframe { time = 0.5f, value = s };
+
+        AnimationUtility.SetObjectReferenceCurve(clip, binding, keyframes);
+
+        AnimationClipSettings settings = AnimationUtility.GetAnimationClipSettings(clip);
+        settings.loopTime = true;
+        AnimationUtility.SetAnimationClipSettings(clip, settings);
+
+        if (File.Exists(clipPath))
+        {
+            AssetDatabase.DeleteAsset(clipPath);
+        }
+
+        AssetDatabase.CreateAsset(clip, clipPath);
+        return clip;
     }
 
     private static AnimatorController CreateAnimatorController(string path, AnimationClip idleClip, AnimationClip runClip, AnimationClip attackClip)
@@ -97,6 +204,7 @@ public static class StrawhatStaffSetupTool
         AnimatorController controller = AnimatorController.CreateAnimatorControllerAtPath(path);
 
         controller.AddParameter("isRunning", AnimatorControllerParameterType.Bool);
+        controller.AddParameter("isWalking", AnimatorControllerParameterType.Bool);
         controller.AddParameter("Attack", AnimatorControllerParameterType.Trigger);
         controller.AddParameter("Parry", AnimatorControllerParameterType.Trigger);
 
@@ -114,29 +222,35 @@ public static class StrawhatStaffSetupTool
         attackState.motion = attackClip;
 
         // Transitions:
-        // Idle -> Run
-        var idleToRun = idleState.AddTransition(runState);
-        idleToRun.AddCondition(AnimatorConditionMode.If, 0, "isRunning");
-        idleToRun.hasExitTime = false;
-        idleToRun.duration = 0.08f;
+        // Idle -> Run (via isRunning or isWalking)
+        var idleToRun1 = idleState.AddTransition(runState);
+        idleToRun1.AddCondition(AnimatorConditionMode.If, 0, "isRunning");
+        idleToRun1.hasExitTime = false;
+        idleToRun1.duration = 0.05f;
+
+        var idleToRun2 = idleState.AddTransition(runState);
+        idleToRun2.AddCondition(AnimatorConditionMode.If, 0, "isWalking");
+        idleToRun2.hasExitTime = false;
+        idleToRun2.duration = 0.05f;
 
         // Run -> Idle
         var runToIdle = runState.AddTransition(idleState);
         runToIdle.AddCondition(AnimatorConditionMode.IfNot, 0, "isRunning");
+        runToIdle.AddCondition(AnimatorConditionMode.IfNot, 0, "isWalking");
         runToIdle.hasExitTime = false;
-        runToIdle.duration = 0.08f;
+        runToIdle.duration = 0.05f;
 
         // AnyState -> Attack
         var anyToAttack = rootSm.AddAnyStateTransition(attackState);
         anyToAttack.AddCondition(AnimatorConditionMode.If, 0, "Attack");
         anyToAttack.hasExitTime = false;
-        anyToAttack.duration = 0.04f;
+        anyToAttack.duration = 0.02f;
 
         // Attack -> Idle
         var attackToIdle = attackState.AddTransition(idleState);
         attackToIdle.hasExitTime = true;
-        attackToIdle.exitTime = 0.95f;
-        attackToIdle.duration = 0.08f;
+        attackToIdle.exitTime = 0.92f;
+        attackToIdle.duration = 0.05f;
 
         return controller;
     }
