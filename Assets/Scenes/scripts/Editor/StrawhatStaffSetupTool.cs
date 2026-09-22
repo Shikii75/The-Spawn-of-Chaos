@@ -58,11 +58,11 @@ public static class StrawhatStaffSetupTool
         string controllerPath = $"{ANIM_DIR}/StrawhatStaffController.controller";
         AnimatorController controller = CreateAnimatorController(controllerPath, idleClip, runClip, attackClip);
 
-        // Load Initial Sprite
+        // Load Initial Sprite (Staff guard stance from newfemalestrawstaffattack-1f468d59)
         Sprite initialSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Scenes/animations/frames/newfemalestrawstaffattack-1f468d59/frame_001.png");
         if (initialSprite == null)
         {
-            initialSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Scenes/animations/frames/newfeenalestrawidle-69b4ec11/frame_001.png");
+            initialSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Scenes/animations/frames/newfemalestrawstaffrun-80c96966/frame_001.png");
         }
 
         // Assemble and save prefabs

@@ -147,13 +147,13 @@ Rigidbody2D:
   m_Constraints: 4
 --- !u!61 &4944672814547548447
 BoxCollider2D:
-  serializedVersion: 3
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1856556987809646362}
   m_Enabled: 1
+  serializedVersion: 3
   m_Density: 1
   m_Material: {fileID: 0}
   m_IncludeLayers:
@@ -222,7 +222,11 @@ MonoBehaviour:
   enableParry: 1
   parryCountPerFive: 3
   parryDuration: 0.35
+  staffEnergyColor: {r: 0.85, g: 0.25, b: 0.95, a: 0.95}
+  hitFlashColor: {r: 1, g: 0.3, b: 0.3, a: 1}
   droppedOrbsCount: 3
+  slamHitboxSize: {x: 3.4, y: 3.2}
+  slamHitboxOffset: {x: 0.8, y: -0.2}
 --- !u!114 &3380802360451840726
 MonoBehaviour:
   m_ObjectHideFlags: 0
