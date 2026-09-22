@@ -92,9 +92,9 @@ public class DaraNPC : MonoBehaviour
     public float typeSpeed = 0.025f;
 
     [Header("── Speech Bubble World Offset ─────────────────────────────")]
-    public float bubbleHeightAboveNPC = 3.2f;
-    public float bubbleWidth = 720f;
-    public float bubbleHeight = 240f;
+    public float bubbleHeightAboveNPC = 3.6f;
+    public float bubbleWidth = 850f;
+    public float bubbleHeight = 280f;
 
     // ── Internal Components & State ─────────────────────────────────────
     private SpriteRenderer _sr;
@@ -291,6 +291,7 @@ public class DaraNPC : MonoBehaviour
             // Player lacks Telepathy Orb: play confused audio and show confused dialogue
             _activeLines = confusedDialogueLines;
             PlayConfusedMageVoice();
+            TriggerPlayerConfusedAnimation();
         }
 
         if (_activeLines == null || _activeLines.Length == 0)
@@ -322,6 +323,28 @@ public class DaraNPC : MonoBehaviour
                 _audioSource.pitch = voicePitch;
                 _audioSource.PlayOneShot(clip, 1.0f);
             }
+        }
+    }
+
+    private void TriggerPlayerConfusedAnimation()
+    {
+        if (_playerTransform == null)
+        {
+            LocatePlayer();
+        }
+
+        if (_playerTransform == null) return;
+
+        GameObject playerGO = _playerTransform.gameObject;
+        var voiceCtrl = playerGO.GetComponent<SpawnOfChaos.Entities.PlayerMageVoiceController>();
+        if (voiceCtrl == null)
+        {
+            voiceCtrl = SpawnOfChaos.Entities.PlayerMageVoiceController.EnsureAttached(playerGO);
+        }
+
+        if (voiceCtrl != null)
+        {
+            voiceCtrl.PlayConfusedVoice();
         }
     }
 
@@ -565,7 +588,8 @@ public class DaraNPC : MonoBehaviour
 
         canvasGo.AddComponent<GraphicRaycaster>();
 
-        const float PPU = 100f;
+        // 55 px = 1 Unity world unit for high readability
+        const float PPU = 55f;
         var canvasRt = canvasGo.GetComponent<RectTransform>();
         canvasRt.sizeDelta = new Vector2(1000f, 700f);
         canvasRt.localScale = Vector3.one / PPU;
@@ -630,7 +654,7 @@ public class DaraNPC : MonoBehaviour
         _titleText = badgeGo.AddComponent<TextMeshProUGUI>();
         ApplyTMPDefaults(_titleText);
         _titleText.text = $"<color=#{ColorUtility.ToHtmlStringRGBA(nameColor)}>{characterName}</color>  <size=75%><color=#{ColorUtility.ToHtmlStringRGBA(titleColor)}>{characterTitle}</color></size>";
-        _titleText.fontSize = 26f;
+        _titleText.fontSize = 32f;
         _titleText.fontStyle = FontStyles.Bold;
         _titleText.alignment = TextAlignmentOptions.Left;
 
@@ -647,7 +671,7 @@ public class DaraNPC : MonoBehaviour
         ApplyTMPDefaults(_bodyText);
         _bodyText.text = "";
         _bodyText.color = bodyTextColor;
-        _bodyText.fontSize = 24f;
+        _bodyText.fontSize = 30f;
         _bodyText.enableWordWrapping = true;
         _bodyText.overflowMode = TextOverflowModes.Truncate;
 
@@ -658,7 +682,7 @@ public class DaraNPC : MonoBehaviour
         advRt.anchorMin = new Vector2(1f, 0f);
         advRt.anchorMax = new Vector2(1f, 0f);
         advRt.pivot = new Vector2(1f, 0f);
-        advRt.sizeDelta = new Vector2(50f, 50f);
+        advRt.sizeDelta = new Vector2(56f, 56f);
         advRt.anchoredPosition = new Vector2(-16f, 16f);
 
         var advImg = _advanceBtn.AddComponent<Image>();
@@ -685,7 +709,7 @@ public class DaraNPC : MonoBehaviour
         ApplyTMPDefaults(arrTxt);
         arrTxt.text = "▶";
         arrTxt.color = new Color(0.95f, 0.85f, 1f, 1f);
-        arrTxt.fontSize = 22f;
+        arrTxt.fontSize = 26f;
         arrTxt.alignment = TextAlignmentOptions.Center;
 
         _advanceBtn.SetActive(false);
@@ -697,7 +721,7 @@ public class DaraNPC : MonoBehaviour
         prt.anchorMin = new Vector2(0.5f, 0f);
         prt.anchorMax = new Vector2(0.5f, 0f);
         prt.pivot = new Vector2(0.5f, 0.5f);
-        prt.sizeDelta = new Vector2(210f, 44f);
+        prt.sizeDelta = new Vector2(260f, 54f);
         prt.anchoredPosition = new Vector2(0f, 32f);
 
         var promptImg = _promptGo.AddComponent<Image>();
@@ -721,7 +745,7 @@ public class DaraNPC : MonoBehaviour
         ApplyTMPDefaults(ptxt);
         ptxt.text = $"[{interactKey}]  Talk";
         ptxt.color = new Color(0.88f, 0.68f, 1f, 1f);
-        ptxt.fontSize = 20f;
+        ptxt.fontSize = 26f;
         ptxt.alignment = TextAlignmentOptions.Center;
         ptxt.fontStyle = FontStyles.Bold;
 

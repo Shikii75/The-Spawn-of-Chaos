@@ -42,8 +42,8 @@ namespace SpawnOfChaos.Weapons
         public float cooldown = 0.5f;
 
         [Header("Aesthetics")]
-        public Color auraColor = Color.cyan;
-        public Color trailColor = Color.cyan;
+        public Color auraColor = new Color(0.04f, 0.02f, 0.08f, 1f);
+        public Color trailColor = new Color(0.02f, 0.01f, 0.04f, 0.95f);
         public string spriteResourcePath;
 
         [Header("Shop & Mastery Pricing (Coins)")]

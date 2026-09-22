@@ -1066,11 +1066,29 @@ public class MainMenuUIToolkitController : MonoBehaviour
     {
         SaveSlotManager.ActiveSlotIndex = data.slotIndex;
         SaveSlotManager.LastPlayedSlotIndex = data.slotIndex;
-        if (data.locationName.Contains("Cherry Blossom") || data.sceneName == "SampleScene")
+
+        // Keep save point checkpoint position across scene loads
+        if (Mathf.Abs(data.posX) > 0.001f || Mathf.Abs(data.posY) > 0.001f)
+        {
+            PlayerSpawnPointManager.useExplicitSpawnPosition = true;
+            PlayerSpawnPointManager.explicitSpawnPosition = new Vector3(data.posX, data.posY, data.posZ);
+            CheckpointSystem.respawnPosition = new Vector3(data.posX, data.posY, data.posZ);
+            CheckpointSystem.hasCheckpoint = true;
+        }
+
+        bool isFreshStartCherry = data.locationName == "Start Cherry Blossom" && Mathf.Abs(data.posX - (-33.4f)) < 0.2f;
+        if (isFreshStartCherry)
         {
             PlayerPrefs.SetInt(SampleSceneToriiIntroSequence.PREF_INTRO_COMPLETED, 0);
             PlayerPrefs.Save();
         }
+        else if (data.sceneName == "SampleScene")
+        {
+            // If already at an active checkpoint in SampleScene, do not force intro or reset coordinates
+            PlayerPrefs.SetInt(SampleSceneToriiIntroSequence.PREF_INTRO_COMPLETED, 1);
+            PlayerPrefs.Save();
+        }
+
         ExecuteGameLaunch(data.sceneName);
     }
 
@@ -1099,7 +1117,16 @@ public class MainMenuUIToolkitController : MonoBehaviour
             GameObject existingPlayer = GameObject.FindGameObjectWithTag("Player") ?? GameObject.Find("Player");
             if (existingPlayer != null)
             {
-                existingPlayer.transform.position = SampleSceneToriiIntroSequence.GetToriiGateSpawnPosition();
+                if (PlayerSpawnPointManager.useExplicitSpawnPosition)
+                {
+                    existingPlayer.transform.position = PlayerSpawnPointManager.explicitSpawnPosition;
+                    PlayerSpawnPointManager.useExplicitSpawnPosition = false;
+                    Debug.Log($"[MainMenu] Restored existing player to saved checkpoint position: {existingPlayer.transform.position}");
+                }
+                else if (sceneToLoad == "SampleScene" && PlayerPrefs.GetInt(SampleSceneToriiIntroSequence.PREF_INTRO_COMPLETED, 0) == 0)
+                {
+                    existingPlayer.transform.position = SampleSceneToriiIntroSequence.GetToriiGateSpawnPosition();
+                }
             }
 
             if (HUDManager.Instance != null) HUDManager.Instance.UpdateVisibility();

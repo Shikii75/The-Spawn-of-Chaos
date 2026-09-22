@@ -93,6 +93,11 @@ public class FemaleSamuraiWhipAI : MonoBehaviour, IDamageable
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         if (anim == null) anim = GetComponentInChildren<Animator>();
 
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.color = new Color(0.22f, 0.12f, 0.28f, 1f);
+        }
+
         if (rb != null)
         {
             rb.constraints = RigidbodyConstraints2D.FreezeRotation;

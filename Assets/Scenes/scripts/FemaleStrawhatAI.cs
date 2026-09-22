@@ -112,6 +112,11 @@ public class FemaleStrawhatAI : MonoBehaviour, IDamageable
             anim = GetComponentInChildren<Animator>();
         }
 
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.color = new Color(0.16f, 0.2f, 0.24f, 1f);
+        }
+
         if (rb != null)
         {
             rb.constraints = RigidbodyConstraints2D.FreezeRotation;

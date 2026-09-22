@@ -73,16 +73,16 @@ public class SpeechBubbleDialogue : MonoBehaviour
     public Color buttonColor = new Color(0.24f, 0.40f, 0.20f, 1f);
 
     [Tooltip("Width of the bubble in pixels (reference resolution 1920×1080).")]
-    public float bubbleWidth = 680f;
+    public float bubbleWidth = 850f;
 
     [Tooltip("Height of the bubble in pixels.")]
-    public float bubbleHeight = 240f;
+    public float bubbleHeight = 280f;
 
     [Tooltip("How far above the NPC's pivot the bubble hovers (world units).")]
-    public float heightAboveNPC = 2.8f;
+    public float heightAboveNPC = 3.5f;
 
     [Tooltip("Body text font size (pixels).")]
-    public float fontSize = 28f;
+    public float fontSize = 32f;
 
     // ═══════════════════════════════════════════════════════════════════
     //  PRIVATE RUNTIME STATE — never touch these manually
@@ -368,10 +368,10 @@ public class SpeechBubbleDialogue : MonoBehaviour
 
         canvasGo.AddComponent<GraphicRaycaster>();
 
-        // 100 px = 1 Unity world unit; canvas size in pixels
-        const float PPU = 100f;
+        // 55 px = 1 Unity world unit; larger world-space canvas scale for high readability
+        const float PPU = 55f;
         var canvasRt = canvasGo.GetComponent<RectTransform>();
-        canvasRt.sizeDelta    = new Vector2(900f, 600f);
+        canvasRt.sizeDelta    = new Vector2(1000f, 700f);
         canvasRt.localScale   = Vector3.one / PPU;
         canvasRt.localPosition = new Vector3(0f, heightAboveNPC, -0.1f);
 
@@ -479,7 +479,7 @@ public class SpeechBubbleDialogue : MonoBehaviour
         prt.anchorMin        = new Vector2(0.5f, 0f);
         prt.anchorMax        = new Vector2(0.5f, 0f);
         prt.pivot            = new Vector2(0.5f, 0.5f);
-        prt.sizeDelta        = new Vector2(220f, 46f);
+        prt.sizeDelta        = new Vector2(260f, 54f);
         prt.anchoredPosition = new Vector2(0f, 35f);   // sits just below the bubble canvas
 
         var promptImg   = _promptGo.AddComponent<Image>();
@@ -501,7 +501,7 @@ public class SpeechBubbleDialogue : MonoBehaviour
             : (isShopKeeper ? "Shop" : "Talk");
         ptxt.text      = $"[{interactKey}]  {actionText}";
         ptxt.color     = isShopKeeper ? new Color(1.0f, 0.85f, 0.35f, 1f) : new Color(0.74f, 0.52f, 1f, 1f);
-        ptxt.fontSize  = 20f;
+        ptxt.fontSize  = 26f;
         ptxt.alignment = TextAlignmentOptions.Center;
         ptxt.fontStyle = FontStyles.Bold;
 

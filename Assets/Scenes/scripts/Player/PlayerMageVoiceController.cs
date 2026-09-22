@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -25,6 +26,10 @@ namespace SpawnOfChaos.Entities
         public AudioClip[] hurtVoiceClips;
         public AudioClip[] talkVoiceClips;
         public AudioClip[] confusedVoiceClips;
+
+        [Header("Confused Animation")]
+        [Tooltip("Animation state name to play alongside the confused mage voice.")]
+        public string confusedAnimationState = "MageConfused";
 
         [Header("Voice Volume")]
         [Range(0f, 1f)] public float voiceVolume = 1.0f;
@@ -90,7 +95,7 @@ namespace SpawnOfChaos.Entities
             if (jumpVoiceClips == null || jumpVoiceClips.Length == 0) LoadAllVoiceClips();
             if (jumpVoiceClips == null || jumpVoiceClips.Length == 0) return;
 
-            AudioClip clip = jumpVoiceClips[Random.Range(0, jumpVoiceClips.Length)];
+            AudioClip clip = jumpVoiceClips[UnityEngine.Random.Range(0, jumpVoiceClips.Length)];
             if (clip != null && voiceSource != null)
             {
                 voiceSource.PlayOneShot(clip, GetSFXVolume());
@@ -105,7 +110,7 @@ namespace SpawnOfChaos.Entities
             if (attackVoiceClips == null || attackVoiceClips.Length == 0) LoadAllVoiceClips();
             if (attackVoiceClips == null || attackVoiceClips.Length == 0) return;
 
-            AudioClip clip = attackVoiceClips[Random.Range(0, attackVoiceClips.Length)];
+            AudioClip clip = attackVoiceClips[UnityEngine.Random.Range(0, attackVoiceClips.Length)];
             if (clip != null && voiceSource != null)
             {
                 voiceSource.PlayOneShot(clip, GetSFXVolume());
@@ -120,7 +125,7 @@ namespace SpawnOfChaos.Entities
             if (hurtVoiceClips == null || hurtVoiceClips.Length == 0) LoadAllVoiceClips();
             if (hurtVoiceClips == null || hurtVoiceClips.Length == 0) return;
 
-            AudioClip clip = hurtVoiceClips[Random.Range(0, hurtVoiceClips.Length)];
+            AudioClip clip = hurtVoiceClips[UnityEngine.Random.Range(0, hurtVoiceClips.Length)];
             if (clip != null && voiceSource != null)
             {
                 voiceSource.PlayOneShot(clip, GetSFXVolume());
@@ -132,7 +137,7 @@ namespace SpawnOfChaos.Entities
             if (talkVoiceClips == null || talkVoiceClips.Length == 0) LoadAllVoiceClips();
             if (talkVoiceClips == null || talkVoiceClips.Length == 0) return;
 
-            AudioClip clip = talkVoiceClips[Random.Range(0, talkVoiceClips.Length)];
+            AudioClip clip = talkVoiceClips[UnityEngine.Random.Range(0, talkVoiceClips.Length)];
             if (clip != null && voiceSource != null)
             {
                 voiceSource.PlayOneShot(clip, GetSFXVolume());
@@ -144,11 +149,101 @@ namespace SpawnOfChaos.Entities
             if (confusedVoiceClips == null || confusedVoiceClips.Length == 0) LoadAllVoiceClips();
             if (confusedVoiceClips == null || confusedVoiceClips.Length == 0) return;
 
-            AudioClip clip = confusedVoiceClips[Random.Range(0, confusedVoiceClips.Length)];
+            AudioClip clip = confusedVoiceClips[UnityEngine.Random.Range(0, confusedVoiceClips.Length)];
             if (clip != null && voiceSource != null)
             {
                 voiceSource.PlayOneShot(clip, GetSFXVolume());
             }
+
+            TryPlayConfusedAnimation();
+        }
+
+        private void TryPlayConfusedAnimation()
+        {
+            Animator animator = GetComponent<Animator>() ?? GetComponentInChildren<Animator>();
+            if (animator == null || animator.runtimeAnimatorController == null)
+            {
+                return;
+            }
+
+            string[] candidateStates =
+            {
+                confusedAnimationState,
+                "Confused",
+                "Mage_Confused",
+                "mageConfused"
+            };
+
+            foreach (string stateName in candidateStates)
+            {
+                if (string.IsNullOrWhiteSpace(stateName)) continue;
+                if (!HasAnimationState(animator, stateName)) continue;
+
+                animator.Play(stateName, 0, 0f);
+                StartCoroutine(RestoreIdleAfterConfusedAnimation(animator, stateName));
+                return;
+            }
+        }
+
+        private static bool HasAnimationState(Animator animator, string stateName)
+        {
+            if (animator == null || animator.runtimeAnimatorController == null || string.IsNullOrWhiteSpace(stateName))
+            {
+                return false;
+            }
+
+            foreach (AnimationClip clip in animator.runtimeAnimatorController.animationClips)
+            {
+                if (clip != null && clip.name.Equals(stateName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private IEnumerator RestoreIdleAfterConfusedAnimation(Animator animator, string activeStateName)
+        {
+            if (animator == null)
+            {
+                yield break;
+            }
+
+            float waitTime = GetAnimationLength(animator, activeStateName);
+            yield return new WaitForSeconds(waitTime);
+
+            if (animator == null || animator.runtimeAnimatorController == null)
+            {
+                yield break;
+            }
+
+            if (HasAnimationState(animator, "Idle"))
+            {
+                animator.Play("Idle", 0, 0f);
+            }
+            else if (HasAnimationState(animator, "idle"))
+            {
+                animator.Play("idle", 0, 0f);
+            }
+        }
+
+        private static float GetAnimationLength(Animator animator, string stateName)
+        {
+            if (animator == null || animator.runtimeAnimatorController == null || string.IsNullOrWhiteSpace(stateName))
+            {
+                return 0.6f;
+            }
+
+            foreach (AnimationClip clip in animator.runtimeAnimatorController.animationClips)
+            {
+                if (clip != null && clip.name.Equals(stateName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return Mathf.Max(0.2f, clip.length);
+                }
+            }
+
+            return 0.6f;
         }
 
         /// <summary>

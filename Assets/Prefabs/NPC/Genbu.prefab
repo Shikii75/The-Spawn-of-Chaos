@@ -185,6 +185,7 @@ MonoBehaviour:
   bobbingAmplitude: 0.15
   bobbingFrequency: 2.5
   spriteFacesLeftByDefault: 1
+  seatedPlayerSprite: {fileID: 0}
   mountPromptText: '[E] Ride Genbu'
   disembarkPromptText: '[E] Disembark'
   promptYOffset: 2.8

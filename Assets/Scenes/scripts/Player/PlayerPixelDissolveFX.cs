@@ -11,10 +11,10 @@ using UnityEngine.UI;
 public class PlayerPixelDissolveFX : MonoBehaviour
 {
     [Header("Visual Colors & Intensity")]
-    public Color shadowColor = new Color(0.12f, 0.02f, 0.25f, 0.95f); // Deep Void Dark
-    public Color glowColor = new Color(0.3f, 0.95f, 1.0f, 1.0f);     // Nyxaris Void Cyan
-    public Color beamColor = new Color(1.0f, 0.35f, 1.0f, 1.0f);     // Arcane Magenta Flash
-    public Color flashColor = new Color(0.7f, 0.95f, 1.0f, 0.45f);   // Optics Flash Color
+    public Color shadowColor = new Color(0.04f, 0.02f, 0.08f, 0.95f); // Deep Void Dark
+    public Color glowColor = new Color(0.06f, 0.02f, 0.12f, 1.0f);     // Obsidian Void Shadow
+    public Color beamColor = new Color(0.15f, 0.04f, 0.22f, 1.0f);     // Deep Void Violet
+    public Color flashColor = new Color(0.10f, 0.04f, 0.18f, 0.45f);   // Optics Flash Color
 
     [Header("Juice Options")]
     public bool enableScreenFlash = true;
@@ -70,7 +70,7 @@ public class PlayerPixelDissolveFX : MonoBehaviour
         // Implode player scale at origin before phase
         if (playerSR != null)
         {
-            playerSR.color = new Color(0.3f, 1f, 1f, 0.3f);
+            playerSR.color = new Color(0.05f, 0.02f, 0.10f, 0.5f);
         }
 
         yield return new WaitForSeconds(0.035f);
@@ -226,7 +226,7 @@ public class PlayerPixelDissolveFX : MonoBehaviour
 
             SpriteRenderer sr = sp.AddComponent<SpriteRenderer>();
             sr.sprite = circleRadialSprite;
-            sr.color = Color.Lerp(glowColor, Color.white, Random.value);
+            sr.color = Color.Lerp(shadowColor, glowColor, Random.value);
             sr.sortingOrder = playerSR != null ? playerSR.sortingOrder + 3 : 16;
 
             float sz = Random.Range(0.15f, 0.35f);

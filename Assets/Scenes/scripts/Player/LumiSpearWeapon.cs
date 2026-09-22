@@ -41,10 +41,10 @@ public class LumiSpearWeapon : MonoBehaviour
     public float floatFrequency = 2.6f;
     public float floatAmplitude = 0.12f;
 
-    [Header("Blue Magic Colors")]
-    public Color magicAuraColor = new Color(0.15f, 0.88f, 1.0f, 1.0f);
-    public Color magicTrailColor = new Color(0.35f, 0.95f, 1.0f, 0.95f);
-    public Color moteColor = new Color(0.4f, 0.92f, 1.0f, 0.75f);
+    [Header("Void Shadow Colors")]
+    public Color magicAuraColor = new Color(0.04f, 0.02f, 0.08f, 0.95f);
+    public Color magicTrailColor = new Color(0.02f, 0.01f, 0.04f, 0.95f);
+    public Color moteColor = new Color(0.02f, 0.01f, 0.04f, 0.85f);
 
     public SpearState CurrentState { get; private set; } = SpearState.CarriedByLumi;
     public bool IsEmbedded => CurrentState == SpearState.Embedded;
@@ -101,6 +101,13 @@ public class LumiSpearWeapon : MonoBehaviour
         {
             Destroy(gameObject);
             return;
+        }
+
+        if ((magicAuraColor.b > 0.4f && magicAuraColor.g > 0.4f) || (magicTrailColor.b > 0.4f && magicTrailColor.g > 0.4f))
+        {
+            magicAuraColor = new Color(0.04f, 0.02f, 0.08f, 0.95f);
+            magicTrailColor = new Color(0.02f, 0.01f, 0.04f, 0.95f);
+            moteColor = new Color(0.02f, 0.01f, 0.04f, 0.85f);
         }
 
         SetupComponents();
@@ -216,29 +223,43 @@ public class LumiSpearWeapon : MonoBehaviour
         platformEffector.surfaceArc = 160f;
         platformEffector.enabled = false;
 
-        // 3. Trail Renderer (Radiant Blue Energy Trail)
+        // 3. Trail Renderer (Pitch-Black Void Shadow Trail)
         trailRenderer = GetComponent<TrailRenderer>();
         if (trailRenderer == null) trailRenderer = gameObject.AddComponent<TrailRenderer>();
         trailRenderer.time = 0.32f;
         trailRenderer.startWidth = 0.55f;
         trailRenderer.endWidth = 0.02f;
-        trailRenderer.material = CreateUnlitMaterial(magicTrailColor);
+        trailRenderer.material = PlayerShadowDashTrail.GetShadowMaterial() ?? CreateUnlitMaterial(magicTrailColor);
         trailRenderer.startColor = magicTrailColor;
         trailRenderer.endColor = new Color(magicTrailColor.r, magicTrailColor.g, magicTrailColor.b, 0f);
+        Gradient trailGrad = new Gradient();
+        trailGrad.SetKeys(
+            new GradientColorKey[] {
+                new GradientColorKey(new Color(0.04f, 0.02f, 0.08f), 0f),
+                new GradientColorKey(new Color(0.02f, 0.01f, 0.04f), 0.6f),
+                new GradientColorKey(new Color(0.01f, 0.01f, 0.02f), 1f)
+            },
+            new GradientAlphaKey[] {
+                new GradientAlphaKey(0.90f, 0f),
+                new GradientAlphaKey(0.50f, 0.6f),
+                new GradientAlphaKey(0f, 1f)
+            }
+        );
+        trailRenderer.colorGradient = trailGrad;
         trailRenderer.emitting = false;
 
-        // 4. Line Renderer for Arcane Drag Tether
+        // 4. Line Renderer for Arcane Drag Tether (Void Shadow Line)
         tetherLineRenderer = GetComponent<LineRenderer>();
         if (tetherLineRenderer == null) tetherLineRenderer = gameObject.AddComponent<LineRenderer>();
         tetherLineRenderer.startWidth = 0.22f;
         tetherLineRenderer.endWidth = 0.12f;
-        tetherLineRenderer.material = CreateUnlitMaterial(magicAuraColor);
-        tetherLineRenderer.startColor = magicAuraColor;
-        tetherLineRenderer.endColor = new Color(0.4f, 0.95f, 1.0f, 0.85f);
+        tetherLineRenderer.material = PlayerShadowDashTrail.GetShadowMaterial() ?? CreateUnlitMaterial(magicAuraColor);
+        tetherLineRenderer.startColor = new Color(0.04f, 0.02f, 0.08f, 0.95f);
+        tetherLineRenderer.endColor = new Color(0.01f, 0.01f, 0.03f, 0.85f);
         tetherLineRenderer.positionCount = 2;
         tetherLineRenderer.enabled = false;
 
-        // 5. Floating/Fading Blue Magic Motes Particle System
+        // 5. Floating/Fading Dark Void Motes Particle System
         SetupMoteParticles();
     }
 
@@ -379,6 +400,7 @@ public class LumiSpearWeapon : MonoBehaviour
     void HandleInput()
     {
         if (PauseMenu.Instance != null && PauseMenu.Instance.isPaused) return;
+        if (move.Instance != null && move.Instance.IsBlobForm) return;
 
         // 'Q' Key or Right-Click: Throw Spear
         if (Input.GetKeyDown(KeyCode.Q) || Input.GetMouseButtonDown(1))
@@ -441,6 +463,16 @@ public class LumiSpearWeapon : MonoBehaviour
             {
                 spearRenderer.sortingLayerID = pSr.sortingLayerID;
                 spearRenderer.sortingOrder = pSr.sortingOrder + 2;
+            }
+        }
+
+        // Harmonize trail with player running and dashing
+        if (trailRenderer != null)
+        {
+            bool shouldSpearTrail = (playerMove != null && (playerMove.IsRunning || playerMove.IsDashing));
+            if (trailRenderer.emitting != shouldSpearTrail)
+            {
+                trailRenderer.emitting = shouldSpearTrail;
             }
         }
     }
@@ -506,6 +538,7 @@ public class LumiSpearWeapon : MonoBehaviour
 
     public void Throw(Vector2 direction)
     {
+        if (move.Instance != null && move.Instance.IsBlobForm) return;
         throwOrigin = transform.position;
         throwDirection = (direction.sqrMagnitude > 0.01f) ? direction.normalized : Vector2.right;
         CurrentState = SpearState.ThrownFlight;
@@ -615,6 +648,7 @@ public class LumiSpearWeapon : MonoBehaviour
     /// </summary>
     public void ExplodeAndSuperLaunch()
     {
+        if (move.Instance != null && move.Instance.IsBlobForm) return;
         if (CurrentState != SpearState.Embedded) return;
 
         Vector3 explosionCenter = transform.position;
@@ -689,6 +723,7 @@ public class LumiSpearWeapon : MonoBehaviour
 
     public void Recall()
     {
+        if (move.Instance != null && move.Instance.IsBlobForm) return;
         isAutoDragging = false;
         if (tetherLineRenderer != null) tetherLineRenderer.enabled = false;
         if (platformCollider != null) platformCollider.enabled = false;
@@ -714,12 +749,23 @@ public class LumiSpearWeapon : MonoBehaviour
 
     void SpawnBlueMagicBurst(Vector3 position, int particleCount, float scale)
     {
+        SpawnVoidMagicBurst(position, particleCount, scale);
+    }
+
+    public void SpawnVoidMagicBurst(Vector3 position, int particleCount, float scale)
+    {
         GameObject burstGO = new GameObject("Spear_MagicBurst");
         burstGO.transform.position = position;
 
         ParticleSystem ps = burstGO.AddComponent<ParticleSystem>();
+        ParticleSystemRenderer psRenderer = burstGO.GetComponent<ParticleSystemRenderer>();
+        if (psRenderer != null)
+        {
+            LowResBlackOrb.ConfigureParticleRenderer(psRenderer, 22, spearRenderer != null ? spearRenderer.sortingLayerName : "Default");
+        }
+
         var main = ps.main;
-        main.startColor = magicAuraColor;
+        main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.01f, 0.01f, 0.02f, 0.95f), new Color(0.04f, 0.02f, 0.07f, 0.85f));
         main.startSize = 0.28f * scale;
         main.startSpeed = 7f * scale;
         main.startLifetime = 0.5f;
@@ -1064,6 +1110,7 @@ public class LumiSpearWeapon : MonoBehaviour
 
     public void ExecuteMeleeSpearSlash1(float facingDirection)
     {
+        if (move.Instance != null && move.Instance.IsBlobForm) return;
         FindReferences();
         PlaySpearAttackVoice();
         if (meleeThrustCoroutine != null) StopCoroutine(meleeThrustCoroutine);
@@ -1218,6 +1265,7 @@ public class LumiSpearWeapon : MonoBehaviour
 
     public void ExecuteMeleeSpearSlash2(float facingDirection)
     {
+        if (move.Instance != null && move.Instance.IsBlobForm) return;
         FindReferences();
         PlaySpearAttackVoice();
         if (meleeThrustCoroutine != null) StopCoroutine(meleeThrustCoroutine);
@@ -1330,6 +1378,7 @@ public class LumiSpearWeapon : MonoBehaviour
 
     public void ExecuteMeleeSpearThrust(float facingDirection)
     {
+        if (move.Instance != null && move.Instance.IsBlobForm) return;
         FindReferences();
         PlaySpearAttackVoice();
         if (meleeThrustCoroutine != null) StopCoroutine(meleeThrustCoroutine);
@@ -1496,6 +1545,7 @@ public class LumiSpearWeapon : MonoBehaviour
     /// </summary>
     public void TriggerSpearActionFromTouch()
     {
+        if (move.Instance != null && move.Instance.IsBlobForm) return;
         if (CurrentState == SpearState.CarriedByLumi)
         {
             float facing = (playerTransform != null && playerTransform.localScale.x < 0) ? -1f : 1f;

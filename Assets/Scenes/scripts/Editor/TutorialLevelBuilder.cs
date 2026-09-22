@@ -237,8 +237,8 @@ public class TutorialLevelBuilder : EditorWindow
         colPortal.size = new Vector2(1f, 1f);
 
         entersign sign = portalObj.AddComponent<entersign>();
-        sign.targetSceneName = "MountainPathScene";
-        sign.targetSpawnPointName = "MountainPath_Entrance";
+        sign.targetSceneName = "SampleScene";
+        sign.targetSpawnPointName = "DefaultSpawnPoint";
 
         shrineComp.exitPortalObject = portalObj;
 

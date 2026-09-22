@@ -132,7 +132,7 @@ public class NPCDialogueUI : MonoBehaviour
         boxRt.anchorMax = new Vector2(0.5f, 0f);
         boxRt.pivot = new Vector2(0.5f, 0f);
         boxRt.anchoredPosition = new Vector2(0f, 60f);
-        boxRt.sizeDelta = new Vector2(1000f, 200f);
+        boxRt.sizeDelta = new Vector2(1200f, 260f);
         boxRt.localScale = Vector3.one;
         boxRt.localRotation = Quaternion.identity;
 
@@ -279,7 +279,7 @@ public class NPCDialogueUI : MonoBehaviour
         nameRt.localScale = Vector3.one;
         nameRt.localRotation = Quaternion.identity;
 
-        nameText.fontSize = 20;
+        nameText.fontSize = 32;
         nameText.fontStyle = FontStyles.Bold;
         nameText.alignment = TextAlignmentOptions.Center;
         nameText.color = currentNameColor;
@@ -325,7 +325,7 @@ public class NPCDialogueUI : MonoBehaviour
             textRt.offsetMax = new Vector2(-45f, -35f);
         }
 
-        dialogueText.fontSize = 22;
+        dialogueText.fontSize = 32;
         dialogueText.fontStyle = FontStyles.Normal;
         dialogueText.alignment = TextAlignmentOptions.TopLeft;
         dialogueText.color = currentTextColor;
@@ -363,7 +363,7 @@ public class NPCDialogueUI : MonoBehaviour
         if (advanceIndicator == null) advanceIndicator = indicatorGo.AddComponent<TextMeshProUGUI>();
 
         advanceIndicator.text = "▼";
-        advanceIndicator.fontSize = 22;
+        advanceIndicator.fontSize = 28;
         advanceIndicator.fontStyle = FontStyles.Bold;
         advanceIndicator.color = new Color(0.74f, 0.52f, 1.00f, 1f); // Lilac purple indicator
         advanceIndicator.alignment = TextAlignmentOptions.Center;

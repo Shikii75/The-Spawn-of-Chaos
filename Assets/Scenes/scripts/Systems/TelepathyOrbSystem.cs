@@ -197,7 +197,7 @@ namespace SpawnOfChaos.Systems
             panelRT.anchorMin = new Vector2(0.5f, 0.72f);
             panelRT.anchorMax = new Vector2(0.5f, 0.72f);
             panelRT.pivot = new Vector2(0.5f, 0.5f);
-            panelRT.sizeDelta = new Vector2(740, 130);
+            panelRT.sizeDelta = new Vector2(980, 180);
 
             bannerGroup = panelGO.AddComponent<CanvasGroup>();
             bannerGroup.alpha = 0f;
@@ -209,7 +209,7 @@ namespace SpawnOfChaos.Systems
             // Glowing border
             Outline outline = panelGO.AddComponent<Outline>();
             outline.effectColor = new Color(0.85f, 0.45f, 1.0f, 0.85f);
-            outline.effectDistance = new Vector2(2, 2);
+            outline.effectDistance = new Vector2(2.5f, 2.5f);
 
             // Title
             GameObject titleGO = new GameObject("BannerTitle");
@@ -217,13 +217,13 @@ namespace SpawnOfChaos.Systems
             RectTransform titleRT = titleGO.AddComponent<RectTransform>();
             titleRT.anchorMin = new Vector2(0, 0.5f);
             titleRT.anchorMax = new Vector2(1, 1);
-            titleRT.offsetMin = new Vector2(20, 0);
-            titleRT.offsetMax = new Vector2(-20, -10);
+            titleRT.offsetMin = new Vector2(24, 0);
+            titleRT.offsetMax = new Vector2(-24, -12);
 
             titleText = titleGO.AddComponent<TextMeshProUGUI>();
             titleText.text = "✦ TELEPATHY ORB CLAIMED ✦";
             titleText.alignment = TextAlignmentOptions.Center;
-            titleText.fontSize = 24;
+            titleText.fontSize = 36;
             titleText.fontStyle = FontStyles.Bold;
             titleText.color = new Color(0.95f, 0.82f, 1.0f);
 
@@ -232,15 +232,15 @@ namespace SpawnOfChaos.Systems
             descGO.transform.SetParent(panelGO.transform, false);
             RectTransform descRT = descGO.AddComponent<RectTransform>();
             descRT.anchorMin = new Vector2(0, 0);
-            descRT.anchorMax = new Vector2(1, 0.55f);
-            descRT.offsetMin = new Vector2(20, 10);
-            descRT.offsetMax = new Vector2(-20, 0);
+            descRT.anchorMax = new Vector2(1, 0.52f);
+            descRT.offsetMin = new Vector2(24, 16);
+            descRT.offsetMax = new Vector2(-24, 0);
 
             descText = descGO.AddComponent<TextMeshProUGUI>();
             descText.text = "Ancient mindwaves harmonize with your soul.\nThe native Japanese of clan warriors and villagers is now deciphered.";
             descText.alignment = TextAlignmentOptions.Center;
-            descText.fontSize = 15;
-            descText.color = new Color(0.80f, 0.75f, 0.90f);
+            descText.fontSize = 24;
+            descText.color = new Color(0.88f, 0.82f, 0.96f);
         }
 
         private IEnumerator ShowAcquisitionBannerRoutine()

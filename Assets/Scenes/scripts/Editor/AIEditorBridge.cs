@@ -196,6 +196,10 @@ public static class AIEditorBridge
                 case "ping":
                     return new CommandResponse { status = "success", message = "Connection successful." };
 
+                case "setup_teleport_mob":
+                    StrawhatTeleportSetupTool.SetupMob();
+                    return new CommandResponse { status = "success", message = "StrawhatTeleportMob setup complete." };
+
                 case "gethierarchy":
                     return GetHierarchy();
 

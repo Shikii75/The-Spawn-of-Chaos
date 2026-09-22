@@ -330,7 +330,7 @@ public class PlayerCombatJuice : MonoBehaviour
 
     /// <summary>
     /// Spawns high-end GPU-style satisfying slash VFX for spear and swordmanship combos.
-    /// comboStep 1: Sweeping horizontal crescent slash (Electric Cyan / Neon White core).
+    /// comboStep 1: Sweeping horizontal crescent slash (Deep Void Obsidian / Dark Amethyst core).
     /// comboStep 2: Reverse rising diagonal upper cut (Neon Magenta / Electric Violet with spark fountain).
     /// comboStep 3: Sonic Piercing Thrust & Finisher Shockwave (Massive piercing wedge + dual shockwave rings).
     /// </summary>
@@ -351,13 +351,13 @@ public class PlayerCombatJuice : MonoBehaviour
 
         if (comboStep == 1)
         {
-            // Step 1: Celestial Azure Blade + Warm Solar Amber Glow (Harmonious Complementary Duo)
+            // Step 1: Deep Void Obsidian Blade + Dark Amethyst Shadow Glow
             rotZ = -14f;
             baseScale = 2.1f;
-            bladeColor = new Color(0.35f, 0.95f, 1.0f, 1.0f); // Bright Diamond Cyan
-            glowColor  = new Color(1.0f, 0.72f, 0.15f, 0.75f); // Radiant Solar Gold
-            sparkColor = new Color(0.2f, 0.9f, 1.0f, 1.0f);
-            shardColor = new Color(1.0f, 0.92f, 0.5f, 0.95f);
+            bladeColor = new Color(0.08f, 0.03f, 0.14f, 1.0f); // Deep Void Obsidian
+            glowColor  = new Color(0.20f, 0.06f, 0.32f, 0.75f); // Dark Shadow Amethyst
+            sparkColor = new Color(0.04f, 0.02f, 0.08f, 1.0f);  // Void Pitch-Black Spark
+            shardColor = new Color(0.18f, 0.06f, 0.28f, 0.95f); // Deep Void Mote Shard
         }
         else if (comboStep == 2)
         {
@@ -414,7 +414,7 @@ public class PlayerCombatJuice : MonoBehaviour
         if (comboStep == 3)
         {
             SpawnShockwaveRing(spawnPos, 1, new Color(1.0f, 0.85f, 0.3f, 0.9f));
-            SpawnShockwaveRing(spawnPos + new Vector3(dir * 0.5f, 0f, 0f), 2, new Color(0.4f, 0.95f, 1.0f, 0.85f));
+            SpawnShockwaveRing(spawnPos + new Vector3(dir * 0.5f, 0f, 0f), 2, new Color(0.18f, 0.06f, 0.30f, 0.85f));
         }
         else
         {

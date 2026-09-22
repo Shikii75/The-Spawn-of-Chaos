@@ -16,3 +16,5 @@ MemoryCaptures/
 
 .DS_Store
 *.log
+Assets/_Recovery/
+.agents/

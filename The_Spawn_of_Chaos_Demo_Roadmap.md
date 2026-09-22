@@ -65,7 +65,7 @@ Day 5 (Friday, Aug 21)   : End-of-Demo Outro + Final QA + Export Standalone Demo
   - Convert minigame points to in-game currency.
   - Build a sleek shop to buy spell upgrades, robes, and companion buffs.
 
----
+
 
 ### 🎨 Day 4 (Thursday, Aug 20): UI, VFX & Audio Overhaul
 - [ ] **UI Style Synchronization**:

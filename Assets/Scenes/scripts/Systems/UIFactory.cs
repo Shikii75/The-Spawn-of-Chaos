@@ -29,8 +29,8 @@ public static class UIFactory
     public static readonly Color ButtonPressed     = new Color(146f/255f, 104f/255f, 255f/255f, 0.5f);
     public static readonly Color ButtonDisabled    = new Color(60f/255f, 60f/255f, 80f/255f, 0.4f);
 
-    public static readonly Color SliderHealthFill  = new Color(220f/255f, 40f/255f, 40f/255f, 1f);
-    public static readonly Color SliderManaFill    = new Color(100f/255f, 80f/255f, 220f/255f, 1f);
+    public static readonly Color SliderHealthFill  = new Color(122f/255f, 9f/255f, 9f/255f, 1f); // Deep dark crimson red (#7A0909)
+    public static readonly Color SliderManaFill    = new Color(0f, 0f, 0f, 1f);                   // Pure pitch-black (#000000)
     public static readonly Color SliderBossFill    = new Color(200f/255f, 30f/255f, 30f/255f, 1f);
     public static readonly Color SliderTrack       = new Color(30f/255f, 25f/255f, 45f/255f, 1f);
 

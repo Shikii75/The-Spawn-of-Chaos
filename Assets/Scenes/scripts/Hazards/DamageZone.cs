@@ -24,6 +24,10 @@ public class DamageZone : MonoBehaviour
     [Tooltip("Flat damage dealt instantly on entry before respawn teleport.")]
     public int entryDamage = 30;
 
+    [Header("Fall Hazard / Platform Respawn")]
+    [Tooltip("If true, entering this zone routes through PlayerPlatformFallManager for safe platform respawn and 25% max health penalty.")]
+    public bool isFallHazard = false;
+
     [Header("Visual")]
     public Color zoneColor = new Color(1f, 0.2f, 0.1f, 0.2f);
 
@@ -45,12 +49,30 @@ public class DamageZone : MonoBehaviour
         playerRb = other.GetComponent<Rigidbody2D>();
         playerHealth = other.GetComponent<Health>() ?? other.GetComponentInParent<Health>();
 
+        // If configured as a platform fall hazard, route through PlayerPlatformFallManager
+        if (isFallHazard)
+        {
+            if (PlayerPlatformFallManager.Instance != null)
+            {
+                PlayerPlatformFallManager.Instance.TriggerFallRespawn(other.gameObject);
+                playerInside = false;
+                return;
+            }
+        }
+
         // If respawn point is set, teleport the player immediately + deal flat entry damage
         if (respawnPoint != null)
         {
             if (playerHealth != null)
             {
-                playerHealth.TakeDamage(entryDamage);
+                if (isFallHazard)
+                {
+                    playerHealth.TakeFallPenalty(25f);
+                }
+                else
+                {
+                    playerHealth.TakeDamage(entryDamage);
+                }
             }
 
             // Teleport player

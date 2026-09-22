@@ -88,6 +88,11 @@ public class FatKabutoAI : MonoBehaviour, IDamageable
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         spriteJuice = GetComponent<SpriteJuice>() ?? GetComponentInChildren<SpriteJuice>();
 
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.color = new Color(0.2f, 0.16f, 0.12f, 1f);
+        }
+
         if (rb != null)
         {
             rb.constraints = RigidbodyConstraints2D.FreezeRotation;
@@ -261,7 +266,7 @@ public class FatKabutoAI : MonoBehaviour, IDamageable
             if (!hasHitPlayer && player != null)
             {
                 float dist = Vector2.Distance(transform.position, player.position);
-                if (dist <= 1.8f)
+                if (dist <= GetEffectiveBashRange() + 0.6f)
                 {
                     hasHitPlayer = true;
 
@@ -312,17 +317,17 @@ public class FatKabutoAI : MonoBehaviour, IDamageable
         yield return new WaitForSeconds(0.35f);
 
         // Heavy impact strike
-        float dir = transform.localScale.x > 0 ? 1f : -1f;
-        Vector2 attackCenter = (Vector2)transform.position + new Vector2(dir * 1.5f, 0f);
-        Collider2D hit = Physics2D.OverlapCircle(attackCenter, 1.5f, LayerMask.GetMask("Default", "Player"));
-
-        if (hit != null && (hit.CompareTag("Player") || hit.GetComponent<move>() != null))
+        if (player != null && !IsPlayerDead() && GetHorizontalDistanceToPlayer() <= GetEffectiveBashRange() + 0.6f)
         {
-            Health pHealth = hit.GetComponent<Health>() ?? hit.GetComponentInParent<Health>();
+            Health pHealth = player.GetComponent<Health>() ?? player.GetComponentInParent<Health>();
             if (pHealth != null) pHealth.TakeDamage(bashDamage);
 
-            Rigidbody2D pRb = hit.GetComponent<Rigidbody2D>();
-            if (pRb != null) pRb.linearVelocity = new Vector2(dir * knockbackForce, 4.5f);
+            Rigidbody2D pRb = player.GetComponent<Rigidbody2D>();
+            if (pRb != null)
+            {
+                float dir = transform.position.x < player.position.x ? 1f : -1f;
+                pRb.linearVelocity = new Vector2(dir * knockbackForce, 4.5f);
+            }
         }
 
         // Heavy slam recovery pause
@@ -341,6 +346,20 @@ public class FatKabutoAI : MonoBehaviour, IDamageable
             if (pCol != null) playerWidth = pCol.bounds.extents.x;
         }
         return Mathf.Max(bashAttackRange, enemyWidth + playerWidth + 0.4f);
+    }
+
+    private bool IsPlayerDead()
+    {
+        if (player == null) return true;
+        Health playerHealth = player.GetComponent<Health>();
+        if (playerHealth == null) playerHealth = player.GetComponentInParent<Health>();
+        return playerHealth != null && playerHealth.CurrentHealth <= 0;
+    }
+
+    public float GetHorizontalDistanceToPlayer()
+    {
+        if (player == null) return float.MaxValue;
+        return Mathf.Abs(transform.position.x - player.position.x);
     }
 
     private void FlipSprite(float dir)

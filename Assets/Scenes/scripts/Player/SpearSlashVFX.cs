@@ -854,8 +854,8 @@ public class SpearSlashVFX : MonoBehaviour
                     // Step 3: Supernova Void Finisher (Abyssal singularity black + Supernova diamond white)
                     voidCore     = new Color(0.01f, 0.01f, 0.02f, 0.99f),
                     paleEdge     = new Color(0.96f, 0.97f, 1.0f, 1.0f),
-                    bloomGlow    = new Color(0.30f, 0.55f, 1.0f, 0.75f),
-                    sparkColor   = new Color(0.78f, 0.90f, 1.0f, 1.0f),
+                    bloomGlow    = new Color(0.24f, 0.06f, 0.42f, 0.75f),
+                    sparkColor   = new Color(0.55f, 0.22f, 0.85f, 1.0f),
                     sparkTip     = new Color(1.0f, 1.0f, 1.0f, 1.0f),
                     starGleam    = new Color(1.0f, 1.0f, 1.0f, 1.0f),
                     primaryScale = 1.65f,
@@ -935,7 +935,7 @@ public class SpearSlashVFX : MonoBehaviour
         return sr;
     }
 
-    static void TryShake(float intensity, float duration)
+    public static void TryShake(float intensity, float duration)
     {
         try { CameraShakeManager.Shake(duration, intensity); }
         catch (System.Exception) { /* CameraShakeManager may not exist in scene */ }

@@ -210,7 +210,6 @@ namespace SpawnOfChaos.Systems
             switch (sceneName)
             {
                 case "TutorialScene": return "Primordial Void & Tutorial";
-                case "MountainPathScene": return "Mountain Path & Cherry Grove";
                 case "Dojo1Scene": return "Strawhat Clan Dojo";
                 case "Dojo2Scene": return "Samurai Clan Dojo";
                 case "CaveScene": return "Subterranean Cavern & Boss";
@@ -220,16 +219,17 @@ namespace SpawnOfChaos.Systems
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        public static void EnsureLevel1SlotAvailable()
+        public static void EnsureSceneCheckpointSlotsAvailable()
         {
+            // Seed Slot 1 (Cherry Blossom Forest) if empty
             SaveSlotData slot1 = GetSlot(1);
-            if (slot1 == null || slot1.isEmpty || slot1.sceneName == "TutorialScene" || slot1.locationName != "Start Cherry Blossom")
+            if (slot1 == null || slot1.isEmpty)
             {
-                SaveSlotData cherrySlot1 = new SaveSlotData
+                SaveSlot(1, new SaveSlotData
                 {
                     slotIndex = 1,
                     isEmpty = false,
-                    locationName = "Start Cherry Blossom",
+                    locationName = "Level 1: Cherry Blossom Forest",
                     sceneName = "SampleScene",
                     posX = -33.4f,
                     posY = -8.3f,
@@ -239,42 +239,48 @@ namespace SpawnOfChaos.Systems
                     currentWeapon = "DarkSpear",
                     saveTimestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
                     playTimeSeconds = 60f
-                };
-                SaveSlot(1, cherrySlot1);
+                });
             }
 
-            SaveSlotData slot2 = GetSlot(2);
-            if (slot2 == null || slot2.isEmpty || slot2.sceneName == "TutorialScene" || slot2.locationName != "Start Cherry Blossom")
+            // Seed scene checkpoints for slots 2-5 so the developer can load and test each scene simultaneously
+            SeedSceneCheckpointIfEmpty(2, "Dojo 1: Strawhat Clan", "Dojo1Scene", 0f, 0f, 0f);
+            SeedSceneCheckpointIfEmpty(3, "Dojo 2: Samurai Clan", "Dojo2Scene", 7.2f, 1.1f, 0f);
+            SeedSceneCheckpointIfEmpty(4, "Subterranean Cavern & Boss", "CaveScene", -23.4f, 20f, 0f);
+            SeedSceneCheckpointIfEmpty(5, "Primordial Void & Tutorial", "TutorialScene", -3378.2f, 518.5f, 0f);
+        }
+
+        private static void SeedSceneCheckpointIfEmpty(int slotIdx, string locName, string scName, float x, float y, float z)
+        {
+            SaveSlotData s = GetSlot(slotIdx);
+            if (s == null || s.isEmpty)
             {
-                SaveSlotData cherrySlot2 = new SaveSlotData
+                SaveSlot(slotIdx, new SaveSlotData
                 {
-                    slotIndex = 2,
+                    slotIndex = slotIdx,
                     isEmpty = false,
-                    locationName = "Start Cherry Blossom",
-                    sceneName = "SampleScene",
-                    posX = -33.4f,
-                    posY = -8.3f,
-                    posZ = 0f,
+                    locationName = locName,
+                    sceneName = scName,
+                    posX = x,
+                    posY = y,
+                    posZ = z,
                     playerLevel = 1,
                     coins = 100,
                     currentWeapon = "DarkSpear",
                     saveTimestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
                     playTimeSeconds = 60f
-                };
-                SaveSlot(2, cherrySlot2);
+                });
             }
-            Debug.Log("<color=#55FF88>[SaveSlotManager] Save slots seeded with 'Start Cherry Blossom' (SampleScene at Torii Gate)!</color>");
         }
 
 #if UNITY_EDITOR
-        [UnityEditor.MenuItem("Spawn of Chaos/Save Slots/Set Slot to Start Cherry Blossom")]
-        public static void SeedSlot2ToLevel1()
+        [UnityEditor.MenuItem("Spawn of Chaos/Save Slots/Seed Checkpoint Slots For All Scenes")]
+        public static void SeedAllSceneCheckpoints()
         {
-            SaveSlotData cherrySlot = new SaveSlotData
+            SaveSlot(1, new SaveSlotData
             {
                 slotIndex = 1,
                 isEmpty = false,
-                locationName = "Start Cherry Blossom",
+                locationName = "Level 1: Cherry Blossom Forest",
                 sceneName = "SampleScene",
                 posX = -33.4f,
                 posY = -8.3f,
@@ -284,11 +290,73 @@ namespace SpawnOfChaos.Systems
                 currentWeapon = "DarkSpear",
                 saveTimestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
                 playTimeSeconds = 60f
-            };
-            SaveSlot(1, cherrySlot);
-            cherrySlot.slotIndex = 2;
-            SaveSlot(2, cherrySlot);
-            Debug.Log("<color=#55FF88>[SaveSlotManager] Slots 1 & 2 set to 'Start Cherry Blossom' (SampleScene)!</color>");
+            });
+
+            SaveSlot(2, new SaveSlotData
+            {
+                slotIndex = 2,
+                isEmpty = false,
+                locationName = "Dojo 1: Strawhat Clan",
+                sceneName = "Dojo1Scene",
+                posX = 0f,
+                posY = 0f,
+                posZ = 0f,
+                playerLevel = 1,
+                coins = 100,
+                currentWeapon = "DarkSpear",
+                saveTimestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
+                playTimeSeconds = 60f
+            });
+
+            SaveSlot(3, new SaveSlotData
+            {
+                slotIndex = 3,
+                isEmpty = false,
+                locationName = "Dojo 2: Samurai Clan",
+                sceneName = "Dojo2Scene",
+                posX = 7.2f,
+                posY = 1.1f,
+                posZ = 0f,
+                playerLevel = 1,
+                coins = 100,
+                currentWeapon = "DarkSpear",
+                saveTimestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
+                playTimeSeconds = 60f
+            });
+
+            SaveSlot(4, new SaveSlotData
+            {
+                slotIndex = 4,
+                isEmpty = false,
+                locationName = "Subterranean Cavern & Boss",
+                sceneName = "CaveScene",
+                posX = -23.4f,
+                posY = 20f,
+                posZ = 0f,
+                playerLevel = 1,
+                coins = 100,
+                currentWeapon = "DarkSpear",
+                saveTimestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
+                playTimeSeconds = 60f
+            });
+
+            SaveSlot(5, new SaveSlotData
+            {
+                slotIndex = 5,
+                isEmpty = false,
+                locationName = "Primordial Void & Tutorial",
+                sceneName = "TutorialScene",
+                posX = -3378.2f,
+                posY = 518.5f,
+                posZ = 0f,
+                playerLevel = 1,
+                coins = 100,
+                currentWeapon = "DarkSpear",
+                saveTimestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
+                playTimeSeconds = 60f
+            });
+
+            Debug.Log("<color=#55FF88>[SaveSlotManager] Seeded Checkpoint Slots 1-5 for all scenes!</color>");
         }
 #endif
     }

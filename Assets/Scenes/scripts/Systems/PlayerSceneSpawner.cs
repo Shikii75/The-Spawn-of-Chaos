@@ -61,18 +61,32 @@ public class PlayerSceneSpawner : MonoBehaviour
         }
 
         // --- Step 3: Resolve spawn point name & position ---
-        if (isSampleScene && (toriiIntroPending || string.IsNullOrEmpty(targetName) || targetName == "DefaultSpawnPoint" || targetName == "PlayerSceneSpawner"))
-        {
-            targetName = "PlayerSceneSpawner";
-        }
-        else if (string.IsNullOrEmpty(targetName))
-        {
-            targetName = isTutorialScene ? "DefaultSpawnPoint" : defaultSpawnPointName;
-            Debug.Log($"[PlayerSceneSpawner] Using default spawn point: '{targetName}'");
-        }
-
         Vector3 spawnPosition = Vector3.zero;
         bool foundSpawnPoint = false;
+
+        if (PlayerSpawnPointManager.useExplicitSpawnPosition)
+        {
+            spawnPosition = PlayerSpawnPointManager.explicitSpawnPosition;
+            foundSpawnPoint = true;
+            PlayerSpawnPointManager.useExplicitSpawnPosition = false;
+            Debug.Log($"[PlayerSceneSpawner] Snapped to explicit loaded checkpoint/save position: {spawnPosition}");
+
+            // Keep checkpoint system aligned
+            CheckpointSystem.respawnPosition = spawnPosition;
+            CheckpointSystem.hasCheckpoint = true;
+        }
+        else
+        {
+            if (isSampleScene && (toriiIntroPending || string.IsNullOrEmpty(targetName) || targetName == "DefaultSpawnPoint" || targetName == "PlayerSceneSpawner"))
+            {
+                targetName = "PlayerSceneSpawner";
+            }
+            else if (string.IsNullOrEmpty(targetName))
+            {
+                targetName = isTutorialScene ? "DefaultSpawnPoint" : defaultSpawnPointName;
+                Debug.Log($"[PlayerSceneSpawner] Using default spawn point: '{targetName}'");
+            }
+        }
         if (!string.IsNullOrEmpty(targetName))
         {
             GameObject spawnPoint = GameObject.Find(targetName);

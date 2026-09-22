@@ -82,6 +82,11 @@ public class FatStrawhatAI : MonoBehaviour, IDamageable
             anim = GetComponentInChildren<Animator>();
         }
 
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.color = new Color(0.72f, 0.2f, 0.1f, 1f);
+        }
+
         if (rb != null)
         {
             rb.constraints = RigidbodyConstraints2D.FreezeRotation;

@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using SpawnOfChaos.Minigames;
 
 public class Health : MonoBehaviour, IDamageable
 {
@@ -23,6 +24,22 @@ public class Health : MonoBehaviour, IDamageable
     private Color originalPlayerColor = Color.white;
     private bool hasOriginalPlayerColor = false;
 
+    private float postFallInvulnerabilityTimer = 0f;
+    public bool IsPostFallInvulnerable => postFallInvulnerabilityTimer > 0f;
+
+    public void GrantPostFallInvulnerability(float duration = 1.5f)
+    {
+        postFallInvulnerabilityTimer = Mathf.Max(postFallInvulnerabilityTimer, duration);
+    }
+
+    void Update()
+    {
+        if (postFallInvulnerabilityTimer > 0f)
+        {
+            postFallInvulnerabilityTimer -= Time.deltaTime;
+        }
+    }
+
     void Start()
     {
         InitHurtVoice();
@@ -35,8 +52,60 @@ public class Health : MonoBehaviour, IDamageable
                 originalPlayerColor = playerSpriteRenderer.color;
                 hasOriginalPlayerColor = true;
             }
+            PlayerPlatformFallManager.EnsureAttached(gameObject);
         }
         currentHealth = maxHealth;
+    }
+
+    /// <summary>
+    /// Deducts environmental fall penalty (default 25% of max health).
+    /// Bypasses dash/blob invulnerability and Lumi's shield mitigation.
+    /// Triggers hurt audio, onDamageTaken event, and HUD damage splash.
+    /// If health drops to <= 0, triggers player death routine.
+    /// </summary>
+    public void TakeFallPenalty(float percent = 25f)
+    {
+        int damageAmount = Mathf.Max(1, Mathf.RoundToInt(maxHealth * (percent / 100f)));
+        currentHealth -= damageAmount;
+        currentHealth = Mathf.Max(currentHealth, 0);
+        Debug.Log($"[Health] Fall penalty applied: -{damageAmount} HP ({percent}% of max {maxHealth}). Current: {currentHealth}/{maxHealth}");
+
+        if (CompareTag("Player"))
+        {
+            PlayRandomHurtVoice();
+            if (playerSpriteRenderer != null)
+            {
+                if (flashCoroutine != null) StopCoroutine(flashCoroutine);
+                flashCoroutine = StartCoroutine(FlashPlayerRed());
+            }
+
+            if (HUDOrbPanel.Instance != null)
+            {
+                HUDOrbPanel.Instance.TriggerSplash(OrbType.Health, 0.85f);
+            }
+        }
+
+        onDamageTaken?.Invoke(damageAmount);
+
+        if (currentHealth <= 0)
+        {
+            // 1-in-3 Luck Cheat-Death (DarkBladeSmall)
+            if (CompareTag("Player") && SpawnOfChaos.Weapons.WeaponManager.Instance != null && SpawnOfChaos.Weapons.WeaponManager.Instance.TryTriggerLuckCheatDeath(this))
+            {
+                return;
+            }
+
+            Die();
+        }
+    }
+
+    /// <summary>
+    /// Inflicts damage calculated as a percentage of maximum health for fall recovery.
+    /// Alias for TakeFallPenalty for interface compliance.
+    /// </summary>
+    public void TakeFallDamagePercent(float percent = 25f)
+    {
+        TakeFallPenalty(percent);
     }
 
     /// <summary>
@@ -50,6 +119,13 @@ public class Health : MonoBehaviour, IDamageable
 
     public void TakeDamage(int damage)
     {
+        // Check if in post-fall invulnerability window
+        if (postFallInvulnerabilityTimer > 0f)
+        {
+            Debug.Log($"{name} is in post-fall invulnerability window! Ignored damage.");
+            return;
+        }
+
         // Check if invulnerable (e.g. player is dashing)
         move playerMove = GetComponent<move>();
         if (playerMove != null && playerMove.IsInvulnerable)

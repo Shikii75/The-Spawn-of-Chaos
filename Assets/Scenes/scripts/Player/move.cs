@@ -27,7 +27,7 @@ public class move : MonoBehaviour
     [Header("Teleport Jump Settings")]
     [Tooltip("If true, jumping teleports the player up a set distance with pixelated dissolve/rebuild FX instead of using standard jump animations.")]
     public bool useTeleportJump = false;
-    public float teleportJumpDistance = 4.2f;
+    public float teleportJumpDistance = 7.35f;
 
     [Header("Blob Form Settings")]
     public float blobSpeedMultiplier = 1.5f; // Makes the blob dash faster than normal running
@@ -35,21 +35,44 @@ public class move : MonoBehaviour
     private bool isBlobForm = false;
 
     [Header("Dash Settings")]
-    public float dashSpeed = 16f;
-    public float dashDuration = 0.45f;
-    public float dashCooldown = 0.8f;
+    [Tooltip("Target distance covered by the instantaneous shadow dash.")]
+    public float dashDistance = 11.2f;
+    public float dashSpeed = 48f;
+    [Tooltip("Duration of the instantaneous shadow warp window in seconds.")]
+    public float dashDuration = 0.075f;
+    [Tooltip("Cooldown between consecutive dashes.")]
+    public float dashCooldown = 0.35f;
     public bool invulnerableDuringDash = true;
 
     private bool isDashing = false;
     private float dashTimeLeft;
     private float dashCooldownTimer;
     public float lastFacingSign = 1f;
+    private Vector3 dashStartPos;
+    private Vector3 dashTargetPos;
+    private PlayerShadowDashTrail shadowTrail;
+
+    [Header("Post-Dash Attack Window")]
+    public const float POST_DASH_WINDOW = 0.35f;
+    private float postDashTimer = 0f;
+    public bool IsInPostDashWindow => postDashTimer > 0f;
+
+    public bool TryConsumePostDashStrike()
+    {
+        if (postDashTimer > 0f)
+        {
+            postDashTimer = 0f;
+            return true;
+        }
+        return false;
+    }
 
     public float LastFacingSign => lastFacingSign;
     public bool IsInvulnerable => (isDashing && invulnerableDuringDash) || isBlobForm;
     public bool IsBlobForm => isBlobForm;
     public bool IsDashing => isDashing;
     public bool IsGrounded => isGrounded;
+    public bool IsRunning => isDoubleTapRunning && isGrounded && Mathf.Abs(Input.GetAxisRaw("Horizontal")) > 0.05f;
 
     [Header("Debuffs")]
     private float speedDebuffMultiplier = 1.0f;
@@ -134,6 +157,11 @@ public class move : MonoBehaviour
         dissolveFX = GetComponent<PlayerPixelDissolveFX>();
         if (dissolveFX == null) dissolveFX = gameObject.AddComponent<PlayerPixelDissolveFX>();
 
+        shadowTrail = GetComponent<PlayerShadowDashTrail>();
+        if (shadowTrail == null) shadowTrail = gameObject.AddComponent<PlayerShadowDashTrail>();
+
+        PlayerPlatformFallManager.EnsureAttached(gameObject);
+
         // Layer both players at layer 1
         gameObject.layer = 1;
         foreach (Transform t in GetComponentsInChildren<Transform>(true))
@@ -162,14 +190,18 @@ public class move : MonoBehaviour
 
         initialAbsScale = new Vector3(Mathf.Abs(transform.localScale.x), Mathf.Abs(transform.localScale.y), Mathf.Abs(transform.localScale.z));
 
-        // Enforce Start Dash Run full duration to match 23-frame animation
-        if (dashDuration > 0.6f || dashDuration < 0.3f)
+        // Instantaneous shadow teleport dash parameters
+        if (dashDuration > 0.15f || dashDuration <= 0.01f)
         {
-            dashDuration = 0.45f;
+            dashDuration = 0.075f;
         }
-        if (dashSpeed < 18f)
+        if (dashSpeed < 30f)
         {
-            dashSpeed = 22f;
+            dashSpeed = 48f;
+        }
+        if (dashDistance < 10.0f)
+        {
+            dashDistance = 11.2f;
         }
         if (initialAbsScale == Vector3.zero) initialAbsScale = Vector3.one;
 
@@ -302,8 +334,128 @@ public class move : MonoBehaviour
     public void UpgradeDash()
     {
         dashSpeed *= 1.25f;
-        dashCooldown *= 0.8f;
-        Debug.Log("Player dash upgraded! New speed: " + dashSpeed + ", cooldown: " + dashCooldown);
+        dashDistance *= 1.15f;
+        dashCooldown = Mathf.Max(0.25f, dashCooldown * 0.85f);
+        Debug.Log("Player dash upgraded! New speed: " + dashSpeed + ", distance: " + dashDistance + ", cooldown: " + dashCooldown);
+    }
+
+    private bool IsObstacleIgnored(Collider2D col)
+    {
+        if (col == null || col.isTrigger) return true;
+        if (col.gameObject == gameObject || col.transform.IsChildOf(transform)) return true;
+        try
+        {
+            if (col.CompareTag("enemy")) return true;
+        }
+        catch { }
+        if (string.Equals(col.tag, "enemy", System.StringComparison.OrdinalIgnoreCase)) return true;
+        if (col.GetComponent<UniversalEnemy>() != null || col.GetComponentInParent<UniversalEnemy>() != null) return true;
+        if (col.GetComponent<IDamageable>() != null || LumiSpearWeapon.IsEnemyTarget(col)) return true;
+        return false;
+    }
+
+    /// <summary>
+    /// Executes an instantaneous, addictive shadow warp/teleport dash.
+    /// Safely boxcasts ahead for solid geometry and triggers shadow visuals and audio.
+    /// </summary>
+    public void ExecuteInstantShadowDash(float direction)
+    {
+        if (isBlobForm || dashCooldownTimer > 0f) return;
+
+        postDashTimer = 0f;
+        if (direction != 0f) lastFacingSign = Mathf.Sign(direction);
+        float dir = lastFacingSign != 0f ? lastFacingSign : 1f;
+
+        // 1. BoxCastAll check ahead for solid walls/geometry to ensure safe teleport destination
+        float targetDist = dashDistance;
+        int obstacleMask = ~LayerMask.GetMask("Player", "Ignore Raycast");
+        Vector2 castOrigin = (Vector2)transform.position + standingColOffset;
+        Vector2 castDir = new Vector2(dir, 0f);
+        Vector2 boxSize = (standingCollider != null) 
+            ? new Vector2(standingColSize.x * 0.90f, standingColSize.y * 0.95f) 
+            : new Vector2(0.9f, 2.4f);
+
+        RaycastHit2D[] hits = Physics2D.BoxCastAll(castOrigin, boxSize, 0f, castDir, targetDist, obstacleMask);
+        foreach (var h in hits)
+        {
+            if (IsObstacleIgnored(h.collider)) continue;
+
+            // Valid solid environment / wall obstacle found!
+            // Stop safely 0.35 units before the wall
+            targetDist = Mathf.Max(0.1f, h.distance - 0.35f);
+            break; // BoxCastAll returns hits sorted by distance; first valid solid obstacle is closest
+        }
+
+        // Secondary Overlap Verification at Target Position:
+        Vector3 potentialTargetPos = transform.position + new Vector3(dir * targetDist, 0f, 0f);
+        Collider2D[] initialOverlaps = Physics2D.OverlapBoxAll(
+            (Vector2)potentialTargetPos + standingColOffset,
+            boxSize * 0.95f,
+            0f,
+            obstacleMask
+        );
+        bool hasSolidOverlap = false;
+        foreach (var col in initialOverlaps)
+        {
+            if (!IsObstacleIgnored(col))
+            {
+                hasSolidOverlap = true;
+                break;
+            }
+        }
+
+        if (hasSolidOverlap)
+        {
+            // Step backward along direction until fully clear of solid geometry
+            for (float stepBack = 0.2f; stepBack <= targetDist; stepBack += 0.2f)
+            {
+                Vector3 testPos = transform.position + new Vector3(dir * (targetDist - stepBack), 0f, 0f);
+                Collider2D[] testOverlaps = Physics2D.OverlapBoxAll((Vector2)testPos + standingColOffset, boxSize * 0.95f, 0f, obstacleMask);
+                bool solidFound = false;
+                foreach (var to in testOverlaps)
+                {
+                    if (!IsObstacleIgnored(to))
+                    {
+                        solidFound = true;
+                        break;
+                    }
+                }
+                if (!solidFound)
+                {
+                    targetDist = Mathf.Max(0.1f, targetDist - stepBack);
+                    break;
+                }
+            }
+        }
+
+        dashStartPos = transform.position;
+        dashTargetPos = dashStartPos + new Vector3(dir * targetDist, 0f, 0f);
+
+        isDashing = true;
+        dashTimeLeft = dashDuration;
+        dashCooldownTimer = dashCooldown;
+        if (rb != null)
+        {
+            rb.gravityScale = 0f;
+            rb.linearVelocity = new Vector2(dir * (targetDist / Mathf.Max(0.005f, dashDuration)), 0f);
+        }
+
+        PlayRandomJumpVoice();
+
+        if (shadowTrail != null)
+        {
+            shadowTrail.OnDashStart(dashStartPos, dashTargetPos, dir, dashDuration);
+        }
+
+        if (anim != null)
+        {
+            try
+            {
+                anim.SetTrigger("dash");
+                anim.Play("Dash", 0, 0f);
+            }
+            catch (System.Exception) { }
+        }
     }
 
     public void ApplySlow(float duration, float multiplier)
@@ -342,14 +494,24 @@ public class move : MonoBehaviour
             lastFacingSign = Mathf.Sign(horizontalInput);
         }
 
-        // Handle active dash burst: Snappy 0.45s dash that cleanly flows into Fall (air) or Run (ground)
+        // Handle active instantaneous shadow dash: ultra-snappy teleport phase
         if (isDashing)
         {
             dashTimeLeft -= Time.deltaTime;
+            float progress = Mathf.Clamp01(1f - (dashTimeLeft / Mathf.Max(0.001f, dashDuration)));
+            transform.position = Vector3.Lerp(dashStartPos, dashTargetPos, progress);
+
             if (dashTimeLeft <= 0f)
             {
                 isDashing = false;
-                rb.gravityScale = gravityScale; // Restore gravity
+                postDashTimer = POST_DASH_WINDOW;
+                transform.position = dashTargetPos;
+                if (rb != null) rb.gravityScale = gravityScale; // Restore gravity
+
+                if (shadowTrail != null)
+                {
+                    shadowTrail.OnDashEnd(dashTargetPos);
+                }
 
                 // Use a fresh physics check instead of the stale isGrounded flag
                 bool actuallyGrounded = CheckIsGrounded();
@@ -363,6 +525,7 @@ public class move : MonoBehaviour
                     hasTriggeredStartLanding = false;
                     airTimeCounter = 0.25f; // Ready for proximity landing detection
                     isDoubleTapRunning = false;
+                    if (rb != null) rb.linearVelocity = new Vector2(horizontalInput * moveSpeed, -1.0f);
                     if (anim != null)
                     {
                         try
@@ -381,7 +544,7 @@ public class move : MonoBehaviour
                 else if (isDoubleTapRunning && horizontalInput != 0)
                 {
                     // Ground dash completed with movement held: flow directly into continuous Run!
-                    rb.linearVelocity = new Vector2(horizontalInput * moveSpeed * runSpeedMultiplier, rb.linearVelocity.y);
+                    if (rb != null) rb.linearVelocity = new Vector2(horizontalInput * moveSpeed * runSpeedMultiplier, rb.linearVelocity.y);
                     if (anim != null)
                     {
                         try
@@ -397,7 +560,7 @@ public class move : MonoBehaviour
                 {
                     // Ground dash completed without holding direction: halt in idle
                     isDoubleTapRunning = false;
-                    rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+                    if (rb != null) rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
                     if (anim != null)
                     {
                         try
@@ -417,11 +580,6 @@ public class move : MonoBehaviour
             }
             else
             {
-                // Dynamic speed curve across the 23-frame dash: starts explosive (22) and smoothly blends into top run speed (14)
-                float progress = 1f - (dashTimeLeft / dashDuration);
-                float targetRunSpeed = moveSpeed * runSpeedMultiplier;
-                float currentBurstSpeed = Mathf.Lerp(dashSpeed, targetRunSpeed, progress);
-                rb.linearVelocity = new Vector2(lastFacingSign * currentBurstSpeed, 0f);
                 return;
             }
         }
@@ -451,6 +609,11 @@ public class move : MonoBehaviour
         if (dashCooldownTimer > 0f)
         {
             dashCooldownTimer -= Time.deltaTime;
+        }
+
+        if (postDashTimer > 0f)
+        {
+            postDashTimer -= Time.deltaTime;
         }
 
         if (LightOrbCompanion.Instance != null && LightOrbCompanion.Instance.IsGrappling)
@@ -488,26 +651,7 @@ public class move : MonoBehaviour
             if (timeSinceLastLeft <= doubleTapThreshold && lastTapDirection == -1 && dashCooldownTimer <= 0f && !isBlobForm)
             {
                 isDoubleTapRunning = true;
-                isDashing = true;
-                PlayRandomJumpVoice();
-                dashTimeLeft = dashDuration;
-                dashCooldownTimer = dashCooldown;
-                rb.gravityScale = 0f;
-                rb.linearVelocity = new Vector2(-1f * dashSpeed, 0f);
-                lastFacingSign = -1f;
-                if (PlayerCombatJuice.Instance != null)
-                {
-                    // Dash stretch disabled to maintain stable frame scale
-                }
-                if (anim != null)
-                {
-                    try
-                    {
-                        anim.SetTrigger("dash");
-                        anim.Play("Dash", 0, 0f);
-                    }
-                    catch (System.Exception) { }
-                }
+                ExecuteInstantShadowDash(-1f);
                 lastLeftTapTime = -10f; // Reset to prevent triple-tap re-trigger
             }
             else
@@ -523,26 +667,7 @@ public class move : MonoBehaviour
             if (timeSinceLastRight <= doubleTapThreshold && lastTapDirection == 1 && dashCooldownTimer <= 0f && !isBlobForm)
             {
                 isDoubleTapRunning = true;
-                isDashing = true;
-                PlayRandomJumpVoice();
-                dashTimeLeft = dashDuration;
-                dashCooldownTimer = dashCooldown;
-                rb.gravityScale = 0f;
-                rb.linearVelocity = new Vector2(1f * dashSpeed, 0f);
-                lastFacingSign = 1f;
-                if (PlayerCombatJuice.Instance != null)
-                {
-                    // Dash stretch disabled to maintain stable frame scale
-                }
-                if (anim != null)
-                {
-                    try
-                    {
-                        anim.SetTrigger("dash");
-                        anim.Play("Dash", 0, 0f);
-                    }
-                    catch (System.Exception) { }
-                }
+                ExecuteInstantShadowDash(1f);
                 lastRightTapTime = -10f; // Reset to prevent triple-tap re-trigger
             }
             else
@@ -610,30 +735,13 @@ public class move : MonoBehaviour
             isBlobForm = false;
         }
 
-        // Trigger Dash
+        // Trigger Instant Shadow Dash
         bool dashTriggered = (Input.GetKeyDown(KeyCode.LeftShift) || virtualDashPressed) && dashCooldownTimer <= 0f && !isBlobForm;
         virtualDashPressed = false;
         if (dashTriggered)
         {
-            isDashing = true;
-            PlayRandomJumpVoice();
-            dashTimeLeft = dashDuration;
-            dashCooldownTimer = dashCooldown;
-            rb.gravityScale = 0f; // Disable gravity during dash
-            rb.linearVelocity = new Vector2(lastFacingSign * dashSpeed, 0f);
-            if (PlayerCombatJuice.Instance != null)
-            {
-                // Dash stretch disabled to maintain stable frame scale
-            }
-            if (anim != null)
-            {
-                try
-                {
-                    anim.SetTrigger("dash");
-                    anim.Play("Dash", 0, 0f);
-                }
-                catch (System.Exception) { }
-            }
+            float dashDir = (horizontalInput != 0f) ? Mathf.Sign(horizontalInput) : lastFacingSign;
+            ExecuteInstantShadowDash(dashDir);
             return;
         }
 

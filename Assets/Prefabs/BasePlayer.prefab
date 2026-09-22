@@ -210,7 +210,7 @@ MonoBehaviour:
   jumpForce: 11
   gravityScale: 1
   useTeleportJump: 0
-  teleportJumpDistance: 4.2
+  teleportJumpDistance: 7.35
   blobSpeedMultiplier: 1.5
   blobColliderSize: {x: 0.9, y: 0.35}
   dashSpeed: 22

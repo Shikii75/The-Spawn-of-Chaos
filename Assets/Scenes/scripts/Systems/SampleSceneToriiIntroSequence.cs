@@ -565,11 +565,15 @@ namespace SpawnOfChaos.Systems
             Vector3 currentPos = player != null ? player.transform.position : floatingHeadSpawnPos;
             if (player != null)
             {
-                // Clear move singleton so new Mage player doesn't self-destruct
+                // Clear move and fall manager singletons so new Mage player doesn't self-destruct or hold stale refs
                 move oldMove = player.GetComponent<move>();
                 if (oldMove != null && move.Instance == oldMove)
                 {
                     move.Instance = null;
+                }
+                if (PlayerPlatformFallManager.Instance != null && PlayerPlatformFallManager.Instance.gameObject == player)
+                {
+                    // Stale instance will be rebound cleanly on MagePlayer instantiation
                 }
                 Destroy(player);
                 player = null;
@@ -580,6 +584,10 @@ namespace SpawnOfChaos.Systems
             if (move.Instance != null && move.Instance.gameObject == null)
             {
                 move.Instance = null;
+            }
+            if (PlayerPlatformFallManager.Instance != null && PlayerPlatformFallManager.Instance.gameObject == null)
+            {
+                // Cleared
             }
 
             GameObject magePrefab = Resources.Load<GameObject>("Prefabs/Player");

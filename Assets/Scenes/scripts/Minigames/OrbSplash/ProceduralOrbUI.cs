@@ -100,10 +100,14 @@ namespace SpawnOfChaos.Minigames
             orbRenderer.CatchUpFillAmount = catchUpVisualFill;
             orbRenderer.WaveSpeed = waveSpeed;
 
+            // Render initial frame immediately so Texture2D is fully populated from frame 0
+            orbRenderer.UpdateAndRender(0f);
+
             if (rawImage != null)
             {
                 rawImage.texture = orbRenderer.Texture;
                 rawImage.color = Color.white;
+                rawImage.enabled = true;
             }
         }
 
@@ -114,14 +118,12 @@ namespace SpawnOfChaos.Minigames
                 InitializeRenderer();
             }
 
-            bool isGameplay = !HUDManager.IsInMainMenu();
-
-            if (rawImage != null && rawImage.enabled != isGameplay)
+            if (rawImage != null && !rawImage.enabled)
             {
-                rawImage.enabled = isGameplay;
+                rawImage.enabled = true;
             }
 
-            if (!isGameplay || !autoUpdate || orbRenderer == null) return;
+            if (!autoUpdate || orbRenderer == null) return;
 
             if (autoLinkToPlayer)
             {
@@ -181,7 +183,10 @@ namespace SpawnOfChaos.Minigames
 
         private void AutoLinkStats()
         {
-            GameObject p = GameObject.FindGameObjectWithTag("Player");
+            GameObject p = GameObject.FindGameObjectWithTag("Player") 
+                        ?? GameObject.Find("Player") 
+                        ?? GameObject.Find("BasePlayer") 
+                        ?? (move.Instance != null ? move.Instance.gameObject : null);
             if (p == null) return;
 
             switch (orbType)
@@ -275,6 +280,14 @@ namespace SpawnOfChaos.Minigames
             }
 
             TriggerSplash(intensity * 1.2f);
+        }
+
+        public void SetBasePosition(Vector2 pos)
+        {
+            baseAnchoredPosition = pos;
+            hasBasePosition = true;
+            if (rectTransform == null) rectTransform = GetComponent<RectTransform>();
+            if (rectTransform != null) rectTransform.anchoredPosition = pos;
         }
     }
 }

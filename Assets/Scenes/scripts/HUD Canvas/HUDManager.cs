@@ -11,22 +11,12 @@ public class HUDManager : MonoBehaviour
     public GameObject playerGameObject;
 
     [Header("UI Scale Settings")]
-    [Tooltip("Scale multiplier for HUD elements. Default is 10f (10 times larger). Adjust in the Inspector to scale up or down.")]
+    [Tooltip("Scale multiplier for HUD elements. Default is 2f.")]
     public float hudScale = 10f;
-
-    [Header("Health Units Settings")]
-    [Tooltip("Base size of each health unit in the HUD.")]
-    public float healthUnitSize = 50f;
 
     // ── Runtime-built UI references ──
     private Canvas canvas;
-    private RectTransform healthUnitsContainer;
-    private List<Image> unitForegroundFills = new List<Image>();
-    private List<Image> unitCatchUpFills = new List<Image>();
-    private Sprite healthUnitSprite;
-    private float healthPerUnit = 2f;
-    private TextMeshProUGUI healthText;
-    
+
     private Slider manaSlider;
     private Slider catchUpManaSlider;
     private TextMeshProUGUI manaText;
@@ -37,7 +27,7 @@ public class HUDManager : MonoBehaviour
     private RawImage manaWaveOverlay2;
     private float manaWaveScroll1 = 0f;
     private float manaWaveScroll2 = 0f;
-    
+
     private TextMeshProUGUI coinsText;
     private TextMeshProUGUI potionsText;
 
@@ -56,6 +46,34 @@ public class HUDManager : MonoBehaviour
         Instance = null;
     }
 
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    private static void AutoBootstrapHUD()
+    {
+        EnsureExists();
+    }
+
+    public static void EnsureExists()
+    {
+        if (Instance == null)
+        {
+            HUDManager existing = FindFirstObjectByType<HUDManager>();
+            if (existing != null)
+            {
+                Instance = existing;
+            }
+            else
+            {
+                GameObject hudGo = new GameObject("HUDManager");
+                Instance = hudGo.AddComponent<HUDManager>();
+            }
+        }
+
+        if (Instance != null)
+        {
+            Instance.ValidateHUD();
+        }
+    }
+
     void Awake()
     {
         // Force the scale multiplier to a compact size of 2.0f to prevent covering the screen
@@ -64,11 +82,15 @@ public class HUDManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            if (transform.parent == null)
+            {
+                DontDestroyOnLoad(gameObject);
+            }
         }
-        else
+        else if (Instance != this)
         {
-            Destroy(gameObject);
+            // Do NOT destroy gameObject if HUDManager is attached to Player!
+            Destroy(this);
             return;
         }
 
@@ -81,8 +103,6 @@ public class HUDManager : MonoBehaviour
             levelSysGO.AddComponent<SpawnOfChaos.Systems.PlayerLevelSystem>();
         }
 
-        // HUDOrbPanel is created directly in BuildUI() under canvas
-
         UpdateVisibility();
     }
 
@@ -90,9 +110,63 @@ public class HUDManager : MonoBehaviour
     //  UI CONSTRUCTION — entire hierarchy built from code
     // ══════════════════════════════════════════════════════════════════
 
+    public void ValidateHUD()
+    {
+        if (canvas == null || canvas.gameObject == null)
+        {
+            BuildUI();
+        }
+        else
+        {
+            if (canvas.transform.parent != null)
+            {
+                canvas.transform.SetParent(null, false);
+            }
+            DontDestroyOnLoad(canvas.gameObject);
+            canvas.sortingOrder = 50;
+
+            EnsureOrbPanelExists();
+        }
+    }
+
+    private void EnsureOrbPanelExists()
+    {
+        if (canvas == null) return;
+
+        SpawnOfChaos.Minigames.HUDOrbPanel orbPanel = canvas.GetComponentInChildren<SpawnOfChaos.Minigames.HUDOrbPanel>(true);
+        if (orbPanel == null)
+        {
+            Transform existingChild = canvas.transform.Find("HUDOrbPanel");
+            if (existingChild != null)
+            {
+                orbPanel = existingChild.GetComponent<SpawnOfChaos.Minigames.HUDOrbPanel>();
+                if (orbPanel == null) orbPanel = existingChild.gameObject.AddComponent<SpawnOfChaos.Minigames.HUDOrbPanel>();
+            }
+        }
+
+        if (orbPanel == null)
+        {
+            Transform existingMgr = canvas.transform.Find("HUDOrbPanelManager");
+            if (existingMgr != null)
+            {
+                orbPanel = existingMgr.GetComponent<SpawnOfChaos.Minigames.HUDOrbPanel>();
+                if (orbPanel == null) orbPanel = existingMgr.gameObject.AddComponent<SpawnOfChaos.Minigames.HUDOrbPanel>();
+            }
+        }
+
+        if (orbPanel == null)
+        {
+            GameObject orbGO = new GameObject("HUDOrbPanel");
+            orbGO.transform.SetParent(canvas.transform, false);
+            orbPanel = orbGO.AddComponent<SpawnOfChaos.Minigames.HUDOrbPanel>();
+        }
+
+        orbPanel.EnsureWidgetBuilt();
+    }
+
     private void BuildUI()
     {
-        // ── Canvas (sort order -10, layered below menus & overlays) ──
+        // ── Canvas (sort order 50, persistent across scenes) ──
         if (canvas == null)
         {
             GameObject existingCanvas = GameObject.Find("HUDCanvas");
@@ -103,57 +177,70 @@ public class HUDManager : MonoBehaviour
             else
             {
                 canvas = UIFactory.CreateCanvas("HUDCanvas", 50);
-                canvas.transform.SetParent(null, false);
-                DontDestroyOnLoad(canvas.gameObject);
             }
-            if (canvas != null) canvas.sortingOrder = 50;
         }
 
-        // Calculate scaled dimensions and positions to keep alignment clean at any scale
-        float leftMargin = 30f * Mathf.Min(hudScale, 2f);
-        float topMargin = 20f * Mathf.Min(hudScale, 2f);
-        float unitSize = healthUnitSize * hudScale; // Configurable unit size
-        float healthY = -topMargin - 30f * Mathf.Min(hudScale, 2f);
+        if (canvas != null)
+        {
+            if (canvas.transform.parent != null)
+            {
+                canvas.transform.SetParent(null, false);
+            }
+            DontDestroyOnLoad(canvas.gameObject);
+            canvas.sortingOrder = 50;
+        }
 
-        // Old rectangular HP units and MP bar sliders removed — replaced by procedural liquid Orbs (HUDOrbPanel)
-        healthUnitsContainer = null;
-        healthText = null;
         manaSlider = null;
         catchUpManaSlider = null;
         manaText = null;
 
         // ──────────────────── TOP-RIGHT: Coins & Potions ────────────────
+        if (canvas != null)
+        {
+            // Coins text — top-right
+            Transform existingCoins = canvas.transform.Find("CoinsText");
+            if (existingCoins != null)
+            {
+                coinsText = existingCoins.GetComponent<TextMeshProUGUI>();
+            }
+            else
+            {
+                coinsText = UIFactory.CreateText(
+                    canvas.transform, "CoinsText", "Coins: 0",
+                    24f, UIFactory.TextGold, TextAlignmentOptions.TopRight
+                );
+                coinsText.rectTransform.pivot = new Vector2(1f, 1f);
+                coinsText.rectTransform.anchorMin = new Vector2(1f, 1f);
+                coinsText.rectTransform.anchorMax = new Vector2(1f, 1f);
+                coinsText.rectTransform.anchoredPosition = new Vector2(-50f, -40f);
+                coinsText.rectTransform.sizeDelta = new Vector2(220f, 36f);
+                coinsText.enableWordWrapping = false;
+                coinsText.fontStyle = FontStyles.Bold;
+            }
 
-        // Coins text — top-right
-        coinsText = UIFactory.CreateText(
-            canvas.transform, "CoinsText", "Coins: 0",
-            24f, UIFactory.TextGold, TextAlignmentOptions.TopRight
-        );
-        coinsText.rectTransform.pivot = new Vector2(1f, 1f);
-        coinsText.rectTransform.anchorMin = new Vector2(1f, 1f);
-        coinsText.rectTransform.anchorMax = new Vector2(1f, 1f);
-        coinsText.rectTransform.anchoredPosition = new Vector2(-50f, -40f);
-        coinsText.rectTransform.sizeDelta = new Vector2(220f, 36f);
-        coinsText.enableWordWrapping = false;
-        coinsText.fontStyle = FontStyles.Bold;
+            // Potions text — below coins
+            Transform existingPotions = canvas.transform.Find("PotionsText");
+            if (existingPotions != null)
+            {
+                potionsText = existingPotions.GetComponent<TextMeshProUGUI>();
+            }
+            else
+            {
+                potionsText = UIFactory.CreateText(
+                    canvas.transform, "PotionsText", "Potions: 0 [H]",
+                    20f, UIFactory.TextMuted, TextAlignmentOptions.TopRight
+                );
+                potionsText.rectTransform.pivot = new Vector2(1f, 1f);
+                potionsText.rectTransform.anchorMin = new Vector2(1f, 1f);
+                potionsText.rectTransform.anchorMax = new Vector2(1f, 1f);
+                potionsText.rectTransform.anchoredPosition = new Vector2(-50f, -80f);
+                potionsText.rectTransform.sizeDelta = new Vector2(220f, 32f);
+                potionsText.enableWordWrapping = false;
+                potionsText.fontStyle = FontStyles.Bold;
+            }
 
-        // Potions text — below coins
-        potionsText = UIFactory.CreateText(
-            canvas.transform, "PotionsText", "Potions: 0 [H]",
-            20f, UIFactory.TextMuted, TextAlignmentOptions.TopRight
-        );
-        potionsText.rectTransform.pivot = new Vector2(1f, 1f);
-        potionsText.rectTransform.anchorMin = new Vector2(1f, 1f);
-        potionsText.rectTransform.anchorMax = new Vector2(1f, 1f);
-        potionsText.rectTransform.anchoredPosition = new Vector2(-50f, -80f);
-        potionsText.rectTransform.sizeDelta = new Vector2(220f, 32f);
-        potionsText.enableWordWrapping = false;
-        potionsText.fontStyle = FontStyles.Bold;
-
-        // Directly spawn HUDOrbPanel under this canvas
-        GameObject orbPanelGO = new GameObject("HUDOrbPanelManager");
-        orbPanelGO.transform.SetParent(canvas.transform, false);
-        orbPanelGO.AddComponent<SpawnOfChaos.Minigames.HUDOrbPanel>();
+            EnsureOrbPanelExists();
+        }
     }
 
     // ══════════════════════════════════════════════════════════════════
@@ -162,12 +249,6 @@ public class HUDManager : MonoBehaviour
 
     void Start()
     {
-        healthUnitSprite = Resources.Load<Sprite>("health_unit");
-        if (healthUnitSprite == null)
-        {
-            Debug.LogWarning("health_unit sprite could not be loaded from Resources!");
-        }
-
         manaWaveSprite = Resources.Load<Sprite>("mana_wave");
         if (manaWaveSprite != null && manaSlider != null && manaSlider.fillRect != null)
         {
@@ -207,6 +288,7 @@ public class HUDManager : MonoBehaviour
 
     private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
     {
+        ValidateHUD();
         RebindPlayerReferences();
         UpdateVisibility();
     }
@@ -215,14 +297,23 @@ public class HUDManager : MonoBehaviour
 
     public static bool IsInMainMenu()
     {
-        // 1. Check if the UI Toolkit main menu controller is active and the game has not been started yet
+        // 1. If an active player character is in the scene, we are definitively in gameplay!
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player == null) player = GameObject.Find("Player");
+        if (player == null) player = GameObject.Find("BasePlayer");
+        if (player != null && player.activeInHierarchy)
+        {
+            return false;
+        }
+
+        // 2. Check if the UI Toolkit main menu controller is active and the game has not been started yet
         MainMenuUIToolkitController menu = FindFirstObjectByType<MainMenuUIToolkitController>();
         if (menu != null && menu.gameObject.activeInHierarchy && !MainMenuUIToolkitController.isPlaying)
         {
             return true;
         }
 
-        // 2. Dedicated MainMenu scene
+        // 3. Dedicated MainMenu scene
         string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
         if (sceneName.Equals("MainMenu", System.StringComparison.OrdinalIgnoreCase))
         {
@@ -269,6 +360,18 @@ public class HUDManager : MonoBehaviour
         {
             SpawnOfChaos.Minigames.HUDOrbPanel.Instance.UpdateVisibility();
         }
+        else if (canvas != null)
+        {
+            var panel = canvas.GetComponentInChildren<SpawnOfChaos.Minigames.HUDOrbPanel>(true);
+            if (panel != null)
+            {
+                panel.gameObject.SetActive(shouldShowHUD);
+            }
+            else if (shouldShowHUD)
+            {
+                EnsureOrbPanelExists();
+            }
+        }
     }
 
     public void RebindPlayerReferences()
@@ -276,17 +379,13 @@ public class HUDManager : MonoBehaviour
         UnsubscribePlayerEvents();
 
         playerGameObject = GameObject.FindGameObjectWithTag("Player");
+        if (playerGameObject == null) playerGameObject = GameObject.Find("Player");
+        if (playerGameObject == null) playerGameObject = GameObject.Find("BasePlayer");
         if (playerGameObject != null)
         {
             playerHealth = playerGameObject.GetComponent<Health>();
             playerCombat = playerGameObject.GetComponent<MageCombat>();
             playerCurrency = playerGameObject.GetComponent<PlayerCurrency>();
-
-            if (playerHealth != null)
-            {
-                playerHealth.onDamageTaken += UpdateHealthUI;
-                playerHealth.onMaxHealthChanged += UpdateMaxHealthUI;
-            }
 
             if (playerCurrency != null)
             {
@@ -296,16 +395,15 @@ public class HUDManager : MonoBehaviour
 
             InitializeUI();
         }
+
+        if (SpawnOfChaos.Minigames.HUDOrbPanel.Instance != null)
+        {
+            SpawnOfChaos.Minigames.HUDOrbPanel.Instance.FindPlayer();
+        }
     }
 
     private void UnsubscribePlayerEvents()
     {
-        if (playerHealth != null)
-        {
-            playerHealth.onDamageTaken -= UpdateHealthUI;
-            playerHealth.onMaxHealthChanged -= UpdateMaxHealthUI;
-        }
-
         if (playerCurrency != null)
         {
             playerCurrency.onCoinsChanged -= UpdateCoinsUI;
@@ -325,85 +423,6 @@ public class HUDManager : MonoBehaviour
         if (playerGameObject == null)
         {
             RebindPlayerReferences();
-        }
-        // Smoothly drain the catch-up health fills
-        for (int i = 0; i < unitCatchUpFills.Count; i++)
-        {
-            if (i < unitForegroundFills.Count)
-            {
-                Image catchUp = unitCatchUpFills[i];
-                Image fg = unitForegroundFills[i];
-                
-                if (catchUp.fillAmount > fg.fillAmount)
-                {
-                    catchUp.fillAmount = Mathf.Lerp(catchUp.fillAmount, fg.fillAmount, Time.deltaTime * 3.5f);
-                    if (catchUp.fillAmount - fg.fillAmount < 0.005f)
-                    {
-                        catchUp.fillAmount = fg.fillAmount;
-                    }
-                }
-                else
-                {
-                    catchUp.fillAmount = fg.fillAmount;
-                }
-            }
-        }
-
-        if (catchUpManaSlider != null && manaSlider != null)
-        {
-            if (catchUpManaSlider.value > manaSlider.value)
-            {
-                catchUpManaSlider.value = Mathf.Lerp(catchUpManaSlider.value, manaSlider.value, Time.deltaTime * 3.5f);
-                if (catchUpManaSlider.value - manaSlider.value < 0.5f)
-                {
-                    catchUpManaSlider.value = manaSlider.value;
-                }
-            }
-            else
-            {
-                catchUpManaSlider.value = manaSlider.value;
-            }
-        }
-
-        // Regenerating mana slider update (pulled dynamically)
-        if (playerCombat != null && manaSlider != null)
-        {
-            if (Mathf.Abs(playerCombat.maxMana - lastMaxMana) > 0.01f)
-            {
-                lastMaxMana = playerCombat.maxMana;
-                manaSlider.maxValue = lastMaxMana;
-                if (catchUpManaSlider != null) catchUpManaSlider.maxValue = lastMaxMana;
-                RebuildNotches(manaSlider, manaNotches, lastMaxMana, 20f);
-            }
-
-            manaSlider.value = playerCombat.currentMana;
-
-            if (manaText != null)
-            {
-                manaText.text = Mathf.RoundToInt(playerCombat.currentMana) + " / " + Mathf.RoundToInt(playerCombat.maxMana);
-            }
-        }
-
-        // Pulsing danger effect for low health (<= 25% health)
-        if (playerHealth != null && unitForegroundFills.Count > 0)
-        {
-            float hpPercent = (float)playerHealth.CurrentHealth / playerHealth.MaxHealth;
-            if (hpPercent <= 0.25f && playerHealth.CurrentHealth > 0)
-            {
-                float pulse = (Mathf.Sin(Time.time * 8f) + 1f) / 2f; // Fast warning pulse
-                Color warningColor = Color.Lerp(Color.white, new Color(1f, 0.3f, 0.3f, 1f), pulse);
-                foreach (var fg in unitForegroundFills)
-                {
-                    if (fg != null) fg.color = warningColor;
-                }
-            }
-            else
-            {
-                foreach (var fg in unitForegroundFills)
-                {
-                    if (fg != null) fg.color = Color.white;
-                }
-            }
         }
 
         // Scroll and oscillate the mana liquid wave overlays
@@ -432,41 +451,11 @@ public class HUDManager : MonoBehaviour
 
     private void InitializeUI()
     {
-        if (playerHealth != null)
-        {
-            UpdateMaxHealthUI(playerHealth.MaxHealth);
-            UpdateHealthUI(0);
-        }
-
         if (playerCurrency != null)
         {
             UpdateCoinsUI(playerCurrency.Coins);
             UpdatePotionsUI(playerCurrency.HealingPotions);
         }
-    }
-
-    private void UpdateHealthUI(int damageTaken)
-    {
-        if (playerHealth != null)
-        {
-            float currentHP = playerHealth.CurrentHealth;
-            for (int i = 0; i < unitForegroundFills.Count; i++)
-            {
-                float unitMin = i * healthPerUnit;
-                float fill = Mathf.Clamp01((currentHP - unitMin) / healthPerUnit);
-                unitForegroundFills[i].fillAmount = fill;
-            }
-
-            if (healthText != null)
-            {
-                healthText.text = $"{playerHealth.CurrentHealth}%";
-            }
-        }
-    }
-
-    private void UpdateMaxHealthUI(int newMaxHealth)
-    {
-        RebuildHealthUnits(newMaxHealth);
     }
 
     private void UpdateCoinsUI(int coins)
@@ -483,98 +472,6 @@ public class HUDManager : MonoBehaviour
         {
             potionsText.text = "Potions: " + potions + " [H]";
         }
-    }
-
-    // ══════════════════════════════════════════════════════════════════
-    //  HEALTH UNITS MANAGEMENT
-    // ══════════════════════════════════════════════════════════════════
-
-    private void RebuildHealthUnits(float newMaxHealth)
-    {
-        if (healthUnitsContainer != null)
-        {
-            foreach (Transform child in healthUnitsContainer)
-            {
-                Destroy(child.gameObject);
-            }
-        }
-        unitForegroundFills.Clear();
-        unitCatchUpFills.Clear();
-
-        if (newMaxHealth <= 0) return;
-
-        int numUnits = Mathf.CeilToInt(newMaxHealth / healthPerUnit);
-        float unitSize = healthUnitSize * hudScale; // Configurable unit size
-        float spacing = 4f * Mathf.Min(hudScale, 2f); // Halved spacing from 8f
-
-        for (int i = 0; i < numUnits; i++)
-        {
-            float xOffset = i * (unitSize + spacing);
-            CreateHealthUnit(xOffset, unitSize); // Offset relative to container left edge
-        }
-
-        UpdateHealthUI(0);
-
-        if (playerHealth != null)
-        {
-            float currentHP = playerHealth.CurrentHealth;
-            for (int i = 0; i < unitForegroundFills.Count; i++)
-            {
-                float unitMin = i * healthPerUnit;
-                float fill = Mathf.Clamp01((currentHP - unitMin) / healthPerUnit);
-                unitForegroundFills[i].fillAmount = fill;
-                unitCatchUpFills[i].fillAmount = fill;
-            }
-        }
-    }
-
-    private void CreateHealthUnit(float xOffset, float size)
-    {
-        GameObject unitGo = new GameObject("HealthUnit_" + unitForegroundFills.Count);
-        unitGo.transform.SetParent(healthUnitsContainer, false);
-        RectTransform unitRT = unitGo.AddComponent<RectTransform>();
-
-        // Anchored to left (0f) and centered vertically (0.5f) inside the container
-        unitRT.anchorMin = new Vector2(0f, 0.5f);
-        unitRT.anchorMax = new Vector2(0f, 0.5f);
-        unitRT.pivot = new Vector2(0f, 0.5f);
-        unitRT.anchoredPosition = new Vector2(xOffset, 0f);
-        unitRT.sizeDelta = new Vector2(size, size);
-
-        // 1. Background Outline Image (depleted unit state)
-        GameObject bgGo = new GameObject("Background");
-        bgGo.transform.SetParent(unitRT, false);
-        Image bgImg = bgGo.AddComponent<Image>();
-        bgImg.sprite = healthUnitSprite;
-        bgImg.color = new Color(0.12f, 0.05f, 0.2f, 0.65f); // Dark-gothic transparent silhouette
-        RectTransform bgRT = bgGo.GetComponent<RectTransform>();
-        UIFactory.SetRect(bgRT, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-
-        // 2. Catch-Up Image (lagging damage indicator)
-        GameObject catchUpGo = new GameObject("CatchUp");
-        catchUpGo.transform.SetParent(unitRT, false);
-        Image catchUpImg = catchUpGo.AddComponent<Image>();
-        catchUpImg.sprite = healthUnitSprite;
-        catchUpImg.color = new Color(0.85f, 0.35f, 0.05f, 0.85f); // Orange warning fill
-        catchUpImg.type = Image.Type.Filled;
-        catchUpImg.fillMethod = Image.FillMethod.Horizontal;
-        catchUpImg.fillAmount = 1f;
-        RectTransform catchUpRT = catchUpGo.GetComponent<RectTransform>();
-        UIFactory.SetRect(catchUpRT, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-        unitCatchUpFills.Add(catchUpImg);
-
-        // 3. Foreground Image (actual current health)
-        GameObject fgGo = new GameObject("Foreground");
-        fgGo.transform.SetParent(unitRT, false);
-        Image fgImg = fgGo.AddComponent<Image>();
-        fgImg.sprite = healthUnitSprite;
-        fgImg.color = Color.white; // Full color original sprite
-        fgImg.type = Image.Type.Filled;
-        fgImg.fillMethod = Image.FillMethod.Horizontal;
-        fgImg.fillAmount = 1f;
-        RectTransform fgRT = fgGo.GetComponent<RectTransform>();
-        UIFactory.SetRect(fgRT, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-        unitForegroundFills.Add(fgImg);
     }
 
     // ══════════════════════════════════════════════════════════════════

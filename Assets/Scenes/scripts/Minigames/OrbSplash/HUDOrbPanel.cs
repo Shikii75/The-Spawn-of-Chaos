@@ -14,7 +14,7 @@ namespace SpawnOfChaos.Minigames
     /// Dynamically binds to player stats, auto-updates fill ratios, triggers liquid splashes when world orbs are collected or damage is taken,
     /// hides when on the main menu / title screen, and persists across scene transitions (e.g., Dojo screen).
     /// </summary>
-        public class HUDOrbPanel : MonoBehaviour
+    public class HUDOrbPanel : MonoBehaviour
     {
         public static HUDOrbPanel Instance { get; private set; }
 
@@ -35,8 +35,6 @@ namespace SpawnOfChaos.Minigames
         private MageCombat playerCombat;
         private PlayerCurrency playerCurrency;
 
-        private GameObject panelGO;
-
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStaticState()
         {
@@ -45,7 +43,7 @@ namespace SpawnOfChaos.Minigames
 
         void Awake()
         {
-            if (Instance != null && Instance != this && Instance.gameObject != null)
+            if (Instance != null && Instance != this && Instance.gameObject != null && Instance.gameObject.activeInHierarchy)
             {
                 if (Application.isPlaying) Destroy(gameObject);
                 else DestroyImmediate(gameObject);
@@ -68,11 +66,19 @@ namespace SpawnOfChaos.Minigames
             UnsubscribeEvents();
         }
 
+        void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
+            }
+        }
+
         void Start()
         {
             FindPlayer();
             SubscribeEvents();
-            if (panelGO == null) BuildHUDWidget();
+            EnsureWidgetBuilt();
             UpdateVisibility();
         }
 
@@ -91,6 +97,7 @@ namespace SpawnOfChaos.Minigames
 
             FindPlayer();
             SubscribeEvents();
+            EnsureWidgetBuilt();
             UpdateVisibility();
         }
 
@@ -202,12 +209,17 @@ namespace SpawnOfChaos.Minigames
                 FindPlayer();
             }
 
+            if (healthOrbUI == null || healthValueText == null)
+            {
+                EnsureWidgetBuilt();
+            }
+
             // Real-time Health Orb Fill & Value sync
             if (playerHealth != null)
             {
                 float hpRatio = (float)playerHealth.CurrentHealth / Mathf.Max(1, playerHealth.MaxHealth);
                 if (healthOrbUI != null) healthOrbUI.fillAmount = hpRatio;
-                if (healthValueText != null) healthValueText.text = $"{playerHealth.CurrentHealth}%";
+                if (healthValueText != null) healthValueText.text = $"{playerHealth.CurrentHealth} / {playerHealth.MaxHealth}";
             }
 
             // Real-time Mana Orb Fill & Value sync
@@ -215,7 +227,7 @@ namespace SpawnOfChaos.Minigames
             {
                 float mpRatio = playerCombat.currentMana / Mathf.Max(1f, playerCombat.maxMana);
                 if (manaOrbUI != null) manaOrbUI.fillAmount = mpRatio;
-                if (manaValueText != null) manaValueText.text = $"{Mathf.RoundToInt(mpRatio * 100f)}%";
+                if (manaValueText != null) manaValueText.text = $"{Mathf.RoundToInt(playerCombat.currentMana)} / {Mathf.RoundToInt(playerCombat.maxMana)}";
             }
 
             // Real-time Currency Orb Fill & Value sync
@@ -241,15 +253,9 @@ namespace SpawnOfChaos.Minigames
 
             bool shouldShowHUD = HUDManager.IsGameplayActive();
 
-            if (panelGO != null && panelGO.activeSelf != shouldShowHUD)
+            if (gameObject.activeSelf != shouldShowHUD)
             {
-                panelGO.SetActive(shouldShowHUD);
-            }
-
-            Canvas parentCanvas = GetComponentInParent<Canvas>();
-            if (parentCanvas != null && parentCanvas != HUDManager.Instance?.Canvas && parentCanvas.gameObject.activeSelf != shouldShowHUD)
-            {
-                parentCanvas.gameObject.SetActive(shouldShowHUD);
+                gameObject.SetActive(shouldShowHUD);
             }
         }
 
@@ -316,9 +322,15 @@ namespace SpawnOfChaos.Minigames
             levelUpBanner.SetActive(false);
         }
 
+        public void EnsureWidgetBuilt()
+        {
+            if (this == null || gameObject == null) return;
+            BuildHUDWidget();
+        }
+
         private void BuildHUDWidget()
         {
-            // Strictly resolve HUDCanvas (never attach to ad or foreign canvases)
+            // Strictly resolve HUDCanvas
             Canvas canvas = GetComponentInParent<Canvas>();
             if (canvas == null && HUDManager.Instance != null)
             {
@@ -332,60 +344,113 @@ namespace SpawnOfChaos.Minigames
             if (canvas == null)
             {
                 canvas = UIFactory.CreateCanvas("HUDCanvas", 50);
-                DontDestroyOnLoad(canvas.gameObject);
             }
-
-            transform.SetParent(canvas.transform, false);
-
-            // Clean up ANY existing duplicate HUDOrbPanel children under this canvas
-            for (int i = canvas.transform.childCount - 1; i >= 0; i--)
+            if (canvas != null)
             {
-                Transform child = canvas.transform.GetChild(i);
-                if (child.name == "HUDOrbPanel")
+                if (canvas.transform.parent != null) canvas.transform.SetParent(null, false);
+                DontDestroyOnLoad(canvas.gameObject);
+                canvas.sortingOrder = 50;
+
+                if (transform.parent != canvas.transform)
                 {
-                    if (Application.isPlaying) Destroy(child.gameObject);
-                    else DestroyImmediate(child.gameObject);
+                    transform.SetParent(canvas.transform, false);
                 }
             }
 
-            panelGO = new GameObject("HUDOrbPanel", typeof(RectTransform));
-            panelGO.transform.SetParent(canvas.transform, false);
+            // Name and configure this GameObject as the top-left HUD panel container
+            gameObject.name = "HUDOrbPanel";
 
-            RectTransform panelRT = panelGO.GetComponent<RectTransform>();
+            RectTransform panelRT = GetComponent<RectTransform>();
+            if (panelRT == null) panelRT = gameObject.AddComponent<RectTransform>();
+
             panelRT.pivot = new Vector2(0f, 1f);
             panelRT.anchorMin = new Vector2(0f, 1f);
             panelRT.anchorMax = new Vector2(0f, 1f);
             panelRT.anchoredPosition = new Vector2(40f, -40f);
             panelRT.sizeDelta = new Vector2(510f, 130f);
 
-            // Dark Obsidian Backing Frame for the 4 containers
-            Image panelBg = panelGO.AddComponent<Image>();
+            // Dark Obsidian Backing Frame
+            Image panelBg = GetComponent<Image>();
+            if (panelBg == null) panelBg = gameObject.AddComponent<Image>();
             panelBg.color = new Color(0.02f, 0.02f, 0.05f, 0.75f);
-            Outline panelOutline = panelGO.AddComponent<Outline>();
+
+            Outline panelOutline = GetComponent<Outline>();
+            if (panelOutline == null) panelOutline = gameObject.AddComponent<Outline>();
             panelOutline.effectColor = new Color(0.12f, 0.18f, 0.32f, 0.65f);
             panelOutline.effectDistance = new Vector2(2f, 2f);
 
-            healthOrbUI = CreateOrbItem(panelRT, OrbType.Health, "HEALTH", new Color(1.0f, 0.25f, 0.38f, 1f), 60f, out healthValueText);
-            manaOrbUI = CreateOrbItem(panelRT, OrbType.Mana, "MANA", new Color(0.15f, 0.75f, 1.0f, 1f), 180f, out manaValueText);
-            currencyOrbUI = CreateOrbItem(panelRT, OrbType.Currency, "COINS", new Color(1.0f, 0.82f, 0.18f, 1f), 300f, out currencyValueText);
-            epOrbUI = CreateOrbItem(panelRT, OrbType.EP, "EXP", new Color(0.78f, 0.42f, 1.0f, 1f), 420f, out epValueText);
+            // Check if all 4 orb items already exist and retrieve components if unassigned
+            Transform healthTr = transform.Find("OrbItem_Health");
+            Transform manaTr = transform.Find("OrbItem_Mana");
+            Transform currTr = transform.Find("OrbItem_Currency");
+            Transform epTr = transform.Find("OrbItem_EP");
+
+            if (healthTr != null && healthOrbUI == null)
+            {
+                healthOrbUI = healthTr.GetComponent<ProceduralOrbUI>();
+                Transform valTr = healthTr.Find("Value");
+                if (valTr != null) healthValueText = valTr.GetComponent<TextMeshProUGUI>();
+            }
+            if (manaTr != null && manaOrbUI == null)
+            {
+                manaOrbUI = manaTr.GetComponent<ProceduralOrbUI>();
+                Transform valTr = manaTr.Find("Value");
+                if (valTr != null) manaValueText = valTr.GetComponent<TextMeshProUGUI>();
+            }
+            if (currTr != null && currencyOrbUI == null)
+            {
+                currencyOrbUI = currTr.GetComponent<ProceduralOrbUI>();
+                Transform valTr = currTr.Find("Value");
+                if (valTr != null) currencyValueText = valTr.GetComponent<TextMeshProUGUI>();
+            }
+            if (epTr != null && epOrbUI == null)
+            {
+                epOrbUI = epTr.GetComponent<ProceduralOrbUI>();
+                Transform valTr = epTr.Find("Value");
+                if (valTr != null) epValueText = valTr.GetComponent<TextMeshProUGUI>();
+            }
+
+            if (healthTr == null || manaTr == null || currTr == null || epTr == null ||
+                healthOrbUI == null || manaOrbUI == null || currencyOrbUI == null || epOrbUI == null)
+            {
+                // Re-instantiate orbs cleanly
+                for (int i = transform.childCount - 1; i >= 0; i--)
+                {
+                    if (Application.isPlaying) Destroy(transform.GetChild(i).gameObject);
+                    else DestroyImmediate(transform.GetChild(i).gameObject);
+                }
+
+                healthOrbUI = CreateOrbItem(panelRT, OrbType.Health, "HEALTH", new Color(122f/255f, 9f/255f, 9f/255f, 1f), 60f, out healthValueText);
+                manaOrbUI = CreateOrbItem(panelRT, OrbType.Mana, "MANA", new Color(0.35f, 0.35f, 0.40f, 1f), 180f, out manaValueText);
+                currencyOrbUI = CreateOrbItem(panelRT, OrbType.Currency, "COINS", new Color(0.68f, 0.46f, 0.12f, 1f), 300f, out currencyValueText);
+                epOrbUI = CreateOrbItem(panelRT, OrbType.EP, "EXP", new Color(0.48f, 0.16f, 0.72f, 1f), 420f, out epValueText);
+            }
 
             // Level Up Banner (Center Screen)
-            if (levelUpBanner == null)
+            if (canvas != null && levelUpBanner == null)
             {
-                levelUpBanner = new GameObject("LevelUpBanner", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
-                levelUpBanner.transform.SetParent(canvas.transform, false);
-                RectTransform bannerRT = levelUpBanner.GetComponent<RectTransform>();
-                UIFactory.SetRectFixed(bannerRT, new Vector2(0.5f, 0.65f), new Vector2(0.5f, 0.65f), Vector2.zero, new Vector2(440f, 95f));
+                Transform existingBanner = canvas.transform.Find("LevelUpBanner");
+                if (existingBanner != null)
+                {
+                    levelUpBanner = existingBanner.gameObject;
+                    levelUpText = levelUpBanner.GetComponentInChildren<TextMeshProUGUI>();
+                }
+                else
+                {
+                    levelUpBanner = new GameObject("LevelUpBanner", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
+                    levelUpBanner.transform.SetParent(canvas.transform, false);
+                    RectTransform bannerRT = levelUpBanner.GetComponent<RectTransform>();
+                    UIFactory.SetRectFixed(bannerRT, new Vector2(0.5f, 0.65f), new Vector2(0.5f, 0.65f), Vector2.zero, new Vector2(440f, 95f));
 
-                Image bannerBg = levelUpBanner.GetComponent<Image>();
-                bannerBg.color = new Color(0.05f, 0.02f, 0.12f, 0.92f);
+                    Image bannerBg = levelUpBanner.GetComponent<Image>();
+                    bannerBg.color = new Color(0.05f, 0.02f, 0.12f, 0.92f);
 
-                levelUpText = UIFactory.CreateText(levelUpBanner.transform, "Text", "LEVEL UP!\nREACHED LEVEL 2", 22f, new Color(1f, 0.82f, 0.2f, 1f), TextAlignmentOptions.Center);
-                UIFactory.SetRect(levelUpText.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-                levelUpText.fontStyle = FontStyles.Bold;
+                    levelUpText = UIFactory.CreateText(levelUpBanner.transform, "Text", "LEVEL UP!\nREACHED LEVEL 2", 22f, new Color(1f, 0.82f, 0.2f, 1f), TextAlignmentOptions.Center);
+                    UIFactory.SetRect(levelUpText.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+                    levelUpText.fontStyle = FontStyles.Bold;
 
-                levelUpBanner.SetActive(false);
+                    levelUpBanner.SetActive(false);
+                }
             }
 
             UpdateVisibility();
@@ -393,7 +458,7 @@ namespace SpawnOfChaos.Minigames
 
         private ProceduralOrbUI CreateOrbItem(Transform parent, OrbType type, string label, Color tagColor, float posX, out TextMeshProUGUI valueTextRef)
         {
-            GameObject orbGO = new GameObject($"OrbItem_{type}", typeof(RectTransform), typeof(RawImage), typeof(ProceduralOrbUI));
+            GameObject orbGO = new GameObject($"OrbItem_{type}", typeof(RectTransform));
             orbGO.transform.SetParent(parent, false);
 
             RectTransform rt = orbGO.GetComponent<RectTransform>();
@@ -403,11 +468,15 @@ namespace SpawnOfChaos.Minigames
             rt.anchoredPosition = new Vector2(posX, -65f);
             rt.sizeDelta = new Vector2(90f, 90f);
 
-            ProceduralOrbUI orbUI = orbGO.GetComponent<ProceduralOrbUI>();
+            RawImage rawImg = orbGO.AddComponent<RawImage>();
+
+            ProceduralOrbUI orbUI = orbGO.AddComponent<ProceduralOrbUI>();
             orbUI.orbType = type;
             orbUI.textureResolution = 128;
             orbUI.autoUpdate = true;
             orbUI.fillAmount = 0.8f;
+            orbUI.SetBasePosition(new Vector2(posX, -65f));
+            orbUI.InitializeRenderer();
 
             // Tag Header above orb
             TextMeshProUGUI tagText = UIFactory.CreateText(orbGO.transform, "Tag", label, 12f, tagColor, TextAlignmentOptions.Center);

@@ -149,7 +149,7 @@ MonoBehaviour:
   dashCooldown: 0.4
   invulnerableDuringDash: 1
   useTeleportJump: 1
-  teleportJumpDistance: 4.2
+  teleportJumpDistance: 7.35
 --- !u!95 &4487229105665306076
 Animator:
   serializedVersion: 7

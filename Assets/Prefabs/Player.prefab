@@ -140,16 +140,41 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3ef55e662e7a2ee48842c80616a1ec8c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
+  jumpVoiceClips: []
+  talkVoiceClips: []
+  virtualHorizontalInput: 0
+  virtualJumpPressed: 0
+  virtualJumpHeld: 0
+  virtualDashPressed: 0
+  virtualBlobPressed: 0
+  virtualLeftDown: 0
+  virtualRightDown: 0
   moveSpeed: 7
   jumpForce: 12
   gravityScale: 1
+  fallGravityMultiplier: 1.6
+  lowJumpMultiplier: 2
+  useTeleportJump: 1
+  teleportJumpDistance: 7.35
   blobSpeedMultiplier: 1.5
+  blobColliderSize: {x: 1.2, y: 0.45}
   dashSpeed: 22
   dashDuration: 0.45
   dashCooldown: 0.4
   invulnerableDuringDash: 1
-  useTeleportJump: 1
-  teleportJumpDistance: 4.2
+  lastFacingSign: 1
+  runSpeedMultiplier: 1.6
+  doubleTapThreshold: 0.35
+  jumpLockoutDuration: 0.25
+  fallThresholdTime: 0.35
+  landingProximityDistance: 1.8
+  enableOrbCompanion: 1
+  enableNyxarisTutorialOrb: 1
+  maxStepHeight: 0.35
+  stepScanDistance: 0.45
+  stepSmoothSpeed: 14
+  feetOffset: {x: 0, y: -1.65}
+  feetBoxSize: {x: 0.7, y: 0.4}
 --- !u!95 &4487229105665306076
 Animator:
   serializedVersion: 7
@@ -230,6 +255,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4be95743e3964c04fbdb066318ca31ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Health
+  hurtVoiceClips: []
   maxHealth: 1000
   hitFlashDuration: 0.15
 --- !u!114 &7773563666861187544
@@ -258,10 +284,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 12114aba13e6ee74abdb83803e182720, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MageCombat
+  attackVoiceClips: []
   meleeDamage: 20
+  secondHitDamage: 28
   meleeAttackCollider: {fileID: 8425255500286858545}
   meleeAttackDuration: 0.2
-  meleeCooldown: 0.3
+  comboWindowDuration: 1.85
+  doubleTapThreshold: 0.35
   projectilePrefab: {fileID: 0}
   projectileSpawnPoint: {fileID: 0}
   rangedCooldown: 0.5

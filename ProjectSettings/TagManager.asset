@@ -8,6 +8,11 @@ TagManager:
   - enemy
   - Enemy
   - entersign
+  - Hazard
+  - Spike
+  - Spikes
+  - Pit
+  - KillZone
   layers:
   - Default
   - TransparentFX

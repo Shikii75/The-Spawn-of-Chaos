@@ -5,12 +5,6 @@ TextureImporter:
   - first:
       213: 6840564828551953541
     second: frame_020_0
-  - first:
-      213: 6894955427960756027
-    second: frame_020_1
-  - first:
-      213: 7625832645589101520
-    second: frame_020_2
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -57,7 +51,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
+  spritePixelsToUnits: 250
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -109,10 +103,10 @@ TextureImporter:
       name: frame_020_0
       rect:
         serializedVersion: 2
-        x: 627
-        y: 97
-        width: 647
-        height: 876
+        x: 600
+        y: 80
+        width: 710
+        height: 910
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -123,50 +117,6 @@ TextureImporter:
       bones: []
       spriteID: 58cbedcf7719eee50800000000000000
       internalID: 6840564828551953541
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: frame_020_1
-      rect:
-        serializedVersion: 2
-        x: 1274
-        y: 849
-        width: 7
-        height: 43
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: b3790c14e6dcfaf50800000000000000
-      internalID: 6894955427960756027
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: frame_020_2
-      rect:
-        serializedVersion: 2
-        x: 622
-        y: 559
-        width: 6
-        height: 46
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 0db6ae4436664d960800000000000000
-      internalID: 7625832645589101520
       vertices: []
       indices: 
       edges: []
@@ -186,8 +136,6 @@ TextureImporter:
       entries: []
     nameFileIdTable:
       frame_020_0: 6840564828551953541
-      frame_020_1: 6894955427960756027
-      frame_020_2: 7625832645589101520
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

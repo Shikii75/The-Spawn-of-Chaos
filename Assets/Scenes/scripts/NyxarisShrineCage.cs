@@ -145,8 +145,8 @@ public class NyxarisShrineCage : MonoBehaviour, IDamageable
             entersign sign = exitPortalObject.GetComponent<entersign>();
             if (sign != null)
             {
-                sign.targetSceneName = "MountainPathScene";
-                sign.targetSpawnPointName = "MountainPath_Entrance";
+                sign.targetSceneName = "SampleScene";
+                sign.targetSpawnPointName = "DefaultSpawnPoint";
             }
         }
     }

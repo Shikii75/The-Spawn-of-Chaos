@@ -11,7 +11,7 @@ using UnityEngine;
 ///   Collider world-space:  ~1.72 × 3.9 units
 ///   Move speed:            6 u/s
 ///   Standard jump peak:    ~7.3u height, ~4.5u horizontal at full run
-///   Teleport jump:         4.2u instant vertical
+///   Teleport jump:         7.35u instant vertical (increased by 75% from 4.2u)
 ///   Dash:                  3.2u horizontal burst (16 u/s × 0.2s), zero gravity, invulnerable
 ///   Dash cooldown:         0.8s
 /// ══════════════════════════════════════════════════════════════════════════════
@@ -31,7 +31,7 @@ public class Dojo2ParkourBuilder : EditorWindow
     // ── Player Physics Constants (for gap/height calculations) ───────
     private const float PLAYER_WIDTH       = 1.72f;  // World-space collider width
     private const float PLAYER_HEIGHT      = 3.9f;   // World-space collider height
-    private const float TELEPORT_JUMP_MAX  = 4.2f;   // Max teleport jump height
+    private const float TELEPORT_JUMP_MAX  = 7.35f;  // Max teleport jump height (increased by 75% from 4.2f)
     private const float STD_JUMP_PEAK      = 7.3f;   // Standard jump apex
     private const float STD_JUMP_HORIZ     = 4.5f;   // Max horizontal distance at full run-jump
     private const float DASH_DISTANCE      = 3.2f;   // Dash travel distance
