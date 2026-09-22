@@ -20,13 +20,16 @@ public static class StrawhatStaffSetupTool
     private const string PREFAB_DIR = "Assets/Prefabs/Enemies";
     private const string RESOURCES_PREFAB_DIR = "Assets/Resources/Prefabs/Enemies";
 
+    private static bool hasRun = false;
+
     [InitializeOnLoadMethod]
     private static void AutoRunIfPending()
     {
         EditorApplication.delayCall += () =>
         {
-            if (!File.Exists($"{PREFAB_DIR}/StrawhatStaffMob.prefab"))
+            if (!hasRun)
             {
+                hasRun = true;
                 SetupMob();
             }
         };
