@@ -27,7 +27,6 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
 {
     public enum State
     {
-        Idle,
         Patrol,
         Chase,
         VaultSlam,
@@ -38,7 +37,7 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
     }
 
     [Header("Current State")]
-    [SerializeField] private State currentState = State.Idle;
+    [SerializeField] private State currentState = State.Patrol;
 
     [Header("Health & Combat Stats")]
     public int maxHealth = 120;
@@ -58,7 +57,7 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
     public float vaultForwardVelocity = 5.5f;
     public float vaultJumpForce = 5.0f;
     public float shockwaveTravelSpeed = 7.5f;
-    public float shockwaveLifetime = 0.8f;
+    public float shockwaveLifetime = 0.85f;
     public float attackCooldown = 2.4f;
 
     [Header("Deflection / Parry (3 out of 5)")]
@@ -67,6 +66,7 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
     public float parryDuration = 0.35f;
 
     [Header("VFX & Visuals")]
+    public Color shadowWaveColor = new Color(0.015f, 0.01f, 0.02f, 1f); // Pure pitch black abyssal shadow
     public Color staffEnergyColor = new Color(0.85f, 0.25f, 0.95f, 0.95f);
     public Color hitFlashColor = new Color(1f, 0.3f, 0.3f, 1f);
 
@@ -74,7 +74,6 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
     public int droppedOrbsCount = 3;
 
     [Header("Configured Animation Sequences (Exclusive)")]
-    public Sprite idleSprite;
     public Sprite[] runSprites;
     public Sprite[] attackSprites;
 
@@ -125,6 +124,7 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
     private static Sprite shockwaveSprite;
     private static Sprite parryRingSprite;
     private static Sprite sparkSprite;
+    public static Sprite SparkSprite => sparkSprite;
 
     void Awake()
     {
@@ -157,7 +157,7 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
         if (spriteRenderer != null)
         {
             originalColor = spriteRenderer.color;
-            if (idleSprite != null) spriteRenderer.sprite = idleSprite;
+            if (runSprites != null && runSprites.Length > 0) spriteRenderer.sprite = runSprites[0];
         }
 
         currentHealth = maxHealth;
@@ -171,8 +171,8 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
     void Start()
     {
         FindPlayer();
-        currentState = State.Idle;
-        stateTimer = Random.Range(0.6f, 1.2f);
+        currentState = CanSeePlayer() ? State.Chase : State.Patrol;
+        stateTimer = Random.Range(3f, 5f);
     }
 
     void Update()
@@ -186,9 +186,6 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
 
         switch (currentState)
         {
-            case State.Idle:
-                UpdateIdle();
-                break;
             case State.Patrol:
                 UpdatePatrol();
                 break;
@@ -202,57 +199,21 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
     }
 
     // ══════════════════════════════════════════════════════════════════
-    //  STATE LOGIC
+    //  STATE LOGIC (CONTINUOUS ACTIVE LOCOMOTION - NO IDLE)
     // ══════════════════════════════════════════════════════════════════
-
-    private void UpdateIdle()
-    {
-        SetRunningAnimation(false);
-        rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
-
-        if (CanSeePlayer())
-        {
-            FacePlayer();
-            currentState = State.Chase;
-            return;
-        }
-
-        stateTimer -= Time.deltaTime;
-        if (stateTimer <= 0f)
-        {
-            currentState = State.Patrol;
-            stateTimer = Random.Range(2.5f, 4.5f);
-            patrolDirection = Random.value > 0.5f ? 1f : -1f;
-        }
-    }
 
     private void UpdatePatrol()
     {
-        if (isPatrolWaiting)
-        {
-            SetRunningAnimation(false);
-            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
-            patrolWaitTimer -= Time.deltaTime;
-            if (patrolWaitTimer <= 0f)
-            {
-                isPatrolWaiting = false;
-                patrolDirection = -patrolDirection;
-                lastTurnTime = Time.time;
-            }
-            return;
-        }
-
         SetRunningAnimation(true);
 
         float distFromSpawn = transform.position.x - spawnPosition.x;
         bool outOfBounds = Mathf.Abs(distFromSpawn) > patrolDistance && Mathf.Sign(distFromSpawn) == Mathf.Sign(patrolDirection);
         bool wallAhead = IsWallAhead(patrolDirection);
 
-        if ((outOfBounds || wallAhead) && Time.time >= lastTurnTime + 0.6f)
+        if ((outOfBounds || wallAhead) && Time.time >= lastTurnTime + 0.5f)
         {
-            isPatrolWaiting = true;
-            patrolWaitTimer = 0.5f;
-            return;
+            patrolDirection = -patrolDirection;
+            lastTurnTime = Time.time;
         }
 
         rb.linearVelocity = new Vector2(patrolDirection * patrolSpeed, rb.linearVelocity.y);
@@ -268,8 +229,12 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
         stateTimer -= Time.deltaTime;
         if (stateTimer <= 0f)
         {
-            currentState = State.Idle;
-            stateTimer = Random.Range(1f, 2.5f);
+            stateTimer = Random.Range(3.5f, 6.0f);
+            if (Random.value > 0.4f)
+            {
+                patrolDirection = -patrolDirection;
+                lastTurnTime = Time.time;
+            }
         }
     }
 
@@ -277,7 +242,8 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
     {
         if (player == null)
         {
-            currentState = State.Idle;
+            currentState = State.Patrol;
+            stateTimer = 3f;
             return;
         }
 
@@ -286,8 +252,8 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
 
         if (distToPlayer > detectionRange * 1.35f)
         {
-            currentState = State.Idle;
-            stateTimer = 1.5f;
+            currentState = State.Patrol;
+            stateTimer = 3f;
             return;
         }
 
@@ -307,20 +273,32 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
     private void UpdateCooldown()
     {
         FacePlayer();
-        SetRunningAnimation(false);
-        rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+        SetRunningAnimation(true);
+
+        // Active combat footwork during cooldown: stalk or pace around player without freezing
+        float distToPlayer = (player != null) ? Vector2.Distance(transform.position, player.position) : 99f;
+        float dirToPlayer = (player != null && player.position.x > transform.position.x) ? 1f : -1f;
+
+        if (distToPlayer < attackRange * 0.65f)
+        {
+            // Back away smoothly to maintain attack pacing
+            rb.linearVelocity = new Vector2(-dirToPlayer * patrolSpeed, rb.linearVelocity.y);
+        }
+        else if (distToPlayer > attackRange * 1.15f)
+        {
+            // Stalk forward
+            rb.linearVelocity = new Vector2(dirToPlayer * patrolSpeed, rb.linearVelocity.y);
+        }
+        else
+        {
+            // Subtle combat bob / pacing
+            float paceDir = Mathf.Sin(Time.time * 3f) > 0f ? 1f : -1f;
+            rb.linearVelocity = new Vector2(paceDir * patrolSpeed * 0.6f, rb.linearVelocity.y);
+        }
 
         if (Time.time >= lastAttackTime + attackCooldown)
         {
-            if (CanSeePlayer())
-            {
-                currentState = State.Chase;
-            }
-            else
-            {
-                currentState = State.Idle;
-                stateTimer = 1.0f;
-            }
+            currentState = CanSeePlayer() ? State.Chase : State.Patrol;
         }
     }
 
@@ -423,21 +401,21 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
 
     private void SpawnTravelingGroundShockwave(Vector3 origin, float dir)
     {
-        GameObject waveGO = new GameObject("StaffGroundShockwave");
+        GameObject waveGO = new GameObject("StaffShadowShockwave");
         waveGO.transform.position = origin + Vector3.up * 0.45f;
         waveGO.transform.localScale = new Vector3(dir > 0f ? 1f : -1f, 1f, 1f);
 
         SpriteRenderer sr = waveGO.AddComponent<SpriteRenderer>();
         sr.sprite = shockwaveSprite;
-        sr.color = staffEnergyColor;
-        sr.sortingOrder = 30;
+        sr.color = shadowWaveColor;
+        sr.sortingOrder = 32;
 
         BoxCollider2D col = waveGO.AddComponent<BoxCollider2D>();
         col.isTrigger = true;
-        col.size = new Vector2(1.8f, 1.4f);
+        col.size = new Vector2(2.0f, 1.4f);
 
         StaffShockwaveProjectile projectile = waveGO.AddComponent<StaffShockwaveProjectile>();
-        projectile.Init(dir, shockwaveTravelSpeed, shockwaveDamage, shockwaveLifetime, playerKnockbackForce * 0.8f);
+        projectile.Init(dir, shockwaveTravelSpeed, shockwaveDamage, shockwaveLifetime, playerKnockbackForce * 0.8f, shadowWaveColor);
     }
 
     // ══════════════════════════════════════════════════════════════════
@@ -567,7 +545,7 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
         }
         else
         {
-            if (currentState == State.Idle || currentState == State.Patrol || currentState == State.Cooldown)
+            if (currentState == State.Patrol || currentState == State.Cooldown)
             {
                 StartAction(ExecuteHitStunRoutine());
             }
@@ -622,7 +600,6 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
             if (spriteRenderer != null)
             {
                 spriteRenderer.color = new Color(startCol.r, startCol.g, startCol.b, 1f - t);
-                transform.localScale = Vector3.Lerp(transform.localScale, Vector3.zero, t * 0.5f);
             }
             yield return null;
         }
@@ -631,12 +608,12 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
     }
 
     // ══════════════════════════════════════════════════════════════════
-    //  VFX & PROCEDURAL SPRITES
+    //  VFX PROCEDURAL ANIMATORS
     // ══════════════════════════════════════════════════════════════════
 
-    private static void EnsureVFXSprites()
+    private void EnsureVFXSprites()
     {
-        if (shockwaveSprite == null) shockwaveSprite = GenerateShockwaveSprite(128, 64);
+        if (shockwaveSprite == null) shockwaveSprite = GenerateShockwaveSprite(128, 96);
         if (parryRingSprite == null) parryRingSprite = GenerateParryRingSprite(64);
         if (sparkSprite == null) sparkSprite = GenerateSparkSprite(32);
     }
@@ -649,7 +626,7 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
 
         SpriteRenderer sr = ripple.AddComponent<SpriteRenderer>();
         sr.sprite = parryRingSprite;
-        sr.color = staffEnergyColor;
+        sr.color = shadowWaveColor;
         sr.sortingOrder = 25;
 
         float duration = 0.28f;
@@ -663,7 +640,7 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
             if (ripple == null) yield break;
 
             ripple.transform.localScale = Vector3.Lerp(new Vector3(0.5f, 0.15f, 1f), maxScale, Mathf.Sin(t * Mathf.PI * 0.5f));
-            sr.color = new Color(staffEnergyColor.r, staffEnergyColor.g, staffEnergyColor.b, (1f - t) * 0.9f);
+            sr.color = new Color(shadowWaveColor.r, shadowWaveColor.g, shadowWaveColor.b, (1f - t) * 0.95f);
             yield return null;
         }
 
@@ -736,15 +713,35 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
         Color[] pixels = new Color[w * h];
         for (int y = 0; y < h; y++)
         {
-            float normY = (float)y / h;
+            float normY = (float)y / (float)h;
             for (int x = 0; x < w; x++)
             {
-                float normX = (float)x / w;
-                // Forward crest crescent profile
-                float crest = Mathf.Sin(normX * Mathf.PI);
-                float wave = Mathf.Exp(-Mathf.Pow(normY - crest * 0.75f, 2f) * 12f);
-                float alpha = Mathf.Clamp01(wave * (1f - normX * 0.35f));
-                pixels[y * w + x] = new Color(1f, 1f, 1f, alpha);
+                float normX = (float)x / (float)w;
+                // Multi-peak jagged shadow wave profile surging forward (normX=1 is front)
+                float mainWave = Mathf.Sin(normX * Mathf.PI * 0.9f);
+                float jagged1 = Mathf.Sin(normX * 18.0f) * 0.12f;
+                float jagged2 = Mathf.Cos(normX * 9.0f) * 0.08f;
+                float crestHeight = Mathf.Clamp01(mainWave * 0.85f + jagged1 + jagged2);
+
+                float distFromCrest = normY - crestHeight;
+                float alpha = 0f;
+                if (normY <= crestHeight)
+                {
+                    // Solid dark shadow core
+                    alpha = Mathf.Clamp01(1f - normY * 0.25f);
+                }
+                else
+                {
+                    // Wispy smoke trail rising off the top of the shadow wave
+                    alpha = Mathf.Clamp01(Mathf.Exp(-distFromCrest * distFromCrest * 32f) * 0.7f);
+                }
+
+                // Front cut-off and back fade
+                alpha *= Mathf.SmoothStep(0f, 0.15f, normX);
+                alpha *= (1f - normX * 0.2f);
+
+                // Pure pitch black shadow void
+                pixels[y * w + x] = new Color(0.015f, 0.01f, 0.02f, alpha);
             }
         }
         tex.SetPixels(pixels);
@@ -865,18 +862,10 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
             anim.SetBool(AnimIsWalking, isRunning);
         }
 
-        // Also drive the sprite directly so that even without an active AnimatorController,
-        // the 13 run frames and idle frame play with 100% reliability
-        if (currentState != State.VaultSlam && currentState != State.Deflecting && currentState != State.Dead)
+        // Direct frame animation fallback: continuously cycle run frames during locomotion
+        if (currentState != State.VaultSlam && currentState != State.Deflecting && currentState != State.Dead && currentState != State.HitStun)
         {
-            if (isRunning)
-            {
-                AnimateRun();
-            }
-            else
-            {
-                AnimateIdle();
-            }
+            AnimateRun();
         }
     }
 
@@ -891,21 +880,6 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
             if (spriteRenderer != null)
             {
                 spriteRenderer.sprite = runSprites[runAnimIndex];
-            }
-        }
-    }
-
-    private void AnimateIdle()
-    {
-        if (spriteRenderer != null)
-        {
-            if (idleSprite != null)
-            {
-                spriteRenderer.sprite = idleSprite;
-            }
-            else if (attackSprites != null && attackSprites.Length > 0)
-            {
-                spriteRenderer.sprite = attackSprites[0];
             }
         }
     }
@@ -934,10 +908,6 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
         if (attackSprites == null || attackSprites.Length == 0)
         {
             attackSprites = LoadEditorSprites("Assets/Scenes/animations/frames/newfemalestrawstaffattack-1f468d59");
-        }
-        if (idleSprite == null && attackSprites != null && attackSprites.Length > 0)
-        {
-            idleSprite = attackSprites[0];
         }
 #endif
     }
@@ -1012,7 +982,8 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
 }
 
 /// <summary>
-/// Projectile script for traveling ground shockwave unleashed by the staff slam.
+/// Projectile script for traveling pitch-black shadow ground shockwave unleashed by the staff slam.
+/// Leaves a creeping smoky dark shadow trail hugging the terrain to match the dark game design.
 /// </summary>
 public class StaffShockwaveProjectile : MonoBehaviour
 {
@@ -1023,14 +994,52 @@ public class StaffShockwaveProjectile : MonoBehaviour
     private float lifetime;
     private float elapsed;
     private bool hasHitPlayer;
+    private Color shadowColor = new Color(0.015f, 0.01f, 0.02f, 1f);
 
-    public void Init(float dir, float moveSpeed, int dmg, float duration, float kb)
+    private TrailRenderer trail;
+    private float smokeSpawnTimer = 0f;
+    private const float SMOKE_INTERVAL = 0.035f;
+
+    public void Init(float dir, float moveSpeed, int dmg, float duration, float kb, Color col)
     {
         direction = dir;
         speed = moveSpeed;
         damage = dmg;
         lifetime = duration;
         knockback = kb;
+        shadowColor = col;
+
+        SetupShadowTrail();
+    }
+
+    private void SetupShadowTrail()
+    {
+        trail = gameObject.AddComponent<TrailRenderer>();
+        trail.time = 0.32f;
+        trail.startWidth = 1.3f;
+        trail.endWidth = 0.05f;
+        trail.minVertexDistance = 0.05f;
+        trail.sortingOrder = 30;
+
+        Material mat = new Material(Shader.Find("Sprites/Default"));
+        trail.material = mat;
+
+        Gradient grad = new Gradient();
+        grad.SetKeys(
+            new GradientColorKey[]
+            {
+                new GradientColorKey(new Color(0.02f, 0.01f, 0.03f), 0.0f),
+                new GradientColorKey(new Color(0.01f, 0.005f, 0.02f), 0.5f),
+                new GradientColorKey(new Color(0.0f, 0.0f, 0.0f), 1.0f)
+            },
+            new GradientAlphaKey[]
+            {
+                new GradientAlphaKey(0.95f, 0.0f),
+                new GradientAlphaKey(0.70f, 0.45f),
+                new GradientAlphaKey(0.0f, 1.0f)
+            }
+        );
+        trail.colorGradient = grad;
     }
 
     void Update()
@@ -1038,17 +1047,73 @@ public class StaffShockwaveProjectile : MonoBehaviour
         elapsed += Time.deltaTime;
         transform.position += new Vector3(direction * speed * Time.deltaTime, 0f, 0f);
 
-        // Ground check: keep hugging floor
+        // Ground check: hug floor closely
         RaycastHit2D ground = Physics2D.Raycast(transform.position + Vector3.up * 0.5f, Vector2.down, 1.2f, LayerMask.GetMask("Ground", "Terrain", "Platform", "Default"));
         if (ground.collider != null && !ground.collider.isTrigger)
         {
             transform.position = new Vector3(transform.position.x, ground.point.y + 0.35f, transform.position.z);
         }
 
+        // Spawn creeping shadow smoke wisps along the ground
+        smokeSpawnTimer += Time.deltaTime;
+        if (smokeSpawnTimer >= SMOKE_INTERVAL)
+        {
+            smokeSpawnTimer -= SMOKE_INTERVAL;
+            SpawnGroundShadowSmoke(transform.position);
+        }
+
         if (elapsed >= lifetime)
         {
-            Destroy(gameObject);
+            DissipateShadow();
         }
+    }
+
+    private void SpawnGroundShadowSmoke(Vector3 pos)
+    {
+        GameObject puff = new GameObject("ShadowSmokePuff");
+        puff.transform.position = pos + new Vector3(Random.Range(-0.15f, 0.15f), -0.1f + Random.Range(0f, 0.12f), 0f);
+        float initScale = Random.Range(0.35f, 0.65f);
+        puff.transform.localScale = Vector3.one * initScale;
+
+        SpriteRenderer sr = puff.AddComponent<SpriteRenderer>();
+        sr.sprite = StrawhatStaffAI.SparkSprite;
+        sr.color = new Color(0.01f, 0.01f, 0.02f, 0.85f);
+        sr.sortingOrder = 31;
+
+        StartCoroutine(AnimateShadowSmokePuff(puff, initScale, 0.35f));
+    }
+
+    private IEnumerator AnimateShadowSmokePuff(GameObject puff, float startScale, float duration)
+    {
+        float t = 0f;
+        SpriteRenderer sr = puff.GetComponent<SpriteRenderer>();
+        Vector3 floatVelocity = new Vector3(-direction * 0.45f, Random.Range(0.35f, 0.75f), 0f);
+
+        while (t < duration && puff != null)
+        {
+            t += Time.deltaTime;
+            float norm = t / duration;
+
+            puff.transform.position += floatVelocity * Time.deltaTime;
+            puff.transform.localScale = Vector3.one * Mathf.Lerp(startScale, startScale * 1.35f, norm);
+
+            if (sr != null)
+            {
+                sr.color = new Color(0.01f, 0.01f, 0.02f, (1f - norm) * 0.85f);
+            }
+            yield return null;
+        }
+
+        if (puff != null) Destroy(puff);
+    }
+
+    private void DissipateShadow()
+    {
+        for (int i = 0; i < 5; i++)
+        {
+            SpawnGroundShadowSmoke(transform.position + new Vector3(Random.Range(-0.35f, 0.35f), Random.Range(0f, 0.4f), 0f));
+        }
+        Destroy(gameObject);
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -1075,7 +1140,7 @@ public class StaffShockwaveProjectile : MonoBehaviour
                 }
                 catch { }
 
-                Destroy(gameObject, 0.05f);
+                DissipateShadow();
             }
         }
     }
