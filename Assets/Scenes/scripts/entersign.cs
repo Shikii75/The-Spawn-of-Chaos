@@ -94,6 +94,7 @@ public class entersign : MonoBehaviour
 
         Debug.Log($"[entersign] Transitioning to '{targetSceneName}' at spawn point '{targetSpawnPointName}'");
         PlayerSpawnPointManager.targetSpawnPointName = targetSpawnPointName;
+        PlayerSpawnPointManager.lastUsedSpawnPointName = targetSpawnPointName;
 
         // If target scene is current active scene, teleport player directly without reloading scene
         if (targetSceneName == SceneManager.GetActiveScene().name)

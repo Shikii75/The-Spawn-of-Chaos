@@ -85,6 +85,20 @@ namespace SpawnOfChaos.Systems
             string sceneName = SceneManager.GetActiveScene().name;
             if (!sceneName.Equals("SampleScene", System.StringComparison.OrdinalIgnoreCase)) return;
 
+            // If player is arriving from a Dojo exit, NEVER play the Torii gate intro!
+            if (PlayerSpawnPointManager.lastUsedSpawnPointName == "Dojo1_ExitSpawnPoint" ||
+                PlayerSpawnPointManager.lastUsedSpawnPointName == "Dojo2_ExitSpawnPoint" ||
+                PlayerSpawnPointManager.lastUsedSpawnPointName == "Dojo2_ReturnPoint" ||
+                PlayerSpawnPointManager.targetSpawnPointName == "Dojo1_ExitSpawnPoint" ||
+                PlayerSpawnPointManager.targetSpawnPointName == "Dojo2_ExitSpawnPoint" ||
+                PlayerSpawnPointManager.targetSpawnPointName == "Dojo2_ReturnPoint")
+            {
+                PlayerPrefs.SetInt(PREF_INTRO_COMPLETED, 1);
+                PlayerPrefs.Save();
+                Debug.Log("[SampleSceneToriiIntroSequence] Arrived from Dojo exit. Torii intro sequence bypassed.");
+                return;
+            }
+
             // CRITICAL: NEVER execute or pop up UI while on the Main Menu!
             // When player clicks 'Start Cherry Blossom' or 'Play', ExecuteGameLaunch calls ForcePlayIntro().
             if (IsMainMenuActive())

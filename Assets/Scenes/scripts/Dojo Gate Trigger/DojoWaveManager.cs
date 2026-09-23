@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using SpawnOfChaos.Systems;
 
 /// <summary>
 /// Dojo 1 Wave Manager — Strawhat Clan Dojo
@@ -258,6 +259,8 @@ public class DojoWaveManager : MonoBehaviour
         Debug.Log("[DojoWaveManager] ★ CHALLENGE STARTED — Gates locked! Strawhat Clan assault begins!");
     }
 
+    private bool isExitingToSampleScene = false;
+
     private void CompleteChallenge()
     {
         challengeCompleted = true;
@@ -271,6 +274,23 @@ public class DojoWaveManager : MonoBehaviour
         }
 
         Debug.Log("[DojoWaveManager] ★ CHALLENGE COMPLETE — Gates opened! All Strawhat waves defeated!");
+
+        // Start post-victory exit sequence
+        StartCoroutine(PostVictoryExitRoutine());
+    }
+
+    private IEnumerator PostVictoryExitRoutine()
+    {
+        // Give player 4.0 seconds to see gates open, vacuum/pick up coin and orb rewards
+        yield return new WaitForSeconds(4.0f);
+
+        if (isExitingToSampleScene) yield break;
+        isExitingToSampleScene = true;
+
+        Debug.Log("[DojoWaveManager] Auto-transitioning to SampleScene in front of Dojo...");
+        PlayerSpawnPointManager.targetSpawnPointName = "Dojo1_ExitSpawnPoint";
+        PlayerSpawnPointManager.lastUsedSpawnPointName = "Dojo1_ExitSpawnPoint";
+        ArcaneLoadingScreen.LoadScene("SampleScene");
     }
 
     // ══════════════════════════════════════════════════════════════════

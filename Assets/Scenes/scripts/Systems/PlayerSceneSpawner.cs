@@ -35,7 +35,17 @@ public class PlayerSceneSpawner : MonoBehaviour
         string targetName = PlayerSpawnPointManager.targetSpawnPointName;
         bool isRespawning = PlayerSpawnPointManager.isRespawning;
 
-        Debug.Log($"[PlayerSceneSpawner] targetSpawnPointName='{targetName}', isRespawning={isRespawning}");
+        if (!string.IsNullOrEmpty(targetName))
+        {
+            PlayerSpawnPointManager.lastUsedSpawnPointName = targetName;
+        }
+        else if (!string.IsNullOrEmpty(PlayerSpawnPointManager.lastUsedSpawnPointName))
+        {
+            // If targetName was cleared before spawner ran, recover it from lastUsedSpawnPointName
+            targetName = PlayerSpawnPointManager.lastUsedSpawnPointName;
+        }
+
+        Debug.Log($"[PlayerSceneSpawner] targetSpawnPointName='{targetName}', isRespawning={isRespawning}, lastUsed='{PlayerSpawnPointManager.lastUsedSpawnPointName}'");
 
         // Clear immediately so it does not persist across future play tests/restarts
         PlayerSpawnPointManager.targetSpawnPointName = "";
@@ -43,7 +53,24 @@ public class PlayerSceneSpawner : MonoBehaviour
 
         bool isTutorialScene = sceneName.Equals("TutorialScene", System.StringComparison.OrdinalIgnoreCase);
         bool isSampleScene = sceneName.Equals("SampleScene", System.StringComparison.OrdinalIgnoreCase);
-        bool toriiIntroPending = isSampleScene && PlayerPrefs.GetInt(SampleSceneToriiIntroSequence.PREF_INTRO_COMPLETED, 0) == 0;
+
+        // Check if returning from a Dojo
+        bool isDojoReturn = targetName == "Dojo1_ExitSpawnPoint" || 
+                            targetName == "Dojo2_ExitSpawnPoint" || 
+                            targetName == "Dojo2_ReturnPoint" ||
+                            PlayerSpawnPointManager.lastUsedSpawnPointName == "Dojo1_ExitSpawnPoint" ||
+                            PlayerSpawnPointManager.lastUsedSpawnPointName == "Dojo2_ExitSpawnPoint" ||
+                            PlayerSpawnPointManager.lastUsedSpawnPointName == "Dojo2_ReturnPoint";
+
+        if (isDojoReturn)
+        {
+            // Returning from Dojo interior — Torii intro is definitely complete
+            PlayerPrefs.SetInt(SampleSceneToriiIntroSequence.PREF_INTRO_COMPLETED, 1);
+            PlayerPrefs.Save();
+            Debug.Log("[PlayerSceneSpawner] Returning from Dojo — marked Torii intro completed.");
+        }
+
+        bool toriiIntroPending = isSampleScene && !isDojoReturn && PlayerPrefs.GetInt(SampleSceneToriiIntroSequence.PREF_INTRO_COMPLETED, 0) == 0;
 
         // --- Step 1: Find the persistent player ---
         GameObject player = FindPersistentPlayer();
@@ -77,7 +104,7 @@ public class PlayerSceneSpawner : MonoBehaviour
         }
         else
         {
-            if (isSampleScene && (toriiIntroPending || string.IsNullOrEmpty(targetName) || targetName == "DefaultSpawnPoint" || targetName == "PlayerSceneSpawner"))
+            if (isSampleScene && (toriiIntroPending || (string.IsNullOrEmpty(targetName) && !isDojoReturn) || targetName == "DefaultSpawnPoint" || targetName == "PlayerSceneSpawner"))
             {
                 targetName = "PlayerSceneSpawner";
             }
@@ -102,6 +129,19 @@ public class PlayerSceneSpawner : MonoBehaviour
                 foundSpawnPoint = true;
                 Debug.Log($"[PlayerSceneSpawner] Snapped Dojo1 exit to position {spawnPosition}");
             }
+            else if ((targetName == "Dojo2_ExitSpawnPoint" || targetName == "Dojo2_ReturnPoint") && isSampleScene)
+            {
+                spawnPosition = new Vector3(1750f, 191.2f, 0f);
+                foundSpawnPoint = true;
+                Debug.Log($"[PlayerSceneSpawner] Snapped Dojo2 exit to position {spawnPosition}");
+            }
+        }
+
+        // Keep checkpoint aligned with dojo exit
+        if (isDojoReturn && foundSpawnPoint)
+        {
+            CheckpointSystem.respawnPosition = spawnPosition;
+            CheckpointSystem.hasCheckpoint = true;
         }
 
         // Fallback search for DefaultSpawnPoint or StartScene if initial target not found
