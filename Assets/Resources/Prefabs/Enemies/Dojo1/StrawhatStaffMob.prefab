@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 5981871265810826470}
   - component: {fileID: 3380802360451840726}
   m_Layer: 0
-  m_Name: StrawhatTeleportMob
+  m_Name: StrawhatStaffMob
   m_TagString: enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -34,8 +34,7 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 0.38, y: 0.38, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 2607441143709969854}
+  m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &7797486139830085599
@@ -87,7 +86,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 5
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: d0deb8851ba275c45a4e1327f569be1f, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 2081bd7e69b74a0e91a285645e9a669b, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -107,7 +106,7 @@ Animator:
   m_GameObject: {fileID: 1856556987809646362}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 8b3d706d2d1609641a077cd2d84ad7f4, type: 2}
+  m_Controller: {fileID: 9100000, guid: df31fd2d04894b6ba165ccfc20a9b7e6, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -190,7 +189,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 2.2, y: 9}
+  m_Size: {x: 2.2, y: 3.6}
   m_EdgeRadius: 0
 --- !u!114 &5981871265810826470
 MonoBehaviour:
@@ -201,30 +200,64 @@ MonoBehaviour:
   m_GameObject: {fileID: 1856556987809646362}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 24460b5609453044cb03f91ed7071ffd, type: 3}
+  m_Script: {fileID: 11500000, guid: 521929940cbc4755a0638ea8c6c5bb39, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::StrawhatTeleportAI
+  m_EditorClassIdentifier: Assembly-CSharp::StrawhatStaffAI
   currentState: 0
-  maxHealth: 100
-  attackDamage: 18
-  playerKnockbackForce: 6.5
-  hitStunDuration: 0.18
+  maxHealth: 120
+  directSlamDamage: 24
+  shockwaveDamage: 16
+  playerKnockbackForce: 7.5
+  hitStunDuration: 0.2
   detectionRange: 12
-  engageBuffer: 0.35
-  retreatDistance: 5
-  attackCooldown: 2.2
-  teleportWindupDelay: 0.15
-  attackActiveStart: 0.2
-  attackActiveEnd: 0.75
-  attackTotalDuration: 1.15
-  postAttackPause: 0.15
-  patrolSpeed: 2.2
-  patrolDistance: 4
-  paceSpeed: 1.6
-  teleportVFXColor: {r: 0.72, g: 0.22, b: 0.95, a: 0.9}
+  attackRange: 5.5
+  runSpeed: 4.2
+  patrolSpeed: 2
+  patrolDistance: 4.5
+  vaultForwardVelocity: 5.5
+  vaultJumpForce: 5
+  shockwaveTravelSpeed: 7.5
+  shockwaveLifetime: 0.85
+  attackCooldown: 2.4
+  enableParry: 1
+  parryCountPerFive: 3
+  parryDuration: 0.35
+  shadowWaveColor: {r: 0.015, g: 0.01, b: 0.02, a: 1}
+  staffEnergyColor: {r: 0.85, g: 0.25, b: 0.95, a: 0.95}
   hitFlashColor: {r: 1, g: 0.3, b: 0.3, a: 1}
-  droppedOrbsCount: 2
-  attackHitboxSize: {x: 3.6, y: 9}
+  droppedOrbsCount: 3
+  runSprites:
+  - {fileID: 21300000, guid: 2081bd7e69b74a0e91a285645e9a669b, type: 3}
+  - {fileID: 21300000, guid: cde5836e9809401fa96512afaa74c133, type: 3}
+  - {fileID: 21300000, guid: 3e4694e0d1524a4cbe0740787f355909, type: 3}
+  - {fileID: 21300000, guid: aceb9aa76a6c494e85604cb15a5f130a, type: 3}
+  - {fileID: 21300000, guid: 005203d762ab48a5a18c3ee1b7adb269, type: 3}
+  - {fileID: 21300000, guid: fc768bde97be4af790f804e7bd10f0f0, type: 3}
+  - {fileID: 21300000, guid: 753db0f084634b86b080807986c579f9, type: 3}
+  - {fileID: 21300000, guid: 4c39868a4492472cb31439bf89fd777c, type: 3}
+  - {fileID: 21300000, guid: 75d79f6c36b04a609143bacc7f402b1e, type: 3}
+  - {fileID: 21300000, guid: 9f1e8e3014af4776972b6393fa9a4373, type: 3}
+  - {fileID: 21300000, guid: 96741663d62543a48a1d82e795f4aa47, type: 3}
+  - {fileID: 21300000, guid: 59093b3adc4f4021b09cce1aa46635dc, type: 3}
+  - {fileID: 21300000, guid: 9ab0e2089a2e4abc96ecddc85e5e3e57, type: 3}
+  attackSprites:
+  - {fileID: 21300000, guid: e3e86255a4324614803a75ff45bd6343, type: 3}
+  - {fileID: 21300000, guid: 17641b3a14a64c4f904ffb6dca9d94f8, type: 3}
+  - {fileID: 21300000, guid: 3306c1194fe9489c8af4cf03d46e0750, type: 3}
+  - {fileID: 21300000, guid: e1ef27065b0b427e8be5c7baff3b4485, type: 3}
+  - {fileID: 21300000, guid: f42ba39a44eb4ae5af50d6ba74a70966, type: 3}
+  - {fileID: 21300000, guid: 6e967cc28d204e44a76ae308a4228a48, type: 3}
+  - {fileID: 21300000, guid: 2f8bcc333c9c4cab8380d12c974b4cbc, type: 3}
+  - {fileID: 21300000, guid: 8d01ffc2f24844e5abafc495a6d39380, type: 3}
+  - {fileID: 21300000, guid: 8e0cbbe80e944935a24776f5e63de3de, type: 3}
+  - {fileID: 21300000, guid: 0a0883acb6594492846a3a22432f716f, type: 3}
+  - {fileID: 21300000, guid: d910d34980694def97b4650a40904207, type: 3}
+  - {fileID: 21300000, guid: 10504efe69ae4291a4dd9a64f0b99b06, type: 3}
+  - {fileID: 21300000, guid: 6a1f24f5ec9c4924943ea956743a9c99, type: 3}
+  - {fileID: 21300000, guid: dcfb1dc26e4741a78464231b9cf233a7, type: 3}
+  - {fileID: 21300000, guid: ae261057c02346b095ea380a90b8fe63, type: 3}
+  slamHitboxSize: {x: 3.4, y: 3.2}
+  slamHitboxOffset: {x: 0.8, y: -0.2}
 --- !u!114 &3380802360451840726
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -238,83 +271,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Health
   hurtVoiceClips: []
-  maxHealth: 100
+  maxHealth: 120
   hitFlashDuration: 0.15
---- !u!1 &7693982246958272476
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2607441143709969854}
-  - component: {fileID: 1849545057359260008}
-  m_Layer: 0
-  m_Name: BodyAttackHitbox
-  m_TagString: enemy
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2607441143709969854
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7693982246958272476}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 7369098914541557684}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!61 &1849545057359260008
-BoxCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7693982246958272476}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 1
-  m_UsedByEffector: 0
-  m_CompositeOperation: 0
-  m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0, y: 0}
-    oldSize: {x: 0, y: 0}
-    newSize: {x: 0, y: 0}
-    adaptiveTilingThreshold: 0
-    drawMode: 0
-    adaptiveTiling: 0
-  m_AutoTiling: 0
-  m_Size: {x: 3.6, y: 3.8}
-  m_EdgeRadius: 0

@@ -1742,7 +1742,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &736927261
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2452,9 +2452,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f71f004297be3b4e8b6948a3e286d83, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DojoWaveManager
-  basicStrawhatPrefab: {fileID: 1943834065}
-  fatStrawhatPrefab: {fileID: 1529874490}
-  femaleStrawhatPrefab: {fileID: 736927260}
+  teleportStrawhatPrefab: {fileID: 1856556987809646362, guid: a2363b2e1fe737e4fad3bef91e4a2c85, type: 3}
+  swordStrawhatPrefab: {fileID: 4450578072239463966, guid: 0045f04ff97744838be88aa001ce6358, type: 3}
+  staffStrawhatPrefab: {fileID: 1856556987809646362, guid: 4bf961031d8c48eeb0c5e39a12f7bd3c, type: 3}
+  bruteStrawhatPrefab: {fileID: 5563607020697696363, guid: 26c2e868ebc04998af5c8d0823ca527a, type: 3}
+  basicStrawhatPrefab: {fileID: 0}
+  fatStrawhatPrefab: {fileID: 0}
+  femaleStrawhatPrefab: {fileID: 0}
+  randomizeDifficulty: 1
+  totalWaves: 4
   spawnPoints:
   - {fileID: 1233024801}
   - {fileID: 154000143}
@@ -3342,7 +3348,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!95 &1529874491
 Animator:
   serializedVersion: 7

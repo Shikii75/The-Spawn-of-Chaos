@@ -15,8 +15,8 @@ using UnityEngine;
 public static class StrawhatClanMobsSetupTool
 {
     private const string ANIM_DIR = "Assets/Scenes/animations/animators";
-    private const string PREFAB_DIR = "Assets/Prefabs/Enemies";
-    private const string RESOURCES_PREFAB_DIR = "Assets/Resources/Prefabs/Enemies";
+    private const string PREFAB_DIR = "Assets/Prefabs/Enemies/Dojo1";
+    private const string RESOURCES_PREFAB_DIR = "Assets/Resources/Prefabs/Enemies/Dojo1";
 
     // Sword Folders
     private const string SWORD_IDLE_DIR = "Assets/Scenes/animations/frames/newidlestraw-838517e4";

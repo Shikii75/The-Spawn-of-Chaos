@@ -3,28 +3,51 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Dojo 1 Wave Manager — spawns Strawhat clan members across 4 escalating waves.
+/// Dojo 1 Wave Manager — Strawhat Clan Dojo
+/// Spawns Strawhat clan members from the new Dojo 1 roster across escalating waves:
+/// 1. StrawhatTeleportMob  (Nimble shadow teleporter / assassin)
+/// 2. StrawhatSwordMob     (Disciplined katana swordsman with 3/5 parry deflect)
+/// 3. StrawhatStaffMob     (Swift runner with dark vault slam shockwave)
+/// 4. StrawhatBruteMob     (Super armor scythe tank with ground tremor shockwaves)
 ///
-/// TEST MODE: Waves auto-start 5 seconds after scene load.
-/// PRODUCTION: Call StartChallenge() from your dialogue callback to begin manually.
+/// Features dynamic difficulty escalation:
+/// - Wave 1: 2 Light Skirmishers (Teleport / Sword)
+/// - Wave 2: 3 Vanguard Fighters (Teleport / Sword / Staff)
+/// - Wave 3: 4 Elite Incursion (Guaranteed Brute / Staff + Sword / Teleport)
+/// - Wave 4: 5 Boss Vanguard (Brute Duo + Sword + Staff + Teleport Climax)
 ///
-/// Wave 1: 2 Basic Strawhats
-/// Wave 2: 2 Fat Strawhats
-/// Wave 3: 3 Basic Strawhats
-/// Wave 4: 1 Female Strawhat + 1 Fat Strawhat (boss round)
+/// Automatically loads prefabs from Assets/Prefabs/Enemies/Dojo1 or Resources if unassigned.
 /// </summary>
 public class DojoWaveManager : MonoBehaviour
 {
-    // ── Prefab Slots ─────────────────────────────────────────────────
-    [Header("Enemy Prefabs")]
-    [Tooltip("Basic strawhat swordsman prefab.")]
+    // ── Dojo 1 Strawhat Clan Prefabs ─────────────────────────────────
+    [Header("Dojo 1 Strawhat Clan Prefabs")]
+    [Tooltip("Fast teleporting dagger assassin.")]
+    public GameObject teleportStrawhatPrefab;
+
+    [Tooltip("Disciplined katana swordsman with low stance and parry deflect.")]
+    public GameObject swordStrawhatPrefab;
+
+    [Tooltip("Swift runner with dark ground slam shockwave.")]
+    public GameObject staffStrawhatPrefab;
+
+    [Tooltip("Devastating scythe tank with ground tremor.")]
+    public GameObject bruteStrawhatPrefab;
+
+    // ── Legacy Prefab Fallbacks ──────────────────────────────────────
+    [Header("Legacy Fallbacks (Optional)")]
     public GameObject basicStrawhatPrefab;
-
-    [Tooltip("Fat strawhat heavy-hitter prefab.")]
     public GameObject fatStrawhatPrefab;
-
-    [Tooltip("Female strawhat phantom-dash fighter prefab.")]
     public GameObject femaleStrawhatPrefab;
+
+    // ── Difficulty & Wave Settings ───────────────────────────────────
+    [Header("Difficulty Progression")]
+    [Tooltip("If true, wave compositions will be randomized each run with escalating difficulty.")]
+    public bool randomizeDifficulty = true;
+
+    [Tooltip("Total number of waves to spawn.")]
+    [Range(2, 6)]
+    public int totalWaves = 4;
 
     // ── Spawn Points ─────────────────────────────────────────────────
     [Header("Spawn Points (MobSpawner 1–3)")]
@@ -64,7 +87,7 @@ public class DojoWaveManager : MonoBehaviour
     [Tooltip("Combat background music track played when fighting starts (e.g. temple-thunder).")]
     public AudioClip combatMusic;
 
-    // ── Runtime ───────────────────────────────────────────────────────
+    // ── Runtime State ─────────────────────────────────────────────────
     private int currentWaveIndex = 0;
     private bool challengeStarted = false;
     private bool challengeCompleted = false;
@@ -73,11 +96,13 @@ public class DojoWaveManager : MonoBehaviour
 
     public bool IsChallengeStarted => challengeStarted;
     public bool IsChallengeCompleted => challengeCompleted;
+    public int CurrentWaveIndex => currentWaveIndex;
 
     private struct SpawnEntry
     {
         public GameObject prefab;
         public int pointIndex;
+        public string mobName;
     }
 
     private List<List<SpawnEntry>> waveBlueprints;
@@ -91,15 +116,12 @@ public class DojoWaveManager : MonoBehaviour
     void Awake()
     {
         Instance = this;
+        EnsurePrefabsLoaded();
+        CleanOldSceneMobs();
     }
 
     void Start()
     {
-        // Clone scene-placed enemies into hidden templates so they survive destruction
-        ResolveSceneObject(ref basicStrawhatPrefab, "Basic");
-        ResolveSceneObject(ref fatStrawhatPrefab, "Fat");
-        ResolveSceneObject(ref femaleStrawhatPrefab, "Female");
-
         SetGatesActive(false);
         BuildWaveBlueprints();
 
@@ -123,10 +145,10 @@ public class DojoWaveManager : MonoBehaviour
             AudioManager.Instance.PlayBGM(ambientMusic, fade: true);
         }
 
-        // ── TEST MODE: auto-start after delay (bypassed when StrawhatLeaderNPC handles dialogue flow) ──
+        // Auto-start timer (bypassed if StrawhatLeaderNPC is present to handle dialogue flow)
         StartCoroutine(AutoStartAfterDelay());
 
-        Debug.Log($"[DojoWaveManager] Initialized.");
+        Debug.Log("[DojoWaveManager] Initialized with Strawhat Clan Dojo 1 mobs.");
     }
 
     private IEnumerator AutoStartAfterDelay()
@@ -152,13 +174,65 @@ public class DojoWaveManager : MonoBehaviour
     }
 
     // ══════════════════════════════════════════════════════════════════
-    //  PUBLIC API — call from dialogue callback later
+    //  PREFAB RESOLUTION & SCENE CLEANUP
+    // ══════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Ensures all 4 Dojo 1 Strawhat prefabs are resolved from the folder or resources.
+    /// </summary>
+    private void EnsurePrefabsLoaded()
+    {
+#if UNITY_EDITOR
+        if (teleportStrawhatPrefab == null)
+            teleportStrawhatPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemies/Dojo1/StrawhatTeleportMob.prefab");
+        if (swordStrawhatPrefab == null)
+            swordStrawhatPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemies/Dojo1/StrawhatSwordMob.prefab");
+        if (staffStrawhatPrefab == null)
+            staffStrawhatPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemies/Dojo1/StrawhatStaffMob.prefab");
+        if (bruteStrawhatPrefab == null)
+            bruteStrawhatPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemies/Dojo1/StrawhatBruteMob.prefab");
+#endif
+
+        if (teleportStrawhatPrefab == null)
+            teleportStrawhatPrefab = Resources.Load<GameObject>("Prefabs/Enemies/Dojo1/StrawhatTeleportMob") ?? Resources.Load<GameObject>("Prefabs/Enemies/StrawhatTeleportMob");
+        if (swordStrawhatPrefab == null)
+            swordStrawhatPrefab = Resources.Load<GameObject>("Prefabs/Enemies/Dojo1/StrawhatSwordMob") ?? Resources.Load<GameObject>("Prefabs/Enemies/StrawhatSwordMob");
+        if (staffStrawhatPrefab == null)
+            staffStrawhatPrefab = Resources.Load<GameObject>("Prefabs/Enemies/Dojo1/StrawhatStaffMob") ?? Resources.Load<GameObject>("Prefabs/Enemies/StrawhatStaffMob");
+        if (bruteStrawhatPrefab == null)
+            bruteStrawhatPrefab = Resources.Load<GameObject>("Prefabs/Enemies/Dojo1/StrawhatBruteMob") ?? Resources.Load<GameObject>("Prefabs/Enemies/StrawhatBruteMob");
+
+        // Fallbacks to legacy prefabs if any remain null
+        if (swordStrawhatPrefab == null && basicStrawhatPrefab != null) swordStrawhatPrefab = basicStrawhatPrefab;
+        if (bruteStrawhatPrefab == null && fatStrawhatPrefab != null) bruteStrawhatPrefab = fatStrawhatPrefab;
+        if (staffStrawhatPrefab == null && femaleStrawhatPrefab != null) staffStrawhatPrefab = femaleStrawhatPrefab;
+        if (teleportStrawhatPrefab == null && swordStrawhatPrefab != null) teleportStrawhatPrefab = swordStrawhatPrefab;
+    }
+
+    /// <summary>
+    /// Deactivates any legacy test mobs placed directly in the scene hierarchy so they don't wander.
+    /// </summary>
+    private void CleanOldSceneMobs()
+    {
+        string[] oldNames = new string[] { "FemaleStrawhat (1)", "FatStrawhat (1)", "BasicStrawhat", "FemaleStrawhat", "FatStrawhat", "Strawhat swordsman" };
+        foreach (string n in oldNames)
+        {
+            GameObject obj = GameObject.Find(n);
+            if (obj != null && string.IsNullOrEmpty(obj.scene.name) == false)
+            {
+                obj.SetActive(false);
+            }
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  PUBLIC API
     // ══════════════════════════════════════════════════════════════════
 
     /// <summary>
     /// Call this to begin the Dojo challenge.
     /// In test mode it auto-fires after autoStartDelay seconds.
-    /// In production, call from your dialogue-end callback.
+    /// In production, called when dialogue with StrawhatLeaderNPC completes.
     /// </summary>
     public void StartChallenge()
     {
@@ -168,6 +242,12 @@ public class DojoWaveManager : MonoBehaviour
         currentWaveIndex = 0;
         SetGatesActive(true);
 
+        // Regenerate randomized blueprints for a fresh battle composition
+        if (randomizeDifficulty)
+        {
+            BuildWaveBlueprints();
+        }
+
         // Switch background music to Temple Thunder when combat begins
         if (combatMusic != null && AudioManager.Instance != null)
         {
@@ -175,7 +255,7 @@ public class DojoWaveManager : MonoBehaviour
             Debug.Log("[DojoWaveManager] ★ Fighting started! Switched BGM to temple-thunder");
         }
 
-        Debug.Log("[DojoWaveManager] ★ CHALLENGE STARTED — Gates locked!");
+        Debug.Log("[DojoWaveManager] ★ CHALLENGE STARTED — Gates locked! Strawhat Clan assault begins!");
     }
 
     private void CompleteChallenge()
@@ -190,7 +270,105 @@ public class DojoWaveManager : MonoBehaviour
             AudioManager.Instance.PlayBGM(ambientMusic, fade: true);
         }
 
-        Debug.Log("[DojoWaveManager] ★ CHALLENGE COMPLETE — Gates opened!");
+        Debug.Log("[DojoWaveManager] ★ CHALLENGE COMPLETE — Gates opened! All Strawhat waves defeated!");
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  DYNAMIC WAVE GENERATION (INCREASING DIFFICULTY)
+    // ══════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Builds escalating wave blueprints with randomized enemy compositions.
+    /// Escalation:
+    /// - Wave 1 (Easy / Tier 1): 2 Light Mobs (Teleport & Katana Swordsman)
+    /// - Wave 2 (Moderate / Tier 2): 3 Mixed Fighters (Sword, Staff, Teleport)
+    /// - Wave 3 (Intense / Tier 3): 4 Elite Incursion (Guaranteed Brute or Staff + Swordsmen)
+    /// - Wave 4 (Climax / Boss Wave): 5 Devastating Assault (Brute Tank Duo + Support)
+    /// </summary>
+    public void BuildWaveBlueprints()
+    {
+        waveBlueprints = new List<List<SpawnEntry>>();
+
+        EnsurePrefabsLoaded();
+
+        GameObject teleport = teleportStrawhatPrefab;
+        GameObject sword = swordStrawhatPrefab != null ? swordStrawhatPrefab : teleport;
+        GameObject staff = staffStrawhatPrefab != null ? staffStrawhatPrefab : sword;
+        GameObject brute = bruteStrawhatPrefab != null ? bruteStrawhatPrefab : staff;
+
+        int numSpawnPoints = (spawnPoints != null && spawnPoints.Length > 0) ? spawnPoints.Length : 3;
+
+        // ── WAVE 1: Initiation / Scout Flank (2 Light Mobs) ──
+        // Tier 1 pool: Teleport, Sword
+        List<SpawnEntry> wave1 = new List<SpawnEntry>();
+        int count1 = 2;
+        int[] flankPoints1 = new int[] { 0, numSpawnPoints - 1 };
+        for (int i = 0; i < count1; i++)
+        {
+            GameObject pick = (Random.value < 0.5f) ? teleport : sword;
+            int pt = (i < flankPoints1.Length) ? flankPoints1[i] : Random.Range(0, numSpawnPoints);
+            wave1.Add(new SpawnEntry { prefab = pick, pointIndex = pt, mobName = pick.name });
+        }
+        waveBlueprints.Add(wave1);
+
+        // ── WAVE 2: Vanguard Pressure (3 Mixed Combatants) ──
+        // Tier 2 pool: Teleport, Sword, Staff
+        List<SpawnEntry> wave2 = new List<SpawnEntry>();
+        int count2 = 3;
+        GameObject[] tier2Pool = new GameObject[] { teleport, sword, staff };
+        for (int i = 0; i < count2; i++)
+        {
+            GameObject pick;
+            if (i == 0) pick = staff; // Guarantee at least 1 staff caster
+            else pick = tier2Pool[Random.Range(0, tier2Pool.Length)];
+
+            int pt = i % numSpawnPoints;
+            wave2.Add(new SpawnEntry { prefab = pick, pointIndex = pt, mobName = pick.name });
+        }
+        ShuffleEntries(wave2);
+        waveBlueprints.Add(wave2);
+
+        // ── WAVE 3: Elite Incursion (4 Heavy Pressure) ──
+        // Tier 3 pool: Guaranteed Brute + mixed Staff/Sword/Teleport
+        List<SpawnEntry> wave3 = new List<SpawnEntry>();
+        int count3 = 4;
+        wave3.Add(new SpawnEntry { prefab = brute, pointIndex = 1 % numSpawnPoints, mobName = brute.name }); // Center Brute
+        for (int i = 1; i < count3; i++)
+        {
+            GameObject pick;
+            float roll = Random.value;
+            if (roll < 0.45f) pick = sword;
+            else if (roll < 0.75f) pick = staff;
+            else pick = teleport;
+
+            int pt = Random.Range(0, numSpawnPoints);
+            wave3.Add(new SpawnEntry { prefab = pick, pointIndex = pt, mobName = pick.name });
+        }
+        ShuffleEntries(wave3);
+        waveBlueprints.Add(wave3);
+
+        // ── WAVE 4: Climax Boss Wave (5 Clan Champions) ──
+        // Climax composition: 2 Brutes + 1 Staff + 1 Sword + 1 Teleport/Sword
+        List<SpawnEntry> wave4 = new List<SpawnEntry>();
+        wave4.Add(new SpawnEntry { prefab = brute, pointIndex = 0, mobName = brute.name });
+        wave4.Add(new SpawnEntry { prefab = brute, pointIndex = numSpawnPoints - 1, mobName = brute.name });
+        wave4.Add(new SpawnEntry { prefab = staff, pointIndex = 1 % numSpawnPoints, mobName = staff.name });
+        wave4.Add(new SpawnEntry { prefab = sword, pointIndex = 0, mobName = sword.name });
+        wave4.Add(new SpawnEntry { prefab = (Random.value < 0.5f ? teleport : sword), pointIndex = numSpawnPoints - 1, mobName = "Support" });
+        waveBlueprints.Add(wave4);
+
+        Debug.Log($"[DojoWaveManager] Built {waveBlueprints.Count} escalating difficulty waves with new Strawhat Clan roster.");
+    }
+
+    private void ShuffleEntries(List<SpawnEntry> list)
+    {
+        for (int i = 0; i < list.Count; i++)
+        {
+            int rnd = Random.Range(i, list.Count);
+            SpawnEntry temp = list[i];
+            list[i] = list[rnd];
+            list[rnd] = temp;
+        }
     }
 
     // ══════════════════════════════════════════════════════════════════
@@ -208,7 +386,7 @@ public class DojoWaveManager : MonoBehaviour
             yield break;
         }
 
-        // Brief pause between waves
+        // Brief breathing room between waves
         if (currentWaveIndex > 0)
         {
             yield return new WaitForSeconds(betweenWaveDelay);
@@ -231,10 +409,10 @@ public class DojoWaveManager : MonoBehaviour
             Vector3 spawnPos = point.position;
 
             GameObject enemy = Instantiate(entry.prefab, spawnPos, Quaternion.identity);
-            enemy.SetActive(true); // ensure it's active (template clones are inactive)
+            enemy.SetActive(true);
             activeEnemies.Add(enemy);
 
-            // Ensure EnemySpawnFX is present to run procedural entrance
+            // Procedural entrance effect
             EnemySpawnFX spawnFX = enemy.GetComponent<EnemySpawnFX>();
             if (spawnFX == null)
             {
@@ -242,10 +420,10 @@ public class DojoWaveManager : MonoBehaviour
                 spawnFX.spawnStyle = EnemySpawnFX.SpawnStyle.NinjaSmokeDrop;
             }
 
-            // Force aggro immediately
+            // Immediately target and engage the player
             ForceAggroOnPlayer(enemy);
 
-            Debug.Log($"[DojoWaveManager] Spawned '{enemy.name}' at {point.name}");
+            Debug.Log($"[DojoWaveManager] Wave {waveNumber}: Spawned '{enemy.name}' at {point.name}");
 
             if (i < wave.Count - 1)
             {
@@ -258,150 +436,70 @@ public class DojoWaveManager : MonoBehaviour
     }
 
     // ══════════════════════════════════════════════════════════════════
-    //  AGGRO — Force enemies to chase the player immediately
+    //  AGGRO DISPATCHER
     // ══════════════════════════════════════════════════════════════════
 
     private void ForceAggroOnPlayer(GameObject enemy)
     {
         if (enemy == null) return;
 
-        // UniversalEnemy (basic strawhat)
+        // 1. Strawhat Katana Swordsman
+        StrawhatSwordAI swordAI = enemy.GetComponent<StrawhatSwordAI>();
+        if (swordAI != null)
+        {
+            swordAI.detectionRange = aggroDetectionOverride;
+            return;
+        }
+
+        // 2. Strawhat Shadow Brute
+        StrawhatBruteAI bruteAI = enemy.GetComponent<StrawhatBruteAI>();
+        if (bruteAI != null)
+        {
+            bruteAI.detectionRange = aggroDetectionOverride;
+            return;
+        }
+
+        // 3. Strawhat Staff Runner
+        StrawhatStaffAI staffAI = enemy.GetComponent<StrawhatStaffAI>();
+        if (staffAI != null)
+        {
+            staffAI.detectionRange = aggroDetectionOverride;
+            return;
+        }
+
+        // 4. Strawhat Teleport Assassin
+        StrawhatTeleportAI teleportAI = enemy.GetComponent<StrawhatTeleportAI>();
+        if (teleportAI != null)
+        {
+            teleportAI.detectionRange = aggroDetectionOverride;
+            return;
+        }
+
+        // Legacy fallbacks
         UniversalEnemy universal = enemy.GetComponent<UniversalEnemy>();
         if (universal != null)
         {
             universal.detectionRange = aggroDetectionOverride;
             universal.standStillUntilSpotted = false;
             universal.currentState = UniversalEnemy.EnemyState.Chasing;
+            return;
         }
 
-        // FatStrawhatAI
         FatStrawhatAI fatAI = enemy.GetComponent<FatStrawhatAI>();
         if (fatAI != null)
         {
             fatAI.detectionRange = aggroDetectionOverride;
             fatAI.currentState = FatStrawhatAI.State.Chasing;
+            return;
         }
 
-        // FemaleStrawhatAI
         FemaleStrawhatAI femaleAI = enemy.GetComponent<FemaleStrawhatAI>();
         if (femaleAI != null)
         {
             femaleAI.detectionRange = aggroDetectionOverride;
             femaleAI.currentState = FemaleStrawhatAI.State.Chasing;
+            return;
         }
-
-        // FemaleSamuraiWhipAI
-        FemaleSamuraiWhipAI samuraiWhipAI = enemy.GetComponent<FemaleSamuraiWhipAI>();
-        if (samuraiWhipAI != null)
-        {
-            samuraiWhipAI.detectionRange = aggroDetectionOverride;
-            samuraiWhipAI.currentState = FemaleSamuraiWhipAI.State.Chasing;
-        }
-
-        // NormalMaleSamuraiAI
-        NormalMaleSamuraiAI maleSamuraiAI = enemy.GetComponent<NormalMaleSamuraiAI>();
-        if (maleSamuraiAI != null)
-        {
-            maleSamuraiAI.detectionRange = aggroDetectionOverride;
-            maleSamuraiAI.currentState = NormalMaleSamuraiAI.State.Chasing;
-        }
-
-        // NormalFemaleSamuraiAI
-        NormalFemaleSamuraiAI femaleSamuraiAI = enemy.GetComponent<NormalFemaleSamuraiAI>();
-        if (femaleSamuraiAI != null)
-        {
-            femaleSamuraiAI.detectionRange = aggroDetectionOverride;
-            femaleSamuraiAI.currentState = NormalFemaleSamuraiAI.State.Chasing;
-        }
-
-        // FatKabutoAI
-        FatKabutoAI fatKabutoAI = enemy.GetComponent<FatKabutoAI>();
-        if (fatKabutoAI != null)
-        {
-            fatKabutoAI.detectionRange = aggroDetectionOverride;
-            if (fatKabutoAI.currentState != FatKabutoAI.State.SpawningIn)
-            {
-                fatKabutoAI.currentState = FatKabutoAI.State.Chasing;
-            }
-        }
-
-        // EnemyPatrol2D (older script fallback)
-        EnemyPatrol2D patrol = enemy.GetComponent<EnemyPatrol2D>();
-        if (patrol != null)
-        {
-            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-            if (playerObj != null)
-            {
-                patrol.TargetA = playerObj.transform;
-            }
-        }
-    }
-
-    // ══════════════════════════════════════════════════════════════════
-    //  SCENE OBJECT → TEMPLATE CLONING
-    // ══════════════════════════════════════════════════════════════════
-
-    /// <summary>
-    /// If a prefab slot points to a live scene object instead of a project asset,
-    /// clone it as a hidden child template and deactivate the original.
-    /// This prevents the reference from breaking when the original is killed.
-    /// </summary>
-    private void ResolveSceneObject(ref GameObject prefab, string label)
-    {
-        if (prefab == null) return;
-
-        // Scene objects have a non-null, non-empty scene name
-        if (!string.IsNullOrEmpty(prefab.scene.name))
-        {
-            Debug.Log($"[DojoWaveManager] '{prefab.name}' is a scene object → cloning as template.");
-
-            GameObject template = Instantiate(prefab, this.transform);
-            template.name = $"_Template_{label}";
-            template.SetActive(false);
-
-            // Hide the original so it doesn't roam the dojo before the fight
-            prefab.SetActive(false);
-
-            prefab = template;
-        }
-    }
-
-    // ══════════════════════════════════════════════════════════════════
-    //  WAVE DEFINITIONS
-    // ══════════════════════════════════════════════════════════════════
-
-    private void BuildWaveBlueprints()
-    {
-        waveBlueprints = new List<List<SpawnEntry>>();
-
-        // Wave 1: 2 Basic Strawhats (warm-up, flanked)
-        waveBlueprints.Add(new List<SpawnEntry>
-        {
-            new SpawnEntry { prefab = basicStrawhatPrefab, pointIndex = 0 },
-            new SpawnEntry { prefab = basicStrawhatPrefab, pointIndex = 2 },
-        });
-
-        // Wave 2: 2 Fat Strawhats (heavy pressure)
-        waveBlueprints.Add(new List<SpawnEntry>
-        {
-            new SpawnEntry { prefab = fatStrawhatPrefab, pointIndex = 0 },
-            new SpawnEntry { prefab = fatStrawhatPrefab, pointIndex = 1 },
-        });
-
-        // Wave 3: 3 Basic Strawhats (mob swarm)
-        waveBlueprints.Add(new List<SpawnEntry>
-        {
-            new SpawnEntry { prefab = basicStrawhatPrefab, pointIndex = 0 },
-            new SpawnEntry { prefab = basicStrawhatPrefab, pointIndex = 1 },
-            new SpawnEntry { prefab = basicStrawhatPrefab, pointIndex = 2 },
-        });
-
-        // Wave 4: 1 Female Strawhat + 1 Fat Strawhat (boss duo finale)
-        waveBlueprints.Add(new List<SpawnEntry>
-        {
-            new SpawnEntry { prefab = femaleStrawhatPrefab, pointIndex = 1 },
-            new SpawnEntry { prefab = fatStrawhatPrefab,    pointIndex = 2 },
-        });
     }
 
     // ══════════════════════════════════════════════════════════════════
