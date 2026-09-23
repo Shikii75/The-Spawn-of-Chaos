@@ -73,6 +73,11 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
     [Header("Loot")]
     public int droppedOrbsCount = 3;
 
+    [Header("Configured Animation Sequences (Exclusive)")]
+    public Sprite idleSprite;
+    public Sprite[] runSprites;
+    public Sprite[] attackSprites;
+
     // Component References
     private Rigidbody2D rb;
     private Collider2D bodyCollider;
@@ -94,6 +99,12 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
     private Coroutine flashRoutine;
     private Color originalColor = Color.white;
     private float lastTurnTime = 0f;
+
+    // Direct Frame-by-Frame Animation Engine
+    private float runAnimTimer = 0f;
+    private int runAnimIndex = 0;
+    private const float RUN_FRAME_RATE = 14f;
+    private Coroutine attackAnimRoutine;
 
     // Parry Deck (3/5)
     private List<bool> parryDeck = new List<bool>();
@@ -122,6 +133,23 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         anim = GetComponentInChildren<Animator>();
 
+        // Ensure AnimatorController is assigned if missing
+        if (anim != null && anim.runtimeAnimatorController == null)
+        {
+#if UNITY_EDITOR
+            anim.runtimeAnimatorController = UnityEditor.AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(
+                "Assets/Scenes/animations/animators/StrawhatStaffController.controller"
+            );
+#endif
+            if (anim.runtimeAnimatorController == null)
+            {
+                anim.runtimeAnimatorController = Resources.Load<RuntimeAnimatorController>("StrawhatStaffController");
+            }
+        }
+
+        // Ensure sprite arrays are loaded from the exclusive folders
+        EnsureSpritesLoaded();
+
         // Ensure localScale.x is strictly positive so spriteRenderer.flipX controls facing cleanly
         Vector3 s = transform.localScale;
         transform.localScale = new Vector3(Mathf.Abs(s.x), s.y, s.z);
@@ -129,6 +157,7 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
         if (spriteRenderer != null)
         {
             originalColor = spriteRenderer.color;
+            if (idleSprite != null) spriteRenderer.sprite = idleSprite;
         }
 
         currentHealth = maxHealth;
@@ -307,8 +336,11 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
 
         float dir = isFacingRight ? 1f : -1f;
 
-        // Trigger Attack Animation (15 frames total)
-        if (anim != null)
+        // Trigger Attack Animation (15 frames from newfemalestrawstaffattack-1f468d59)
+        if (attackAnimRoutine != null) StopCoroutine(attackAnimRoutine);
+        attackAnimRoutine = StartCoroutine(PlayAttackSpriteSequence(0.95f));
+
+        if (anim != null && anim.runtimeAnimatorController != null)
         {
             anim.SetTrigger(AnimAttack);
         }
@@ -827,12 +859,123 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
 
     private void SetRunningAnimation(bool isRunning)
     {
-        if (anim != null)
+        if (anim != null && anim.runtimeAnimatorController != null)
         {
             anim.SetBool(AnimIsRunning, isRunning);
             anim.SetBool(AnimIsWalking, isRunning);
         }
+
+        // Also drive the sprite directly so that even without an active AnimatorController,
+        // the 13 run frames and idle frame play with 100% reliability
+        if (currentState != State.VaultSlam && currentState != State.Deflecting && currentState != State.Dead)
+        {
+            if (isRunning)
+            {
+                AnimateRun();
+            }
+            else
+            {
+                AnimateIdle();
+            }
+        }
     }
+
+    private void AnimateRun()
+    {
+        if (runSprites == null || runSprites.Length == 0) return;
+        runAnimTimer += Time.deltaTime;
+        if (runAnimTimer >= 1f / RUN_FRAME_RATE)
+        {
+            runAnimTimer -= 1f / RUN_FRAME_RATE;
+            runAnimIndex = (runAnimIndex + 1) % runSprites.Length;
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.sprite = runSprites[runAnimIndex];
+            }
+        }
+    }
+
+    private void AnimateIdle()
+    {
+        if (spriteRenderer != null)
+        {
+            if (idleSprite != null)
+            {
+                spriteRenderer.sprite = idleSprite;
+            }
+            else if (attackSprites != null && attackSprites.Length > 0)
+            {
+                spriteRenderer.sprite = attackSprites[0];
+            }
+        }
+    }
+
+    private IEnumerator PlayAttackSpriteSequence(float duration)
+    {
+        if (attackSprites == null || attackSprites.Length == 0) yield break;
+        float frameTime = duration / attackSprites.Length;
+        for (int i = 0; i < attackSprites.Length; i++)
+        {
+            if (spriteRenderer != null && attackSprites[i] != null)
+            {
+                spriteRenderer.sprite = attackSprites[i];
+            }
+            yield return new WaitForSeconds(frameTime);
+        }
+    }
+
+    public void EnsureSpritesLoaded()
+    {
+#if UNITY_EDITOR
+        if (runSprites == null || runSprites.Length == 0)
+        {
+            runSprites = LoadEditorSprites("Assets/Scenes/animations/frames/newfemalestrawstaffrun-80c96966");
+        }
+        if (attackSprites == null || attackSprites.Length == 0)
+        {
+            attackSprites = LoadEditorSprites("Assets/Scenes/animations/frames/newfemalestrawstaffattack-1f468d59");
+        }
+        if (idleSprite == null && attackSprites != null && attackSprites.Length > 0)
+        {
+            idleSprite = attackSprites[0];
+        }
+#endif
+    }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        EnsureSpritesLoaded();
+    }
+
+    private static Sprite[] LoadEditorSprites(string folder)
+    {
+        if (!System.IO.Directory.Exists(folder)) return new Sprite[0];
+        string[] files = System.IO.Directory.GetFiles(folder, "*.png");
+        System.Array.Sort(files);
+        List<Sprite> list = new List<Sprite>();
+        foreach (var f in files)
+        {
+            string p = f.Replace('\\', '/');
+            int idx = p.IndexOf("Assets/");
+            if (idx >= 0) p = p.Substring(idx);
+            Sprite s = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(p);
+            if (s == null)
+            {
+                var all = UnityEditor.AssetDatabase.LoadAllAssetsAtPath(p);
+                if (all != null)
+                {
+                    foreach (var a in all)
+                    {
+                        if (a is Sprite spr) { s = spr; break; }
+                    }
+                }
+            }
+            if (s != null) list.Add(s);
+        }
+        return list.ToArray();
+    }
+#endif
 
     private bool IsWallAhead(float direction)
     {

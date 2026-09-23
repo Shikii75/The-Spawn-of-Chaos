@@ -7,15 +7,16 @@ using UnityEngine;
 
 /// <summary>
 /// Editor setup tool to configure the Staff Strawhat Mob:
-/// 1. Generates animation clips directly via Unity Editor API using ONLY:
+/// 1. Configures TextureImporters on all frame PNGs to Sprite (Single, 100 PPU, Bilinear).
+/// 2. Generates the 3 AnimationClips (Idle, Run, Attack) using ONLY:
 ///    - Assets/Scenes/animations/frames/newfemalestrawstaffrun-80c96966
 ///    - Assets/Scenes/animations/frames/newfemalestrawstaffattack-1f468d59
-/// 2. Creates the AnimatorController with fluid state transitions.
-/// 3. Builds and saves the complete mob Prefabs at:
+/// 3. Creates the AnimatorController with fluid state transitions.
+/// 4. Builds and saves the complete mob Prefabs at:
 ///    - Assets/Prefabs/Enemies/StrawhatStaffMob.prefab
 ///    - Assets/Resources/Prefabs/Enemies/StrawhatStaffMob.prefab
 /// 
-/// Menu Item: Tools > Setup Staff Strawhat Mob
+/// Menu Item: Tools > Configure Staff Mob Animation Frames
 /// </summary>
 public static class StrawhatStaffSetupTool
 {
@@ -34,15 +35,23 @@ public static class StrawhatStaffSetupTool
         };
     }
 
+    [MenuItem("Tools/Configure Staff Mob Animation Frames")]
     [MenuItem("Tools/Setup Staff Strawhat Mob")]
     public static void SetupMob()
     {
-        Debug.Log("<color=#C840FF>[StrawhatStaffSetupTool] Starting automated setup for Staff Strawhat Mob...</color>");
+        Debug.Log("<color=#C840FF>[StrawhatStaffSetupTool] Configuring Staff Strawhat Mob animations and prefabs...</color>");
 
         EnsureFolderExists("Assets/Prefabs", "Enemies");
         EnsureFolderExists("Assets/Resources/Prefabs", "Enemies");
+        EnsureFolderExists("Assets/Scenes/animations", "animators");
 
-        // 1. Generate Run Clip (14 fps, looping)
+        // Step 1: Configure Texture Importers for both frame folders
+        ConfigureFolderTextures(RUN_FRAMES_DIR);
+        ConfigureFolderTextures(ATTACK_FRAMES_DIR);
+
+        AssetDatabase.Refresh();
+
+        // Step 2: Generate Run Clip (14 fps, looping)
         AnimationClip runClip = BuildSpriteAnimationClip(
             $"{ANIM_DIR}/StrawhatStaffRun.anim",
             RUN_FRAMES_DIR,
@@ -50,7 +59,7 @@ public static class StrawhatStaffSetupTool
             true
         );
 
-        // 2. Generate Attack Clip (18 fps, non-looping)
+        // Step 3: Generate Attack Clip (18 fps, non-looping)
         AnimationClip attackClip = BuildSpriteAnimationClip(
             $"{ANIM_DIR}/StrawhatStaffAttack.anim",
             ATTACK_FRAMES_DIR,
@@ -58,7 +67,7 @@ public static class StrawhatStaffSetupTool
             false
         );
 
-        // 3. Generate Idle Clip (uses staff guard frame_001 from attack folder, looping)
+        // Step 4: Generate Idle Clip (uses staff guard frame_001 from attack folder, looping)
         AnimationClip idleClip = BuildSingleSpriteIdleClip(
             $"{ANIM_DIR}/StrawhatStaffIdle.anim",
             $"{ATTACK_FRAMES_DIR}/frame_001.png"
@@ -70,14 +79,14 @@ public static class StrawhatStaffSetupTool
             return;
         }
 
-        // 4. Create Animator Controller
+        // Step 5: Create Animator Controller
         string controllerPath = $"{ANIM_DIR}/StrawhatStaffController.controller";
         AnimatorController controller = CreateAnimatorController(controllerPath, idleClip, runClip, attackClip);
 
-        // 5. Load Initial Sprite (Staff guard stance from newfemalestrawstaffattack-1f468d59)
+        // Step 6: Load Initial Sprite
         Sprite initialSprite = AssetDatabase.LoadAssetAtPath<Sprite>($"{ATTACK_FRAMES_DIR}/frame_001.png");
 
-        // 6. Assemble and save prefabs
+        // Step 7: Assemble and save prefabs
         string prefabPath1 = $"{PREFAB_DIR}/StrawhatStaffMob.prefab";
         string prefabPath2 = $"{RESOURCES_PREFAB_DIR}/StrawhatStaffMob.prefab";
 
@@ -87,7 +96,7 @@ public static class StrawhatStaffSetupTool
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
 
-        Debug.Log("<color=#55FF88>[StrawhatStaffSetupTool] Setup Complete! Staff Strawhat Mob successfully created and bound.</color>");
+        Debug.Log("<color=#55FF88>[StrawhatStaffSetupTool] Setup Complete! Staff Strawhat Mob animations and prefabs configured successfully.</color>");
     }
 
     private static void EnsureFolderExists(string parent, string sub)
@@ -99,22 +108,102 @@ public static class StrawhatStaffSetupTool
         }
     }
 
-    private static AnimationClip BuildSpriteAnimationClip(string clipPath, string folderPath, int sampleRate, bool loop)
+    private static void ConfigureFolderTextures(string folderPath)
     {
-        string[] files = Directory.GetFiles(folderPath, "*.png");
+        if (!Directory.Exists(folderPath)) return;
+
+        string[] files = Directory.GetFiles(folderPath, "*.png", SearchOption.TopDirectoryOnly);
+        foreach (string file in files)
+        {
+            string assetPath = file.Replace("\\", "/");
+            int idx = assetPath.IndexOf("Assets/");
+            if (idx >= 0) assetPath = assetPath.Substring(idx);
+
+            TextureImporter importer = AssetImporter.GetAtPath(assetPath) as TextureImporter;
+            if (importer != null)
+            {
+                bool dirty = false;
+
+                if (importer.textureType != TextureImporterType.Sprite)
+                {
+                    importer.textureType = TextureImporterType.Sprite;
+                    dirty = true;
+                }
+
+                if (importer.spriteImportMode != SpriteImportMode.Single)
+                {
+                    importer.spriteImportMode = SpriteImportMode.Single;
+                    dirty = true;
+                }
+
+                if (Mathf.Abs(importer.spritePixelsPerUnit - 100f) > 0.01f)
+                {
+                    importer.spritePixelsPerUnit = 100f;
+                    dirty = true;
+                }
+
+                if (!importer.alphaIsTransparency)
+                {
+                    importer.alphaIsTransparency = true;
+                    dirty = true;
+                }
+
+                if (importer.mipmapEnabled)
+                {
+                    importer.mipmapEnabled = false;
+                    dirty = true;
+                }
+
+                if (dirty)
+                {
+                    importer.SaveAndReimport();
+                }
+            }
+        }
+    }
+
+    private static List<Sprite> LoadSprites(string folderPath)
+    {
+        List<Sprite> sprites = new List<Sprite>();
+        if (!Directory.Exists(folderPath)) return sprites;
+
+        string[] files = Directory.GetFiles(folderPath, "*.png", SearchOption.TopDirectoryOnly);
         System.Array.Sort(files);
 
-        List<Sprite> sprites = new List<Sprite>();
-        foreach (var file in files)
+        foreach (string file in files)
         {
-            string unityPath = file.Replace('\\', '/');
-            Sprite s = AssetDatabase.LoadAssetAtPath<Sprite>(unityPath);
+            string assetPath = file.Replace("\\", "/");
+            int idx = assetPath.IndexOf("Assets/");
+            if (idx >= 0) assetPath = assetPath.Substring(idx);
+
+            Sprite s = AssetDatabase.LoadAssetAtPath<Sprite>(assetPath);
+            if (s == null)
+            {
+                Object[] allAssets = AssetDatabase.LoadAllAssetsAtPath(assetPath);
+                if (allAssets != null)
+                {
+                    foreach (var obj in allAssets)
+                    {
+                        if (obj is Sprite spr)
+                        {
+                            s = spr;
+                            break;
+                        }
+                    }
+                }
+            }
             if (s != null)
             {
                 sprites.Add(s);
             }
         }
 
+        return sprites;
+    }
+
+    private static AnimationClip BuildSpriteAnimationClip(string clipPath, string folderPath, int sampleRate, bool loop)
+    {
+        List<Sprite> sprites = LoadSprites(folderPath);
         if (sprites.Count == 0)
         {
             Debug.LogError($"[StrawhatStaffSetupTool] No sprites found in {folderPath}!");
@@ -159,6 +248,18 @@ public static class StrawhatStaffSetupTool
     private static AnimationClip BuildSingleSpriteIdleClip(string clipPath, string spritePath)
     {
         Sprite s = AssetDatabase.LoadAssetAtPath<Sprite>(spritePath);
+        if (s == null)
+        {
+            Object[] allAssets = AssetDatabase.LoadAllAssetsAtPath(spritePath);
+            if (allAssets != null)
+            {
+                foreach (var obj in allAssets)
+                {
+                    if (obj is Sprite spr) { s = spr; break; }
+                }
+            }
+        }
+
         if (s == null)
         {
             Debug.LogError($"[StrawhatStaffSetupTool] Sprite not found at {spritePath}!");
@@ -233,12 +334,11 @@ public static class StrawhatStaffSetupTool
         idleToRun2.hasExitTime = false;
         idleToRun2.duration = 0.05f;
 
-        // Run -> Idle
-        var runToIdle = runState.AddTransition(idleState);
-        runToIdle.AddCondition(AnimatorConditionMode.IfNot, 0, "isRunning");
-        runToIdle.AddCondition(AnimatorConditionMode.IfNot, 0, "isWalking");
-        runToIdle.hasExitTime = false;
-        runToIdle.duration = 0.05f;
+        // Run -> Idle (independent transitions for either parameter)
+        var runToIdle1 = runState.AddTransition(idleState);
+        runToIdle1.AddCondition(AnimatorConditionMode.IfNot, 0, "isRunning");
+        runToIdle1.hasExitTime = false;
+        runToIdle1.duration = 0.05f;
 
         // AnyState -> Attack
         var anyToAttack = rootSm.AddAnyStateTransition(attackState);
@@ -291,6 +391,13 @@ public static class StrawhatStaffSetupTool
         ai.playerKnockbackForce = 7.5f;
         ai.enableParry = true;
         ai.parryCountPerFive = 3;
+
+        // Populate Sprite Sequences directly on Prefab
+        List<Sprite> runSprites = LoadSprites(RUN_FRAMES_DIR);
+        List<Sprite> attackSprites = LoadSprites(ATTACK_FRAMES_DIR);
+        ai.runSprites = runSprites.ToArray();
+        ai.attackSprites = attackSprites.ToArray();
+        if (attackSprites.Count > 0) ai.idleSprite = attackSprites[0];
 
         // Health Component
         Health hp = go.AddComponent<Health>();
