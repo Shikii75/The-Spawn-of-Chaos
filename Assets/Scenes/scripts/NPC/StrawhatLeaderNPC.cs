@@ -159,6 +159,10 @@ public class StrawhatLeaderNPC : MonoBehaviour
         // Configure speech bubble
         _dialogue.characterName = "Strawhat Leader";
         _dialogue.dialogueLines = leaderDialogueLines;
+        _dialogue.bubbleWidth = 440f;
+        _dialogue.bubbleHeight = 155f;
+        _dialogue.heightAboveNPC = 2.5f;
+        _dialogue.fontSize = 18f;
 
         // Load background music if not set
         if (dialogueBGM == null)
@@ -177,6 +181,9 @@ public class StrawhatLeaderNPC : MonoBehaviour
             Debug.Log($"[StrawhatLeaderNPC] Playing intro/dialogue BGM: {dialogueBGM.name}");
         }
 
+        // Initial face towards player
+        FacePlayer();
+
         // Hook up dialogue events
         _dialogue.OnDialogueStart += OnDialogueStarted;
         _dialogue.OnPageChanged += OnDialoguePageChanged;
@@ -186,6 +193,20 @@ public class StrawhatLeaderNPC : MonoBehaviour
         StartCoroutine(RunIntroSequence());
     }
 
+    private void FacePlayer()
+    {
+        if (_playerTf == null)
+        {
+            GameObject p = GameObject.FindGameObjectWithTag("Player");
+            if (p != null) _playerTf = p.transform;
+        }
+        if (_playerTf != null && _sr != null)
+        {
+            // Native frames face LEFT. If player is to the right (x > transform.x), flipX = true.
+            _sr.flipX = _playerTf.position.x > transform.position.x;
+        }
+    }
+
     private IEnumerator RunIntroSequence()
     {
         // Lock player movement
@@ -193,9 +214,8 @@ public class StrawhatLeaderNPC : MonoBehaviour
 
         if (_playerTf != null)
         {
-            // Face player
-            float dir = _playerTf.position.x - transform.position.x;
-            _sr.flipX = dir < 0;
+            // Face player correctly (native frames face left)
+            FacePlayer();
 
             // Play Begin Walk
             yield return StartCoroutine(PlayFrameSequence(beginWalkFrames, false));
@@ -204,6 +224,9 @@ public class StrawhatLeaderNPC : MonoBehaviour
             PlayLoopingFrames(keepWalkingFrames);
             while (Vector2.Distance(transform.position, _playerTf.position) > stopDistance)
             {
+                move.ExternalMovementLock = true;
+                FacePlayer();
+                float dir = _playerTf.position.x - transform.position.x;
                 Vector3 target = new Vector3(_playerTf.position.x + (dir > 0 ? -stopDistance : stopDistance), transform.position.y, transform.position.z);
                 transform.position = Vector3.MoveTowards(transform.position, target, walkSpeed * Time.deltaTime);
                 yield return null;
@@ -214,12 +237,14 @@ public class StrawhatLeaderNPC : MonoBehaviour
             if (playerMove != null) playerMove.FaceTarget(transform.position);
 
             // Play Stop Walk
+            FacePlayer();
             yield return StartCoroutine(PlayFrameSequence(stopWalkingFrames, false));
 
             if (playerMove != null) playerMove.FaceTarget(transform.position);
         }
 
         // Play Idle before dialogue
+        FacePlayer();
         PlayLoopingFrames(idleFrames);
         yield return new WaitForSeconds(0.3f);
 
@@ -230,11 +255,15 @@ public class StrawhatLeaderNPC : MonoBehaviour
     private void OnDialogueStarted()
     {
         _currentState = State.Talking;
+        move.ExternalMovementLock = true;
+        FacePlayer();
         PlayTalkingAnimation(0);
     }
 
     private void OnDialoguePageChanged(int lineIndex)
     {
+        move.ExternalMovementLock = true;
+        FacePlayer();
         PlayTalkingAnimation(lineIndex);
     }
 
@@ -265,15 +294,26 @@ public class StrawhatLeaderNPC : MonoBehaviour
     {
         _currentState = State.PostDialogueWait;
 
+        // Keep player locked during countdown
+        move.ExternalMovementLock = true;
+
         // Disable interact prompt / dialogue re-trigger during fight
         if (_dialogue != null) _dialogue.interactionDisabled = true;
 
         // Play End Of Conversation animation gesture
+        FacePlayer();
         yield return StartCoroutine(PlayFrameSequence(endOfConversationFrames, false));
+        FacePlayer();
         PlayLoopingFrames(idleFrames);
 
         // 3-second fight countdown
-        yield return new WaitForSeconds(fightStartDelay);
+        float elapsed = 0f;
+        while (elapsed < fightStartDelay)
+        {
+            move.ExternalMovementLock = true;
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
 
         // Lock gates & start challenge via DojoWaveManager
         DojoWaveManager waveMgr = DojoWaveManager.Instance != null ? DojoWaveManager.Instance : Object.FindFirstObjectByType<DojoWaveManager>();
@@ -282,11 +322,12 @@ public class StrawhatLeaderNPC : MonoBehaviour
             waveMgr.StartChallenge();
         }
 
-        // Unfreeze player
+        // Unfreeze player now that battle has officially begun
         move.ExternalMovementLock = false;
 
         // Start sitting sequence back on altar mat or current position
         _currentState = State.SittingInBattle;
+        FacePlayer();
         yield return StartCoroutine(PlayFrameSequence(startSittingFrames, false));
 
         // Sitting loop during battle
@@ -297,6 +338,7 @@ public class StrawhatLeaderNPC : MonoBehaviour
     {
         while (_currentState == State.SittingInBattle)
         {
+            FacePlayer();
             // Play Sit Idle loop for a random duration (3-6 seconds)
             PlayLoopingFrames(sitIdleFrames);
             yield return new WaitForSeconds(Random.Range(3.0f, 6.0f));
@@ -304,6 +346,7 @@ public class StrawhatLeaderNPC : MonoBehaviour
             if (_currentState != State.SittingInBattle) yield break;
 
             // Play Sit Look Down animation once
+            FacePlayer();
             yield return StartCoroutine(PlayFrameSequence(sitLookDownFrames, false));
         }
     }

@@ -72,21 +72,23 @@ public class SpeechBubbleDialogue : MonoBehaviour
     [Tooltip("Colour of the circular advance button.")]
     public Color buttonColor = new Color(0.24f, 0.40f, 0.20f, 1f);
 
-    [Tooltip("Width of the bubble in pixels (reference resolution 1920×1080).")]
-    public float bubbleWidth = 850f;
+    [Tooltip("Width of the bubble in pixels.")]
+    public float bubbleWidth = 440f;
 
     [Tooltip("Height of the bubble in pixels.")]
-    public float bubbleHeight = 280f;
+    public float bubbleHeight = 155f;
 
     [Tooltip("How far above the NPC's pivot the bubble hovers (world units).")]
-    public float heightAboveNPC = 3.5f;
+    public float heightAboveNPC = 2.5f;
 
     [Tooltip("Body text font size (pixels).")]
-    public float fontSize = 32f;
+    public float fontSize = 18f;
 
     // ═══════════════════════════════════════════════════════════════════
     //  PRIVATE RUNTIME STATE — never touch these manually
     // ═══════════════════════════════════════════════════════════════════
+
+    public static bool IsAnyDialogueOpen { get; private set; } = false;
 
     private Canvas        _canvas;
     private RectTransform _bubbleRt;
@@ -238,6 +240,7 @@ public class SpeechBubbleDialogue : MonoBehaviour
         _lineIndex   = 0;
         _openedFrame = Time.frameCount;
         _isOpen      = true;
+        IsAnyDialogueOpen = true;
 
         SetPromptActive(false);
         SetBubbleActive(true);
@@ -245,6 +248,15 @@ public class SpeechBubbleDialogue : MonoBehaviour
 
         OnDialogueStart?.Invoke();
         OnPageChanged?.Invoke(_lineIndex);
+    }
+
+    private void OnDisable()
+    {
+        if (_isOpen)
+        {
+            _isOpen = false;
+            IsAnyDialogueOpen = false;
+        }
     }
 
     private void AdvanceLine()
@@ -264,6 +276,7 @@ public class SpeechBubbleDialogue : MonoBehaviour
         if (_typeRoutine != null) StopCoroutine(_typeRoutine);
         _isOpen = false;
         _typing = false;
+        IsAnyDialogueOpen = false;
         SetBubbleActive(false);
         if (_playerNear && !(ShopUI.Instance != null && ShopUI.Instance.IsShopActive))
             SetPromptActive(true);
@@ -281,6 +294,7 @@ public class SpeechBubbleDialogue : MonoBehaviour
         if (_typeRoutine != null) StopCoroutine(_typeRoutine);
         _isOpen = false;
         _typing = false;
+        IsAnyDialogueOpen = false;
         SetBubbleActive(false);
         SetPromptActive(false);
         if (ShopUI.Instance != null)
@@ -368,10 +382,10 @@ public class SpeechBubbleDialogue : MonoBehaviour
 
         canvasGo.AddComponent<GraphicRaycaster>();
 
-        // 55 px = 1 Unity world unit; larger world-space canvas scale for high readability
-        const float PPU = 55f;
+        // 100 px = 1 Unity world unit; world-space canvas scale for high readability and compact size
+        const float PPU = 100f;
         var canvasRt = canvasGo.GetComponent<RectTransform>();
-        canvasRt.sizeDelta    = new Vector2(1000f, 700f);
+        canvasRt.sizeDelta    = new Vector2(600f, 400f);
         canvasRt.localScale   = Vector3.one / PPU;
         canvasRt.localPosition = new Vector3(0f, heightAboveNPC, -0.1f);
 
@@ -398,8 +412,8 @@ public class SpeechBubbleDialogue : MonoBehaviour
         tailRt.anchorMin        = new Vector2(0.18f, 0f);
         tailRt.anchorMax        = new Vector2(0.18f, 0f);
         tailRt.pivot            = new Vector2(0.5f, 0.5f);
-        tailRt.sizeDelta        = new Vector2(36f, 36f);
-        tailRt.anchoredPosition = new Vector2(0f, -15f);       // half-overlap below panel
+        tailRt.sizeDelta        = new Vector2(24f, 24f);
+        tailRt.anchoredPosition = new Vector2(0f, -10f);       // half-overlap below panel
         tailRt.localRotation    = Quaternion.Euler(0f, 0f, 45f);
         tailGo.AddComponent<Image>().color = bubbleColor;
 
@@ -412,18 +426,18 @@ public class SpeechBubbleDialogue : MonoBehaviour
             nrt.anchorMin        = new Vector2(0f, 1f);
             nrt.anchorMax        = new Vector2(1f, 1f);
             nrt.pivot            = new Vector2(0f, 1f);
-            nrt.sizeDelta        = new Vector2(0f, 46f);
-            nrt.anchoredPosition = new Vector2(28f, -10f);
+            nrt.sizeDelta        = new Vector2(0f, 36f);
+            nrt.anchoredPosition = new Vector2(24f, -10f);
 
             var nlTxt = nameLGo.AddComponent<TextMeshProUGUI>();
             ApplyTMPDefaults(nlTxt);
             nlTxt.text      = characterName;
             nlTxt.color     = nameColor;
-            nlTxt.fontSize  = 28f;
+            nlTxt.fontSize  = 20f;
             nlTxt.fontStyle = FontStyles.Bold;
             nlTxt.enableWordWrapping = false;
 
-            bodyTopOffset = -54f;   // body text clears the name row
+            bodyTopOffset = -44f;   // body text clears the name row
         }
 
         // ── Body text ─────────────────────────────────────────────────────────
@@ -431,8 +445,8 @@ public class SpeechBubbleDialogue : MonoBehaviour
         var brt = bodyGo.GetComponent<RectTransform>();
         brt.anchorMin = Vector2.zero;
         brt.anchorMax = Vector2.one;
-        brt.offsetMin = new Vector2(28f, 32f);          // left, bottom padding
-        brt.offsetMax = new Vector2(-76f, bodyTopOffset); // right (clears button), top
+        brt.offsetMin = new Vector2(24f, 20f);          // left, bottom padding
+        brt.offsetMax = new Vector2(-60f, bodyTopOffset); // right (clears button), top
 
         _bodyText = bodyGo.AddComponent<TextMeshProUGUI>();
         ApplyTMPDefaults(_bodyText);
@@ -448,8 +462,8 @@ public class SpeechBubbleDialogue : MonoBehaviour
         art.anchorMin        = new Vector2(1f, 0f);
         art.anchorMax        = new Vector2(1f, 0f);
         art.pivot            = new Vector2(1f, 0f);
-        art.sizeDelta        = new Vector2(56f, 56f);
-        art.anchoredPosition = new Vector2(-14f, 14f);
+        art.sizeDelta        = new Vector2(40f, 40f);
+        art.anchoredPosition = new Vector2(-12f, 12f);
 
         var btnImg   = _advanceBtn.AddComponent<Image>();
         btnImg.color = buttonColor;
@@ -461,13 +475,13 @@ public class SpeechBubbleDialogue : MonoBehaviour
         arrRt.anchorMin        = Vector2.zero;
         arrRt.anchorMax        = Vector2.one;
         arrRt.sizeDelta        = Vector2.zero;
-        arrRt.anchoredPosition = new Vector2(3f, 0f);   // optical centering
+        arrRt.anchoredPosition = new Vector2(2f, 0f);   // optical centering
 
         var arrTxt = arrowGo.AddComponent<TextMeshProUGUI>();
         ApplyTMPDefaults(arrTxt);
         arrTxt.text      = "▶";
         arrTxt.color     = new Color(0.92f, 1f, 0.88f, 1f);
-        arrTxt.fontSize  = 26f;
+        arrTxt.fontSize  = 18f;
         arrTxt.alignment = TextAlignmentOptions.Center;
 
         _advanceBtn.SetActive(false);

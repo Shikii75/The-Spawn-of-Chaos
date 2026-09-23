@@ -189,6 +189,7 @@ public class MageCombat : MonoBehaviour
 
         // Check if game is paused or UI is active
         if (PauseMenu.Instance != null && PauseMenu.Instance.isPaused) return;
+        if (move.ExternalMovementLock || SpeechBubbleDialogue.IsAnyDialogueOpen) return;
         if (NyxarisManager.IsChatActive) return;
         if (ShopUI.Instance != null && ShopUI.Instance.IsShopActive) return;
         if (NPCDialogueUI.Instance != null && NPCDialogueUI.Instance.IsDialogueActive) return;

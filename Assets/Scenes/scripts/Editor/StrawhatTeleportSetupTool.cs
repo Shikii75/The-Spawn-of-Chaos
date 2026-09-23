@@ -23,8 +23,8 @@ public static class StrawhatTeleportSetupTool
     private const string ATTACK_FOLDER = "Assets/Scenes/animations/frames/newfemalestrawattack-8750f70d";
 
     private const string ANIM_DIR = "Assets/Scenes/animations/animators";
-    private const string PREFAB_DIR = "Assets/Prefabs/Enemies";
-    private const string RESOURCES_PREFAB_DIR = "Assets/Resources/Prefabs/Enemies";
+    private const string PREFAB_DIR = "Assets/Prefabs/Enemies/Dojo1";
+    private const string RESOURCES_PREFAB_DIR = "Assets/Resources/Prefabs/Enemies/Dojo1";
 
     [InitializeOnLoadMethod]
     private static void AutoRunIfPending()
@@ -293,8 +293,8 @@ public static class StrawhatTeleportSetupTool
         GameObject go = new GameObject("StrawhatTeleportMob");
         go.tag = "enemy";
 
-        // Transform scale for 1920x1080 frames (approx 3.7 units tall in world space)
-        go.transform.localScale = new Vector3(0.38f, 0.38f, 1.0f);
+        // Transform scale: bigger than player (~5.4 units tall in world space)
+        go.transform.localScale = new Vector3(0.58f, 0.58f, 1.0f);
 
         // SpriteRenderer
         SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
@@ -314,8 +314,8 @@ public static class StrawhatTeleportSetupTool
 
         // Main Physical Collider
         BoxCollider2D col = go.AddComponent<BoxCollider2D>();
-        col.size = new Vector2(2.2f, 3.6f);
-        col.offset = new Vector2(0f, 0f);
+        col.size = new Vector2(3.4f, 8.8f);
+        col.offset = new Vector2(-0.4f, -0.1f);
 
         // Body Attack Hitbox Child Trigger
         GameObject hitboxChild = new GameObject("BodyAttackHitbox");
@@ -323,15 +323,15 @@ public static class StrawhatTeleportSetupTool
         hitboxChild.tag = "enemy";
         BoxCollider2D hitboxCol = hitboxChild.AddComponent<BoxCollider2D>();
         hitboxCol.isTrigger = true;
-        hitboxCol.size = new Vector2(3.6f, 3.8f);
-        hitboxCol.offset = new Vector2(0f, 0f);
+        hitboxCol.size = new Vector2(4.2f, 9.0f);
+        hitboxCol.offset = new Vector2(-0.4f, -0.1f);
 
         // AI Script
         StrawhatTeleportAI ai = go.AddComponent<StrawhatTeleportAI>();
         ai.maxHealth = 100;
         ai.attackDamage = 18;
         ai.playerKnockbackForce = 6.5f;
-        ai.attackHitboxSize = new Vector2(3.6f, 3.8f);
+        ai.attackHitboxSize = new Vector2(4.2f, 9.0f);
         ai.enableDodge = true;
         ai.dodgeCountPerFive = 3;
 

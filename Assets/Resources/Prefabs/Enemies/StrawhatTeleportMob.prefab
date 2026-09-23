@@ -27,7 +27,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.58, y: 0.58, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 7787788059698418233}
@@ -66,7 +66,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: -0.4, y: -0.1}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0, y: 0}
@@ -76,7 +76,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 3.6, y: 3.8}
+  m_Size: {x: 4.2, y: 9}
   m_EdgeRadius: 0
 --- !u!1 &8387366845229614426
 GameObject:
@@ -258,7 +258,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: -0.4, y: -0.1}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -268,7 +268,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 2.2, y: 3.6}
+  m_Size: {x: 3.4, y: 8.8}
   m_EdgeRadius: 0
 --- !u!114 &1662349472295270300
 MonoBehaviour:
@@ -291,7 +291,7 @@ MonoBehaviour:
   engageBuffer: 0.35
   retreatDistance: 5
   attackCooldown: 2.2
-  teleportWindupDelay: 0.15
+  teleportWindupDelay: 0.12
   attackActiveStart: 0.2
   attackActiveEnd: 0.75
   attackTotalDuration: 1.15
@@ -299,8 +299,11 @@ MonoBehaviour:
   patrolSpeed: 2.2
   patrolDistance: 4
   paceSpeed: 1.6
-  teleportVFXColor: {r: 0.72, g: 0.22, b: 0.95, a: 0.9}
+  teleportVFXColor: {r: 0.78, g: 0.25, b: 0.98, a: 0.95}
   hitFlashColor: {r: 1, g: 0.3, b: 0.3, a: 1}
+  enableDodge: 1
+  dodgeCountPerFive: 3
+  dodgeCooldown: 0.35
   droppedOrbsCount: 2
   attackHitboxSize: {x: 3.6, y: 3.8}
 --- !u!114 &186931414494009350

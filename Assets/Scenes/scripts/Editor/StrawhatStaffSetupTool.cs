@@ -21,8 +21,8 @@ using UnityEngine;
 public static class StrawhatStaffSetupTool
 {
     private const string ANIM_DIR = "Assets/Scenes/animations/animators";
-    private const string PREFAB_DIR = "Assets/Prefabs/Enemies";
-    private const string RESOURCES_PREFAB_DIR = "Assets/Resources/Prefabs/Enemies";
+    private const string PREFAB_DIR = "Assets/Prefabs/Enemies/Dojo1";
+    private const string RESOURCES_PREFAB_DIR = "Assets/Resources/Prefabs/Enemies/Dojo1";
     private const string RUN_FRAMES_DIR = "Assets/Scenes/animations/frames/newfemalestrawstaffrun-80c96966";
     private const string ATTACK_FRAMES_DIR = "Assets/Scenes/animations/frames/newfemalestrawstaffattack-1f468d59";
 
@@ -298,7 +298,8 @@ public static class StrawhatStaffSetupTool
         GameObject go = new GameObject("StrawhatStaffMob");
         go.tag = "enemy";
 
-        go.transform.localScale = new Vector3(0.38f, 0.38f, 1.0f);
+        // Scaled bigger than player (player is ~4.5u tall, mob will be ~5.3u tall)
+        go.transform.localScale = new Vector3(0.58f, 0.58f, 1.0f);
 
         // SpriteRenderer
         SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
@@ -316,10 +317,10 @@ public static class StrawhatStaffSetupTool
         rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
         rb.constraints = RigidbodyConstraints2D.FreezeRotation;
 
-        // Main Collider
+        // Main Collider matching actual sprite silhouette
         BoxCollider2D col = go.AddComponent<BoxCollider2D>();
-        col.size = new Vector2(2.2f, 3.6f);
-        col.offset = new Vector2(0f, 0f);
+        col.size = new Vector2(3.6f, 8.8f);
+        col.offset = new Vector2(-0.15f, -0.3f);
 
         // AI Script
         StrawhatStaffAI ai = go.AddComponent<StrawhatStaffAI>();

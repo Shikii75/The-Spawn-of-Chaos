@@ -1218,6 +1218,7 @@ public class move : MonoBehaviour
     private bool IsMovementBlocked()
     {
         if (ExternalMovementLock) return true;
+        if (SpeechBubbleDialogue.IsAnyDialogueOpen) return true;
         if (PauseMenu.Instance != null && PauseMenu.Instance.isPaused) return true;
         if (NPCDialogueUI.Instance != null && NPCDialogueUI.Instance.IsDialogueActive) return true;
         if (ShopUI.Instance != null && ShopUI.Instance.IsShopActive) return true;

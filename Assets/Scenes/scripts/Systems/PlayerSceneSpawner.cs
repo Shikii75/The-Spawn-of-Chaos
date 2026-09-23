@@ -96,6 +96,12 @@ public class PlayerSceneSpawner : MonoBehaviour
                 foundSpawnPoint = true;
                 Debug.Log($"[PlayerSceneSpawner] Found spawn point '{targetName}' at position {spawnPosition}");
             }
+            else if (targetName == "Dojo1_ExitSpawnPoint" && isSampleScene)
+            {
+                spawnPosition = new Vector3(1185.7f, 191.2f, 0f);
+                foundSpawnPoint = true;
+                Debug.Log($"[PlayerSceneSpawner] Snapped Dojo1 exit to position {spawnPosition}");
+            }
         }
 
         // Fallback search for DefaultSpawnPoint or StartScene if initial target not found
