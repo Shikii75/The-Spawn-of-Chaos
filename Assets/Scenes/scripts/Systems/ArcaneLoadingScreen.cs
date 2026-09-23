@@ -123,6 +123,13 @@ namespace SpawnOfChaos.Systems
             }
             isCurrentlyLoading = true;
             EnsureExists();
+
+            // Resolve unambiguous path for SampleScene
+            if (sceneName.Equals("SampleScene", System.StringComparison.OrdinalIgnoreCase))
+            {
+                sceneName = "Assets/Scenes/SampleScene.unity";
+            }
+
             Instance.StartCoroutine(Instance.LoadSceneAsyncRoutine(sceneName));
         }
 

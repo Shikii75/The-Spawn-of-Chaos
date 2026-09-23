@@ -128,24 +128,39 @@ public class PlayerSceneSpawner : MonoBehaviour
         }
         if (!string.IsNullOrEmpty(targetName))
         {
-            GameObject spawnPoint = GameObject.Find(targetName);
-            if (spawnPoint != null)
+            if (targetName == "Dojo1_ExitSpawnPoint" && isSampleScene)
             {
-                spawnPosition = spawnPoint.transform.position;
-                foundSpawnPoint = true;
-                Debug.Log($"[PlayerSceneSpawner] Found spawn point '{targetName}' at position {spawnPosition}");
+                // Snap directly in front of the entersign ("press\"E\"") on the Dojo deck
+                GameObject enterSign = GameObject.Find("press\"E\"") ?? GameObject.Find("pressE");
+                if (enterSign != null)
+                {
+                    spawnPosition = enterSign.transform.position;
+                    foundSpawnPoint = true;
+                    Debug.Log($"[PlayerSceneSpawner] Snapped to entersign '{enterSign.name}' at position {spawnPosition}");
+                }
+                else
+                {
+                    GameObject sp = GameObject.Find("Dojo1_ExitSpawnPoint");
+                    spawnPosition = sp != null ? sp.transform.position : new Vector3(1185.72f, 191.08f, 0f);
+                    foundSpawnPoint = true;
+                    Debug.Log($"[PlayerSceneSpawner] Snapped Dojo1 exit to position {spawnPosition}");
+                }
             }
-            else if (targetName == "Dojo1_ExitSpawnPoint" && isSampleScene)
+            else
             {
-                spawnPosition = new Vector3(1185.7f, 191.2f, 0f);
-                foundSpawnPoint = true;
-                Debug.Log($"[PlayerSceneSpawner] Snapped Dojo1 exit to position {spawnPosition}");
-            }
-            else if ((targetName == "Dojo2_ExitSpawnPoint" || targetName == "Dojo2_ReturnPoint") && isSampleScene)
-            {
-                spawnPosition = new Vector3(1750f, 191.2f, 0f);
-                foundSpawnPoint = true;
-                Debug.Log($"[PlayerSceneSpawner] Snapped Dojo2 exit to position {spawnPosition}");
+                GameObject spawnPoint = GameObject.Find(targetName);
+                if (spawnPoint != null)
+                {
+                    spawnPosition = spawnPoint.transform.position;
+                    foundSpawnPoint = true;
+                    Debug.Log($"[PlayerSceneSpawner] Found spawn point '{targetName}' at position {spawnPosition}");
+                }
+                else if ((targetName == "Dojo2_ExitSpawnPoint" || targetName == "Dojo2_ReturnPoint") && isSampleScene)
+                {
+                    spawnPosition = new Vector3(1750f, 191.2f, 0f);
+                    foundSpawnPoint = true;
+                    Debug.Log($"[PlayerSceneSpawner] Snapped Dojo2 exit to position {spawnPosition}");
+                }
             }
         }
 
