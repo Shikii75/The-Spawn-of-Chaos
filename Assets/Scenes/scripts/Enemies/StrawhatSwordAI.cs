@@ -98,6 +98,13 @@ public class StrawhatSwordAI : MonoBehaviour, IDamageable
     private Coroutine flashRoutine;
     private Color originalColor = Color.white;
 
+    // Desynchronization & Organic Movement
+    private float pacePhaseOffset = 0f;
+    private float speedMultiplier = 1f;
+    private float chaseMicroTimer = 0f;
+    private bool isMicroHesitating = false;
+    private float microHesitationDuration = 0f;
+
     // Frame-by-frame direct animator
     private float animTimer = 0f;
     private int animIndex = 0;
@@ -127,6 +134,11 @@ public class StrawhatSwordAI : MonoBehaviour, IDamageable
         bodyCollider = GetComponent<Collider2D>();
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         anim = GetComponentInChildren<Animator>();
+
+        // Desynchronization variables
+        pacePhaseOffset = Random.Range(0f, Mathf.PI * 2f);
+        speedMultiplier = Random.Range(0.88f, 1.15f);
+        chaseMicroTimer = Random.Range(1.2f, 3.0f);
 
         if (anim != null && anim.runtimeAnimatorController == null)
         {
@@ -165,7 +177,9 @@ public class StrawhatSwordAI : MonoBehaviour, IDamageable
     {
         FindPlayer();
         currentState = State.Idle;
-        stateTimer = Random.Range(1.2f, 2.0f);
+        stateTimer = Random.Range(0.6f, 1.8f);
+        // Stagger initial attack cooldown so mobs don't all strike simultaneously
+        lastAttackTime = Time.time - Random.Range(0.4f, attackCooldown * 0.85f);
     }
 
     void Update()
@@ -248,14 +262,14 @@ public class StrawhatSwordAI : MonoBehaviour, IDamageable
             return;
         }
 
-        rb.linearVelocity = new Vector2(patrolDirection * patrolSpeed, rb.linearVelocity.y);
+        rb.linearVelocity = new Vector2(patrolDirection * patrolSpeed * speedMultiplier, rb.linearVelocity.y);
         SetFacing(patrolDirection > 0f);
 
         if (CanSeePlayer())
         {
             FacePlayer();
             currentState = State.EngageStance;
-            stateTimer = Random.Range(0.4f, 0.7f);
+            stateTimer = Random.Range(0.35f, 0.75f);
             return;
         }
 
@@ -265,6 +279,24 @@ public class StrawhatSwordAI : MonoBehaviour, IDamageable
             currentState = State.Idle;
             stateTimer = Random.Range(1.2f, 2.5f);
         }
+    }
+
+    private float GetCrowdSeparationOffset()
+    {
+        Collider2D[] nearby = Physics2D.OverlapCircleAll(transform.position, 1.8f);
+        float separation = 0f;
+        foreach (var col in nearby)
+        {
+            if (col != null && col.gameObject != gameObject && col.CompareTag("enemy"))
+            {
+                float dx = transform.position.x - col.transform.position.x;
+                if (Mathf.Abs(dx) < 1.6f && Mathf.Abs(dx) > 0.01f)
+                {
+                    separation += Mathf.Sign(dx) * (1.6f - Mathf.Abs(dx)) * 0.7f;
+                }
+            }
+        }
+        return Mathf.Clamp(separation, -1.6f, 1.6f);
     }
 
     private void UpdateEngageStance()
@@ -295,11 +327,29 @@ public class StrawhatSwordAI : MonoBehaviour, IDamageable
             return;
         }
 
-        // If player is outside attack range, stalk forward smoothly
+        // If player is outside attack range, stalk forward with desynchronized cadence
         if (distToPlayer > attackRange)
         {
-            float dir = player.position.x > transform.position.x ? 1f : -1f;
-            rb.linearVelocity = new Vector2(dir * runSpeed, rb.linearVelocity.y);
+            chaseMicroTimer -= Time.deltaTime;
+            if (chaseMicroTimer <= 0f)
+            {
+                chaseMicroTimer = Random.Range(2.0f, 3.8f);
+                isMicroHesitating = Random.value < 0.28f;
+                microHesitationDuration = Random.Range(0.2f, 0.45f);
+            }
+
+            if (isMicroHesitating)
+            {
+                microHesitationDuration -= Time.deltaTime;
+                if (microHesitationDuration <= 0f) isMicroHesitating = false;
+                rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+            }
+            else
+            {
+                float dir = player.position.x > transform.position.x ? 1f : -1f;
+                float sep = GetCrowdSeparationOffset();
+                rb.linearVelocity = new Vector2((dir * runSpeed * speedMultiplier) + sep, rb.linearVelocity.y);
+            }
         }
     }
 
@@ -312,18 +362,18 @@ public class StrawhatSwordAI : MonoBehaviour, IDamageable
         // Maintain safe tactical distance
         if (distToPlayer < attackRange * 0.7f)
         {
-            rb.linearVelocity = new Vector2(-dirToPlayer * patrolSpeed, rb.linearVelocity.y);
+            rb.linearVelocity = new Vector2(-dirToPlayer * patrolSpeed * speedMultiplier, rb.linearVelocity.y);
         }
         else
         {
-            float paceDir = Mathf.Sin(Time.time * 2.5f) > 0f ? 1f : -1f;
-            rb.linearVelocity = new Vector2(paceDir * patrolSpeed * 0.5f, rb.linearVelocity.y);
+            float paceDir = Mathf.Sin((Time.time + pacePhaseOffset) * 2.5f) > 0f ? 1f : -1f;
+            rb.linearVelocity = new Vector2(paceDir * patrolSpeed * 0.5f * speedMultiplier, rb.linearVelocity.y);
         }
 
         if (Time.time >= lastAttackTime + attackCooldown)
         {
             currentState = CanSeePlayer() ? State.EngageStance : State.Idle;
-            stateTimer = Random.Range(0.3f, 0.6f);
+            stateTimer = Random.Range(0.35f, 0.75f);
         }
     }
 

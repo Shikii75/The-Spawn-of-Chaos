@@ -112,6 +112,10 @@ public class StrawhatTeleportAI : MonoBehaviour, IDamageable
     private Color originalColor = Color.white;
     private float lastTurnTime = 0f;
 
+    // Desynchronization & Organic Movement
+    private float pacePhaseOffset = 0f;
+    private float speedMultiplier = 1f;
+
     // Dodge State
     private List<bool> dodgeDeck = new List<bool>();
     private int dodgeDeckIndex = 0;
@@ -137,6 +141,10 @@ public class StrawhatTeleportAI : MonoBehaviour, IDamageable
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         anim = GetComponentInChildren<Animator>();
 
+        // Desynchronization variables
+        pacePhaseOffset = Random.Range(0f, Mathf.PI * 2f);
+        speedMultiplier = Random.Range(0.88f, 1.15f);
+
         // Keep localScale.x strictly positive so spriteRenderer.flipX handles facing cleanly
         Vector3 s = transform.localScale;
         transform.localScale = new Vector3(Mathf.Abs(s.x), s.y, s.z);
@@ -158,7 +166,9 @@ public class StrawhatTeleportAI : MonoBehaviour, IDamageable
     {
         FindPlayer();
         currentState = State.Idle;
-        stateTimer = Random.Range(0.5f, 1.2f);
+        stateTimer = Random.Range(0.6f, 1.8f);
+        // Stagger initial attack cooldown so mobs don't all strike simultaneously
+        lastAttackTime = Time.time - Random.Range(0.4f, attackCooldown * 0.85f);
     }
 
     void Update()
@@ -252,7 +262,8 @@ public class StrawhatTeleportAI : MonoBehaviour, IDamageable
         }
 
         // Patrol horizontal movement
-        float moveVel = patrolDirection * patrolSpeed;
+        float sep = GetCrowdSeparationOffset();
+        float moveVel = (patrolDirection * patrolSpeed * speedMultiplier) + sep;
         rb.linearVelocity = new Vector2(moveVel, rb.linearVelocity.y);
         SetFacing(patrolDirection > 0f);
 
@@ -275,6 +286,24 @@ public class StrawhatTeleportAI : MonoBehaviour, IDamageable
         }
     }
 
+    private float GetCrowdSeparationOffset()
+    {
+        Collider2D[] nearby = Physics2D.OverlapCircleAll(transform.position, 1.8f);
+        float separation = 0f;
+        foreach (var col in nearby)
+        {
+            if (col != null && col.gameObject != gameObject && col.CompareTag("enemy"))
+            {
+                float dx = transform.position.x - col.transform.position.x;
+                if (Mathf.Abs(dx) < 1.6f && Mathf.Abs(dx) > 0.01f)
+                {
+                    separation += Mathf.Sign(dx) * (1.6f - Mathf.Abs(dx)) * 0.7f;
+                }
+            }
+        }
+        return Mathf.Clamp(separation, -1.6f, 1.6f);
+    }
+
     private void UpdateCooldownPacing()
     {
         FacePlayer();
@@ -291,7 +320,7 @@ public class StrawhatTeleportAI : MonoBehaviour, IDamageable
                 float retreatDir = transform.position.x < player.position.x ? -1f : 1f;
                 if (!IsWallAhead(retreatDir))
                 {
-                    rb.linearVelocity = new Vector2(retreatDir * paceSpeed, rb.linearVelocity.y);
+                    rb.linearVelocity = new Vector2(retreatDir * paceSpeed * speedMultiplier, rb.linearVelocity.y);
                 }
                 else
                 {

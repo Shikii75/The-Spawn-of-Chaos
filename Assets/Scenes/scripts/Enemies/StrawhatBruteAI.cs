@@ -94,6 +94,13 @@ public class StrawhatBruteAI : MonoBehaviour, IDamageable
     private Color originalColor = Color.white;
     private bool isSuperArmor = false;
 
+    // Desynchronization & Organic Movement
+    private float pacePhaseOffset = 0f;
+    private float speedMultiplier = 1f;
+    private float chaseMicroTimer = 0f;
+    private bool isMicroHesitating = false;
+    private float microHesitationDuration = 0f;
+
     // Ambient Shadow Aura Timer
     private float auraSpawnTimer = 0f;
     private const float AURA_INTERVAL = 0.09f;
@@ -119,6 +126,11 @@ public class StrawhatBruteAI : MonoBehaviour, IDamageable
         bodyCollider = GetComponent<Collider2D>();
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         anim = GetComponentInChildren<Animator>();
+
+        // Desynchronization variables
+        pacePhaseOffset = Random.Range(0f, Mathf.PI * 2f);
+        speedMultiplier = Random.Range(0.85f, 1.15f);
+        chaseMicroTimer = Random.Range(1.2f, 3.0f);
 
         if (anim != null && anim.runtimeAnimatorController == null)
         {
@@ -156,7 +168,9 @@ public class StrawhatBruteAI : MonoBehaviour, IDamageable
     {
         FindPlayer();
         currentState = State.Idle;
-        stateTimer = Random.Range(1.0f, 2.0f);
+        stateTimer = Random.Range(0.8f, 2.0f);
+        // Stagger initial attack cooldown so mobs don't all strike simultaneously
+        lastAttackTime = Time.time - Random.Range(0.5f, attackCooldown * 0.85f);
     }
 
     void Update()
@@ -241,7 +255,7 @@ public class StrawhatBruteAI : MonoBehaviour, IDamageable
             return;
         }
 
-        rb.linearVelocity = new Vector2(patrolDirection * patrolSpeed, rb.linearVelocity.y);
+        rb.linearVelocity = new Vector2(patrolDirection * patrolSpeed * speedMultiplier, rb.linearVelocity.y);
         SetFacing(patrolDirection > 0f);
 
         if (CanSeePlayer())
@@ -257,6 +271,24 @@ public class StrawhatBruteAI : MonoBehaviour, IDamageable
             currentState = State.Idle;
             stateTimer = Random.Range(1.5f, 2.5f);
         }
+    }
+
+    private float GetCrowdSeparationOffset()
+    {
+        Collider2D[] nearby = Physics2D.OverlapCircleAll(transform.position, 2.2f);
+        float separation = 0f;
+        foreach (var col in nearby)
+        {
+            if (col != null && col.gameObject != gameObject && col.CompareTag("enemy"))
+            {
+                float dx = transform.position.x - col.transform.position.x;
+                if (Mathf.Abs(dx) < 2.0f && Mathf.Abs(dx) > 0.01f)
+                {
+                    separation += Mathf.Sign(dx) * (2.0f - Mathf.Abs(dx)) * 0.8f;
+                }
+            }
+        }
+        return Mathf.Clamp(separation, -2.0f, 2.0f);
     }
 
     private void UpdateChase()
@@ -284,9 +316,27 @@ public class StrawhatBruteAI : MonoBehaviour, IDamageable
             return;
         }
 
-        // Lumbering march towards player
-        float dir = player.position.x > transform.position.x ? 1f : -1f;
-        rb.linearVelocity = new Vector2(dir * chaseSpeed, rb.linearVelocity.y);
+        // Lumbering march towards player with heavy stride cadence
+        chaseMicroTimer -= Time.deltaTime;
+        if (chaseMicroTimer <= 0f)
+        {
+            chaseMicroTimer = Random.Range(2.4f, 4.2f);
+            isMicroHesitating = Random.value < 0.25f;
+            microHesitationDuration = Random.Range(0.25f, 0.5f);
+        }
+
+        if (isMicroHesitating)
+        {
+            microHesitationDuration -= Time.deltaTime;
+            if (microHesitationDuration <= 0f) isMicroHesitating = false;
+            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+        }
+        else
+        {
+            float dir = player.position.x > transform.position.x ? 1f : -1f;
+            float sep = GetCrowdSeparationOffset();
+            rb.linearVelocity = new Vector2((dir * chaseSpeed * speedMultiplier) + sep, rb.linearVelocity.y);
+        }
     }
 
     private void UpdateCooldownPacing()
@@ -298,19 +348,19 @@ public class StrawhatBruteAI : MonoBehaviour, IDamageable
         if (distToPlayer < attackRange * 0.75f)
         {
             // Back away slowly
-            rb.linearVelocity = new Vector2(-dirToPlayer * patrolSpeed * 0.7f, rb.linearVelocity.y);
+            rb.linearVelocity = new Vector2(-dirToPlayer * patrolSpeed * 0.7f * speedMultiplier, rb.linearVelocity.y);
         }
         else
         {
-            // Slow pacing
-            float paceDir = Mathf.Sin(Time.time * 2f) > 0f ? 1f : -1f;
-            rb.linearVelocity = new Vector2(paceDir * patrolSpeed * 0.6f, rb.linearVelocity.y);
+            // Slow pacing desynchronized across brute instances
+            float paceDir = Mathf.Sin((Time.time + pacePhaseOffset) * 2f) > 0f ? 1f : -1f;
+            rb.linearVelocity = new Vector2(paceDir * patrolSpeed * 0.6f * speedMultiplier, rb.linearVelocity.y);
         }
 
         if (Time.time >= lastAttackTime + attackCooldown)
         {
             currentState = CanSeePlayer() ? State.Chase : State.Idle;
-            stateTimer = 1.0f;
+            stateTimer = Random.Range(0.6f, 1.2f);
         }
     }
 

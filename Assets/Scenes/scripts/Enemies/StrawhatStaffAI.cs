@@ -99,6 +99,13 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
     private Color originalColor = Color.white;
     private float lastTurnTime = 0f;
 
+    // Desynchronization & Organic Movement
+    private float pacePhaseOffset = 0f;
+    private float speedMultiplier = 1f;
+    private float chaseMicroTimer = 0f;
+    private bool isMicroHesitating = false;
+    private float microHesitationDuration = 0f;
+
     // Direct Frame-by-Frame Animation Engine
     private float runAnimTimer = 0f;
     private int runAnimIndex = 0;
@@ -132,6 +139,11 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
         bodyCollider = GetComponent<Collider2D>();
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         anim = GetComponentInChildren<Animator>();
+
+        // Desynchronization variables
+        pacePhaseOffset = Random.Range(0f, Mathf.PI * 2f);
+        speedMultiplier = Random.Range(0.88f, 1.15f);
+        chaseMicroTimer = Random.Range(1.2f, 3.0f);
 
         // Ensure AnimatorController is assigned if missing
         if (anim != null && anim.runtimeAnimatorController == null)
@@ -172,7 +184,9 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
     {
         FindPlayer();
         currentState = CanSeePlayer() ? State.Chase : State.Patrol;
-        stateTimer = Random.Range(3f, 5f);
+        stateTimer = Random.Range(2.5f, 4.5f);
+        // Stagger initial attack cooldown so mobs don't all strike simultaneously
+        lastAttackTime = Time.time - Random.Range(0.4f, attackCooldown * 0.85f);
     }
 
     void Update()
@@ -216,7 +230,7 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
             lastTurnTime = Time.time;
         }
 
-        rb.linearVelocity = new Vector2(patrolDirection * patrolSpeed, rb.linearVelocity.y);
+        rb.linearVelocity = new Vector2(patrolDirection * patrolSpeed * speedMultiplier, rb.linearVelocity.y);
         SetFacing(patrolDirection > 0f);
 
         if (CanSeePlayer())
@@ -236,6 +250,24 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
                 lastTurnTime = Time.time;
             }
         }
+    }
+
+    private float GetCrowdSeparationOffset()
+    {
+        Collider2D[] nearby = Physics2D.OverlapCircleAll(transform.position, 1.8f);
+        float separation = 0f;
+        foreach (var col in nearby)
+        {
+            if (col != null && col.gameObject != gameObject && col.CompareTag("enemy"))
+            {
+                float dx = transform.position.x - col.transform.position.x;
+                if (Mathf.Abs(dx) < 1.6f && Mathf.Abs(dx) > 0.01f)
+                {
+                    separation += Mathf.Sign(dx) * (1.6f - Mathf.Abs(dx)) * 0.7f;
+                }
+            }
+        }
+        return Mathf.Clamp(separation, -1.6f, 1.6f);
     }
 
     private void UpdateChase()
@@ -264,10 +296,29 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
             return;
         }
 
-        // Sprint towards player
-        float dir = player.position.x > transform.position.x ? 1f : -1f;
-        SetRunningAnimation(true);
-        rb.linearVelocity = new Vector2(dir * runSpeed, rb.linearVelocity.y);
+        // Sprint towards player with organic cadence and tactical micro-adjustments
+        chaseMicroTimer -= Time.deltaTime;
+        if (chaseMicroTimer <= 0f)
+        {
+            chaseMicroTimer = Random.Range(2.0f, 3.8f);
+            isMicroHesitating = Random.value < 0.25f;
+            microHesitationDuration = Random.Range(0.2f, 0.4f);
+        }
+
+        if (isMicroHesitating)
+        {
+            microHesitationDuration -= Time.deltaTime;
+            if (microHesitationDuration <= 0f) isMicroHesitating = false;
+            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+            SetRunningAnimation(false);
+        }
+        else
+        {
+            float dir = player.position.x > transform.position.x ? 1f : -1f;
+            float sep = GetCrowdSeparationOffset();
+            SetRunningAnimation(true);
+            rb.linearVelocity = new Vector2((dir * runSpeed * speedMultiplier) + sep, rb.linearVelocity.y);
+        }
     }
 
     private void UpdateCooldown()
@@ -282,18 +333,18 @@ public class StrawhatStaffAI : MonoBehaviour, IDamageable
         if (distToPlayer < attackRange * 0.65f)
         {
             // Back away smoothly to maintain attack pacing
-            rb.linearVelocity = new Vector2(-dirToPlayer * patrolSpeed, rb.linearVelocity.y);
+            rb.linearVelocity = new Vector2(-dirToPlayer * patrolSpeed * speedMultiplier, rb.linearVelocity.y);
         }
         else if (distToPlayer > attackRange * 1.15f)
         {
             // Stalk forward
-            rb.linearVelocity = new Vector2(dirToPlayer * patrolSpeed, rb.linearVelocity.y);
+            rb.linearVelocity = new Vector2(dirToPlayer * patrolSpeed * speedMultiplier, rb.linearVelocity.y);
         }
         else
         {
-            // Subtle combat bob / pacing
-            float paceDir = Mathf.Sin(Time.time * 3f) > 0f ? 1f : -1f;
-            rb.linearVelocity = new Vector2(paceDir * patrolSpeed * 0.6f, rb.linearVelocity.y);
+            // Subtle combat bob / pacing desynchronized across mob instances
+            float paceDir = Mathf.Sin((Time.time + pacePhaseOffset) * 3f) > 0f ? 1f : -1f;
+            rb.linearVelocity = new Vector2(paceDir * patrolSpeed * 0.6f * speedMultiplier, rb.linearVelocity.y);
         }
 
         if (Time.time >= lastAttackTime + attackCooldown)

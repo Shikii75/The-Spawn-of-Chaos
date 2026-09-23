@@ -66,8 +66,8 @@ public class DojoWaveManager : MonoBehaviour
     [Tooltip("Breathing room between waves after all enemies are dead.")]
     public float betweenWaveDelay = 2.5f;
 
-    [Tooltip("Stagger delay between each enemy spawn within a wave.")]
-    public float spawnStagger = 0.35f;
+    [Tooltip("Stagger delay between each enemy spawn within a wave to prevent simultaneous mob movement.")]
+    public float spawnStagger = 0.75f;
 
     // ── Spawn Polish ──────────────────────────────────────────────────
     [Header("Spawn Polish")]
@@ -454,7 +454,7 @@ public class DojoWaveManager : MonoBehaviour
 
             if (i < wave.Count - 1)
             {
-                yield return new WaitForSeconds(spawnStagger);
+                yield return new WaitForSeconds(spawnStagger + Random.Range(-0.1f, 0.25f));
             }
         }
 
