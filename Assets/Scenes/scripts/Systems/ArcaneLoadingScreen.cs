@@ -78,10 +78,13 @@ namespace SpawnOfChaos.Systems
             "Tap the centerpiece wings emblem on the title screen to command the Spawn of Chaos."
         };
 
+        private static bool isCurrentlyLoading = false;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatic()
         {
             Instance = null;
+            isCurrentlyLoading = false;
         }
 
         private void Awake()
@@ -113,6 +116,12 @@ namespace SpawnOfChaos.Systems
 
         public static void LoadScene(string sceneName)
         {
+            if (isCurrentlyLoading)
+            {
+                Debug.LogWarning($"[ArcaneLoadingScreen] Scene load already in progress. Ignoring redundant call for '{sceneName}'.");
+                return;
+            }
+            isCurrentlyLoading = true;
             EnsureExists();
             Instance.StartCoroutine(Instance.LoadSceneAsyncRoutine(sceneName));
         }
@@ -777,6 +786,7 @@ namespace SpawnOfChaos.Systems
 
             canvasGroup.alpha = 0f;
             canvasGroup.blocksRaycasts = false;
+            isCurrentlyLoading = false;
         }
     }
 }

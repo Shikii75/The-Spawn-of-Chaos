@@ -6,8 +6,8 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/art/SampleScene.unity
-    guid: 0055c5ea77352fa40be1251b06ce9080
+    path: Assets/Scenes/SampleScene.unity
+    guid: 8c9cfa26abfee488c85f1582747f6a02
   - enabled: 1
     path: Assets/Scenes/CaveScene.unity
     guid: 694cb141accfd04429442095c5798f73
@@ -18,11 +18,11 @@ EditorBuildSettings:
     path: Assets/Scenes/Dojo2Scene.unity
     guid: a6e069d738ec5834781ed7a16dc4da90
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
-    guid: 8c9cfa26abfee488c85f1582747f6a02
-  - enabled: 1
     path: Assets/Scenes/TutorialScene.unity
     guid: 7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a
+  - enabled: 0
+    path: Assets/Scenes/art/SampleScene.unity
+    guid: 0055c5ea77352fa40be1251b06ce9080
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0
