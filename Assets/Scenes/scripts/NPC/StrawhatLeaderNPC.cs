@@ -156,6 +156,12 @@ public class StrawhatLeaderNPC : MonoBehaviour
             _dialogue = gameObject.AddComponent<SpeechBubbleDialogue>();
         }
 
+        // Ensure leader gives the player plenty of space
+        if (stopDistance < 5.0f)
+        {
+            stopDistance = 5.5f;
+        }
+
         // Configure speech bubble
         _dialogue.characterName = "Strawhat Leader";
         _dialogue.dialogueLines = leaderDialogueLines;
@@ -209,7 +215,7 @@ public class StrawhatLeaderNPC : MonoBehaviour
 
     private IEnumerator RunIntroSequence()
     {
-        // Lock player movement
+        // Lock player movement during approach and dialogue
         move.ExternalMovementLock = true;
 
         if (_playerTf != null)
@@ -218,35 +224,45 @@ public class StrawhatLeaderNPC : MonoBehaviour
             FacePlayer();
 
             // Play Begin Walk
-            yield return StartCoroutine(PlayFrameSequence(beginWalkFrames, false));
-
-            // Walk towards player until stopDistance
-            PlayLoopingFrames(keepWalkingFrames);
-            while (Vector2.Distance(transform.position, _playerTf.position) > stopDistance)
+            if (beginWalkFrames != null && beginWalkFrames.Length > 0)
             {
+                yield return StartCoroutine(PlayFrameSequence(beginWalkFrames, false));
+            }
+
+            // Walk towards player until stopDistance (checking horizontal distance so Y delta doesn't trap the loop)
+            PlayLoopingFrames(keepWalkingFrames);
+            float walkTimeout = 6.0f;
+            float walkTimer = 0f;
+            while (_playerTf != null && Mathf.Abs(transform.position.x - _playerTf.position.x) > stopDistance && walkTimer < walkTimeout)
+            {
+                walkTimer += Time.deltaTime;
                 move.ExternalMovementLock = true;
                 FacePlayer();
                 float dir = _playerTf.position.x - transform.position.x;
-                Vector3 target = new Vector3(_playerTf.position.x + (dir > 0 ? -stopDistance : stopDistance), transform.position.y, transform.position.z);
+                float targetX = _playerTf.position.x + (dir > 0 ? -stopDistance : stopDistance);
+                Vector3 target = new Vector3(targetX, transform.position.y, transform.position.z);
                 transform.position = Vector3.MoveTowards(transform.position, target, walkSpeed * Time.deltaTime);
                 yield return null;
             }
 
             // Make player face the Strawhat Leader while frozen
-            move playerMove = _playerTf.GetComponent<move>();
+            move playerMove = _playerTf != null ? _playerTf.GetComponent<move>() : null;
             if (playerMove != null) playerMove.FaceTarget(transform.position);
 
-            // Play Stop Walk
+            // Play Stop Walk animation sequence cleanly
             FacePlayer();
-            yield return StartCoroutine(PlayFrameSequence(stopWalkingFrames, false));
+            if (stopWalkingFrames != null && stopWalkingFrames.Length > 0)
+            {
+                yield return StartCoroutine(PlayFrameSequence(stopWalkingFrames, false));
+            }
 
             if (playerMove != null) playerMove.FaceTarget(transform.position);
         }
 
-        // Play Idle before dialogue
+        // Stand in Idle (standing animation)
         FacePlayer();
         PlayLoopingFrames(idleFrames);
-        yield return new WaitForSeconds(0.3f);
+        yield return new WaitForSeconds(0.4f);
 
         // Open speech bubble dialogue
         _dialogue.OpenDialogueExternally();
@@ -287,6 +303,9 @@ public class StrawhatLeaderNPC : MonoBehaviour
 
     private void OnDialogueFinished()
     {
+        // Immediately free the player to move as soon as dialogue ends!
+        move.ExternalMovementLock = false;
+
         StartCoroutine(RunPostDialogueSequence());
     }
 
@@ -294,26 +313,23 @@ public class StrawhatLeaderNPC : MonoBehaviour
     {
         _currentState = State.PostDialogueWait;
 
-        // Keep player locked during countdown
-        move.ExternalMovementLock = true;
+        // Player is free to move right after dialogue
+        move.ExternalMovementLock = false;
 
         // Disable interact prompt / dialogue re-trigger during fight
         if (_dialogue != null) _dialogue.interactionDisabled = true;
 
         // Play End Of Conversation animation gesture
         FacePlayer();
-        yield return StartCoroutine(PlayFrameSequence(endOfConversationFrames, false));
+        if (endOfConversationFrames != null && endOfConversationFrames.Length > 0)
+        {
+            yield return StartCoroutine(PlayFrameSequence(endOfConversationFrames, false));
+        }
         FacePlayer();
         PlayLoopingFrames(idleFrames);
 
-        // 3-second fight countdown
-        float elapsed = 0f;
-        while (elapsed < fightStartDelay)
-        {
-            move.ExternalMovementLock = true;
-            elapsed += Time.deltaTime;
-            yield return null;
-        }
+        // 3-second fight countdown — player can move and reposition freely!
+        yield return new WaitForSeconds(fightStartDelay);
 
         // Lock gates & start challenge via DojoWaveManager
         DojoWaveManager waveMgr = DojoWaveManager.Instance != null ? DojoWaveManager.Instance : Object.FindFirstObjectByType<DojoWaveManager>();
@@ -322,13 +338,16 @@ public class StrawhatLeaderNPC : MonoBehaviour
             waveMgr.StartChallenge();
         }
 
-        // Unfreeze player now that battle has officially begun
+        // Guarantee player is unlocked
         move.ExternalMovementLock = false;
 
         // Start sitting sequence back on altar mat or current position
         _currentState = State.SittingInBattle;
         FacePlayer();
-        yield return StartCoroutine(PlayFrameSequence(startSittingFrames, false));
+        if (startSittingFrames != null && startSittingFrames.Length > 0)
+        {
+            yield return StartCoroutine(PlayFrameSequence(startSittingFrames, false));
+        }
 
         // Sitting loop during battle
         StartCoroutine(RunBattleSittingLoop());
