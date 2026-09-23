@@ -1,19 +1,7 @@
 fileFormatVersion: 2
 guid: 78b182ebaafcced49b48ad5fbab4d777
 TextureImporter:
-  internalIDToNameTable:
-  - first:
-      213: 7591575736208656583
-    second: frame_014_0
-  - first:
-      213: 529698510099187759
-    second: frame_014_1
-  - first:
-      213: -1051787518395584925
-    second: frame_014_2
-  - first:
-      213: 8463342046093134346
-    second: frame_014_3
+  internalIDToNameTable: []
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -55,7 +43,7 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 2
+  spriteMode: 1
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 0
@@ -69,153 +57,10 @@ TextureImporter:
   textureType: 8
   textureShape: 1
   singleChannelComponent: 0
-  flipbookRows: 1
-  flipbookColumns: 1
-  maxTextureSizeSet: 0
-  compressionQualitySet: 0
-  textureFormatSet: 0
+  flipbook: 0
   ignorePngGamma: 0
-  applyGammaDecoding: 0
-  swizzle: 50462976
   cookieLightType: 0
-  platformSettings:
-  - serializedVersion: 4
-    buildTarget: DefaultTexturePlatform
-    maxTextureSize: 2048
-    resizeAlgorithm: 0
-    textureFormat: -1
-    textureCompression: 1
-    compressionQuality: 50
-    crunchedCompression: 0
-    allowsAlphaSplitting: 0
-    overridden: 0
-    ignorePlatformSupport: 0
-    androidETC2FallbackOverride: 0
-    forceMaximumCompressionQuality_BC6H_BC7: 0
-  - serializedVersion: 4
-    buildTarget: Standalone
-    maxTextureSize: 2048
-    resizeAlgorithm: 0
-    textureFormat: -1
-    textureCompression: 1
-    compressionQuality: 50
-    crunchedCompression: 0
-    allowsAlphaSplitting: 0
-    overridden: 0
-    ignorePlatformSupport: 0
-    androidETC2FallbackOverride: 0
-    forceMaximumCompressionQuality_BC6H_BC7: 0
-  spriteSheet:
-    serializedVersion: 2
-    sprites:
-    - serializedVersion: 2
-      name: frame_014_0
-      rect:
-        serializedVersion: 2
-        x: 467
-        y: 56
-        width: 855
-        height: 989
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 7c8013209e1ba5960800000000000000
-      internalID: 7591575736208656583
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: frame_014_1
-      rect:
-        serializedVersion: 2
-        x: 1322
-        y: 590
-        width: 7
-        height: 22
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: f28048c0dfdd95700800000000000000
-      internalID: 529698510099187759
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: frame_014_2
-      rect:
-        serializedVersion: 2
-        x: 459
-        y: 363
-        width: 7
-        height: 100
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 36e67da13dc4761f0800000000000000
-      internalID: -1051787518395584925
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: frame_014_3
-      rect:
-        serializedVersion: 2
-        x: 465
-        y: 336
-        width: 7
-        height: 40
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: a0a420e00c4d37570800000000000000
-      internalID: 8463342046093134346
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    outline: []
-    customData: 
-    physicsShape: []
-    bones: []
-    spriteID: 
-    internalID: 0
-    vertices: []
-    indices: 
-    edges: []
-    weights: []
-    secondaryTextures: []
-    spriteCustomMetadata:
-      entries: []
-    nameFileIdTable:
-      frame_014_0: 7591575736208656583
-      frame_014_1: 529698510099187759
-      frame_014_2: -1051787518395584925
-      frame_014_3: 8463342046093134346
-  mipmapLimitGroupName: 
-  pSDRemoveMatte: 0
+  platformSettings: []
   userData: 
   assetBundleName: 
   assetBundleVariant: 

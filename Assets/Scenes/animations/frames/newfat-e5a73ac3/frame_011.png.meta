@@ -1,25 +1,7 @@
 fileFormatVersion: 2
 guid: 6a8a72667115e2a4a87ce03af95cc976
 TextureImporter:
-  internalIDToNameTable:
-  - first:
-      213: 4520904317959053790
-    second: frame_011_0
-  - first:
-      213: -5188515448371832455
-    second: frame_011_1
-  - first:
-      213: 7523620438153795321
-    second: frame_011_2
-  - first:
-      213: -2432218229560016690
-    second: frame_011_3
-  - first:
-      213: -5794898671637380656
-    second: frame_011_4
-  - first:
-      213: 3812454013763995544
-    second: frame_011_5
+  internalIDToNameTable: []
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -61,7 +43,7 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 2
+  spriteMode: 1
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 0
@@ -75,199 +57,10 @@ TextureImporter:
   textureType: 8
   textureShape: 1
   singleChannelComponent: 0
-  flipbookRows: 1
-  flipbookColumns: 1
-  maxTextureSizeSet: 0
-  compressionQualitySet: 0
-  textureFormatSet: 0
+  flipbook: 0
   ignorePngGamma: 0
-  applyGammaDecoding: 0
-  swizzle: 50462976
   cookieLightType: 0
-  platformSettings:
-  - serializedVersion: 4
-    buildTarget: DefaultTexturePlatform
-    maxTextureSize: 2048
-    resizeAlgorithm: 0
-    textureFormat: -1
-    textureCompression: 1
-    compressionQuality: 50
-    crunchedCompression: 0
-    allowsAlphaSplitting: 0
-    overridden: 0
-    ignorePlatformSupport: 0
-    androidETC2FallbackOverride: 0
-    forceMaximumCompressionQuality_BC6H_BC7: 0
-  - serializedVersion: 4
-    buildTarget: Standalone
-    maxTextureSize: 2048
-    resizeAlgorithm: 0
-    textureFormat: -1
-    textureCompression: 1
-    compressionQuality: 50
-    crunchedCompression: 0
-    allowsAlphaSplitting: 0
-    overridden: 0
-    ignorePlatformSupport: 0
-    androidETC2FallbackOverride: 0
-    forceMaximumCompressionQuality_BC6H_BC7: 0
-  spriteSheet:
-    serializedVersion: 2
-    sprites:
-    - serializedVersion: 2
-      name: frame_011_0
-      rect:
-        serializedVersion: 2
-        x: 470
-        y: 56
-        width: 846
-        height: 992
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: ed1aa7f368a7dbe30800000000000000
-      internalID: 4520904317959053790
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: frame_011_1
-      rect:
-        serializedVersion: 2
-        x: 1316
-        y: 576
-        width: 7
-        height: 36
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 9799b2c80b0bef7b0800000000000000
-      internalID: -5188515448371832455
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: frame_011_2
-      rect:
-        serializedVersion: 2
-        x: 1322
-        y: 586
-        width: 6
-        height: 19
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 9f696093de4496860800000000000000
-      internalID: 7523620438153795321
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: frame_011_3
-      rect:
-        serializedVersion: 2
-        x: 459
-        y: 394
-        width: 7
-        height: 69
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: ec088da18660f3ed0800000000000000
-      internalID: -2432218229560016690
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: frame_011_4
-      rect:
-        serializedVersion: 2
-        x: 466
-        y: 457
-        width: 6
-        height: 9
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 0d1cbaf5c52649fa0800000000000000
-      internalID: -5794898671637380656
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: frame_011_5
-      rect:
-        serializedVersion: 2
-        x: 465
-        y: 353
-        width: 7
-        height: 60
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 8974aece9be88e430800000000000000
-      internalID: 3812454013763995544
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    outline: []
-    customData: 
-    physicsShape: []
-    bones: []
-    spriteID: 
-    internalID: 0
-    vertices: []
-    indices: 
-    edges: []
-    weights: []
-    secondaryTextures: []
-    spriteCustomMetadata:
-      entries: []
-    nameFileIdTable:
-      frame_011_0: 4520904317959053790
-      frame_011_1: -5188515448371832455
-      frame_011_2: 7523620438153795321
-      frame_011_3: -2432218229560016690
-      frame_011_4: -5794898671637380656
-      frame_011_5: 3812454013763995544
-  mipmapLimitGroupName: 
-  pSDRemoveMatte: 0
+  platformSettings: []
   userData: 
   assetBundleName: 
   assetBundleVariant: 

@@ -1,0 +1,252 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1000002}
+  - component: {fileID: 1000003}
+  - component: {fileID: 1000004}
+  - component: {fileID: 1000005}
+  - component: {fileID: 1000006}
+  - component: {fileID: 1000007}
+  - component: {fileID: 1000008}
+  m_Layer: 0
+  m_Name: StrawhatSwordMob
+  m_TagString: enemy
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1000002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.38, y: 0.38, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!212 &1000003
+SpriteRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000001}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 5
+  m_Sprite: {fileID: 21300000, guid: a8ae06001db2f094088026dcc72959a0, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+--- !u!95 &1000004
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000001}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: c1100001111122223333444455556661, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!50 &1000005
+Rigidbody2D:
+  serializedVersion: 4
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000001}
+  m_BodyType: 0
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDrag: 0
+  m_AngularDrag: 0.05
+  m_GravityScale: 2.5
+  m_Material: {fileID: 0}
+  m_Interpolate: 0
+  m_SleepingMode: 1
+  m_CollisionDetection: 1
+  m_Constraints: 4
+--- !u!61 &1000006
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000001}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Offset: {x: 0, y: 0}
+  m_Size: {x: 2.0, y: 3.6}
+  m_EdgeRadius: 0
+--- !u!114 &1000007
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8a21f63b4094e4a9547d2f9b8c31001, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StrawhatSwordAI
+  currentState: 0
+  maxHealth: 110
+  slashDamage: 20
+  playerKnockbackForce: 6.8
+  hitStunDuration: 0.18
+  detectionRange: 11
+  attackRange: 4.8
+  runSpeed: 4.2
+  patrolSpeed: 2
+  patrolDistance: 4.5
+  rushDashSpeed: 7.5
+  rushDuration: 0.4
+  attackCooldown: 2.2
+  slashHitboxSize: {x: 3.2, y: 2.8}
+  slashHitboxOffset: {x: 0.9, y: 0}
+  enableParry: 1
+  parryCountPerFive: 3
+  parryDuration: 0.32
+  bladeArcColor: {r: 0.9, g: 0.25, b: 0.95, a: 0.95}
+  hitFlashColor: {r: 1, g: 0.3, b: 0.3, a: 1}
+  droppedOrbsCount: 3
+  idleSprites:
+  - {fileID: 21300000, guid: a8ae06001db2f094088026dcc72959a0, type: 3}
+  - {fileID: 21300000, guid: 1c209202e24b1264e9d573e9baa36e71, type: 3}
+  - {fileID: 21300000, guid: 6263d4ca30289f349ab9438b4c6df139, type: 3}
+  - {fileID: 21300000, guid: b96f7205d486c2c47bac812a974cb41f, type: 3}
+  - {fileID: 21300000, guid: 250ee5140f88675459066a239ee12540, type: 3}
+  - {fileID: 21300000, guid: 4c40651f58ff2b548bb43d86a8ad5fd8, type: 3}
+  - {fileID: 21300000, guid: 2ea5cc5543f0e9544b8153ec0b0f7f22, type: 3}
+  - {fileID: 21300000, guid: aa6690995af763947aca5f4205b049c6, type: 3}
+  - {fileID: 21300000, guid: 1ebd70cd2de41a54c95f9e943843cd0b, type: 3}
+  - {fileID: 21300000, guid: a0c6d3f40e8eb134393917b4476bbbdf, type: 3}
+  - {fileID: 21300000, guid: 3bcb8e0bb7e78a349a22d6bc2fa3ab9e, type: 3}
+  - {fileID: 21300000, guid: 73e5c0f5c918cae408b308931a79e845, type: 3}
+  - {fileID: 21300000, guid: 6b29de9954bd01c4ca4e698c73c99fa6, type: 3}
+  - {fileID: 21300000, guid: 28ba49470355db443b64c3ae1771ee01, type: 3}
+  - {fileID: 21300000, guid: ab4de858a98efd04582aa38b20093315, type: 3}
+  - {fileID: 21300000, guid: 0a9101bc7d0a6e842b999e384563573e, type: 3}
+  - {fileID: 21300000, guid: 2090e9555c856f8439b4955bbbccfa48, type: 3}
+  - {fileID: 21300000, guid: 274a513e190678b419c9e216d84cd26f, type: 3}
+  - {fileID: 21300000, guid: 10163aef3a1e8314facc6c2298751ea9, type: 3}
+  - {fileID: 21300000, guid: 5b474404b1f9a0949867a19d79bb05fb, type: 3}
+  - {fileID: 21300000, guid: 79eebdd07b8841d4b977062a08e8fccd, type: 3}
+  stanceSprites:
+  - {fileID: 21300000, guid: 96ac3dd76cfacaa4dba46c2808581b55, type: 3}
+  - {fileID: 21300000, guid: e54ef664758a95a48a207a27687922b2, type: 3}
+  - {fileID: 21300000, guid: 1e31786fd6913f6498cbbe9f41fa006c, type: 3}
+  - {fileID: 21300000, guid: c97619261dbeb3d42b5ae59818801556, type: 3}
+  - {fileID: 21300000, guid: 167af246bb9c9bc47ad5b5cb8b4816df, type: 3}
+  - {fileID: 21300000, guid: 704e9855d266ebf46a3a206acbfbef3a, type: 3}
+  - {fileID: 21300000, guid: 5e0277a2e0e54104fba5beb3a2d233a1, type: 3}
+  - {fileID: 21300000, guid: 20781c3834eb6324795f73d6dcbd5eb0, type: 3}
+  - {fileID: 21300000, guid: 74cbb54269f722542bb3c841779028db, type: 3}
+  - {fileID: 21300000, guid: 7b09a3a69c6328147a3ab5481918ea17, type: 3}
+  - {fileID: 21300000, guid: 8f88af0268adc9a4b976b986bb63082c, type: 3}
+  - {fileID: 21300000, guid: a57fee2783768c14da73741d5df7075c, type: 3}
+  - {fileID: 21300000, guid: 2accc00a10569bd44a520c0b39294f57, type: 3}
+  walkSprites:
+  - {fileID: 21300000, guid: a233e16772ae8d649ac9e9e8e8712e46, type: 3}
+  - {fileID: 21300000, guid: 94aa0170ae05ba940b87179196a8022f, type: 3}
+  - {fileID: 21300000, guid: 9e432638fc86a994c9fe748e0458439c, type: 3}
+  - {fileID: 21300000, guid: de41e52f5413e0d4c8364a0f380f2aea, type: 3}
+  - {fileID: 21300000, guid: 256e4ea9669df9c4b88c39e9ecf61a5a, type: 3}
+  - {fileID: 21300000, guid: 8d5a9efb6f1126140a28b518dd038031, type: 3}
+  - {fileID: 21300000, guid: 4a0a77efa5b844e4b80c6db61678ca0e, type: 3}
+  - {fileID: 21300000, guid: 9e3a56ca6f9e9314ba382274943d245f, type: 3}
+  - {fileID: 21300000, guid: a5a612522c99b5b40850256f4c3f1cab, type: 3}
+  - {fileID: 21300000, guid: e6f21192074409b4689d6b2ca95923f7, type: 3}
+  - {fileID: 21300000, guid: 92f2d5039c57a9e44a23404f5f4cb1bb, type: 3}
+  - {fileID: 21300000, guid: f67340d36f509d344953ab11c6d6c08d, type: 3}
+  - {fileID: 21300000, guid: 21b1681f16c976b48ba3209733125af1, type: 3}
+  - {fileID: 21300000, guid: aae25faec935ba34dbe8e322a747a2d0, type: 3}
+  - {fileID: 21300000, guid: 3b2aa0cc6ee851e499f0d07c1587c73c, type: 3}
+  - {fileID: 21300000, guid: 5b23755c401fdbb47a17e04f5f8358ed, type: 3}
+  - {fileID: 21300000, guid: 56ef040c60f11084daa4db1c69536125, type: 3}
+  - {fileID: 21300000, guid: 65e5c6d5ff92cfb42a1db52da9e96bdb, type: 3}
+  - {fileID: 21300000, guid: 0e465cfed5e56394fb01a8a7ff26d6c1, type: 3}
+  - {fileID: 21300000, guid: e33daba2c2e850046ade74716ddbe44d, type: 3}
+  - {fileID: 21300000, guid: cbc401dbe613b004599ac0012d3881da, type: 3}
+  - {fileID: 21300000, guid: eff60575c956cad459d596cd7e26a205, type: 3}
+  - {fileID: 21300000, guid: 0d5f4d31618281545b93c815494bdb99, type: 3}
+  attackSprites:
+  - {fileID: 21300000, guid: db724794df1b7e742a7928c76aba91c5, type: 3}
+  - {fileID: 21300000, guid: bc38ff3aabf8e8e4494ee10853f305ff, type: 3}
+  - {fileID: 21300000, guid: 6d893cd7abf43aa4999bdcaeb1067cdb, type: 3}
+  - {fileID: 21300000, guid: 8a6a48893f4ffeb4e9522ff8a4066d69, type: 3}
+  - {fileID: 21300000, guid: 43059ff8aaa6305438302ee99b7bd5bf, type: 3}
+  - {fileID: 21300000, guid: bd865850d26a7864e8ae3e086a367745, type: 3}
+  - {fileID: 21300000, guid: ccbc8ea40430d9e4eb0eb91b2daa0ef8, type: 3}
+  - {fileID: 21300000, guid: 64bb36d260fe22f47ad1c913e31714ea, type: 3}
+  - {fileID: 21300000, guid: ce7689f7db10ace4db6c82cb0d262e11, type: 3}
+  - {fileID: 21300000, guid: c834aec8f09db9243b97c6d6ee683f80, type: 3}
+  - {fileID: 21300000, guid: bbea36ce5dab5ac478336dfd8aa67ac5, type: 3}
+  - {fileID: 21300000, guid: 498d2f3ae31f3f746b6e6ad98e036985, type: 3}
+  - {fileID: 21300000, guid: bc3a48ec72c580044ba425c081e38181, type: 3}
+  - {fileID: 21300000, guid: 6655104994e61f5479b6ebd5d7c561fd, type: 3}
+  - {fileID: 21300000, guid: 375ec41cf5d09014ca39bde3473ac6a1, type: 3}
+  - {fileID: 21300000, guid: a7d1373e2b09e184b98b1c57e38dac69, type: 3}
+  - {fileID: 21300000, guid: 24687cfd0d998c54cb7dd7b8af1677bf, type: 3}
+  - {fileID: 21300000, guid: 75c3870f08edf164ca0e51a245ea5485, type: 3}
+  - {fileID: 21300000, guid: 98e6a296030944f49bea1986a8236d17, type: 3}
+--- !u!114 &1000008
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4be95743e3964c04fbdb066318ca31ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Health
+  maxHealth: 110
