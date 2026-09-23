@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using TMPro;
 
 [RequireComponent(typeof(Collider2D))]
 public class entersign : MonoBehaviour
@@ -84,11 +85,81 @@ public class entersign : MonoBehaviour
         }
     }
 
+    private bool CanTransition(out string reason)
+    {
+        reason = null;
+
+        // Check Dojo 1 Re-entry Lock: Completed trials cannot be re-entered
+        if ((targetSceneName == "Dojo1Scene" || targetSceneName == "Assets/Scenes/Dojo1Scene.unity") &&
+            PlayerPrefs.GetInt("Dojo1_Completed", 0) == 1)
+        {
+            reason = "Dojo Cleared (The Strawhat Clan acknowledges your strength)";
+            return false;
+        }
+
+        // Check Dojo 1 Combat Lock: Cannot leave Dojo 1 while challenge is active
+        string currentScene = SceneManager.GetActiveScene().name;
+        if (currentScene.Contains("Dojo1") && (targetSceneName == "SampleScene" || targetSceneName.Contains("SampleScene")))
+        {
+            if (DojoWaveManager.Instance != null && !DojoWaveManager.Instance.IsChallengeCompleted)
+            {
+                reason = "The Dojo doors are sealed until the trial is complete!";
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private void ShowFloatingNotice(string msg, Color col)
+    {
+        Debug.Log($"[entersign] Notice: {msg}");
+        GameObject txtGO = new GameObject("EnterSignNotice");
+        txtGO.transform.position = transform.position + Vector3.up * 1.5f;
+        TextMeshPro tmp = txtGO.AddComponent<TextMeshPro>();
+        tmp.text = msg;
+        tmp.fontSize = 4.5f;
+        tmp.fontStyle = FontStyles.Bold;
+        tmp.alignment = TextAlignmentOptions.Center;
+        tmp.color = col;
+        tmp.sortingOrder = 60;
+        StartCoroutine(AnimateNotice(txtGO, 2.0f));
+    }
+
+    private IEnumerator AnimateNotice(GameObject go, float duration)
+    {
+        if (go == null) yield break;
+        TextMeshPro tmp = go.GetComponent<TextMeshPro>();
+        Color startCol = tmp != null ? tmp.color : Color.white;
+        Vector3 startPos = go.transform.position;
+        float elapsed = 0f;
+
+        while (elapsed < duration && go != null)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            go.transform.position = startPos + Vector3.up * (t * 0.8f);
+            if (tmp != null)
+            {
+                tmp.color = new Color(startCol.r, startCol.g, startCol.b, 1f - t);
+            }
+            yield return null;
+        }
+
+        if (go != null) Destroy(go);
+    }
+
     public void TriggerSceneTransition()
     {
         if (string.IsNullOrEmpty(targetSceneName))
         {
             Debug.LogWarning("[entersign] Cannot load scene: Target Scene Name is empty in the Inspector on this GameObject!");
+            return;
+        }
+
+        if (!CanTransition(out string reason))
+        {
+            ShowFloatingNotice(reason, Color.yellow);
             return;
         }
 
@@ -133,6 +204,12 @@ public class entersign : MonoBehaviour
         Debug.Log("entersign triggered by: " + other.name + " tag=" + other.tag);
         if (other.CompareTag("Player"))
         {
+            if (!CanTransition(out string reason))
+            {
+                ShowFloatingNotice(reason, Color.yellow);
+                return;
+            }
+
             isPlayerInside = true;
             if (autoTriggerOnWalkIn)
             {

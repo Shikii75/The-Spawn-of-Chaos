@@ -163,8 +163,9 @@ public class StrawhatLeaderNPC : MonoBehaviour
         }
 
         // Configure speech bubble
-        _dialogue.characterName = "Strawhat Leader";
+        _dialogue.characterName = "Momoka (Strawhat Leader)";
         _dialogue.dialogueLines = leaderDialogueLines;
+        _dialogue.typeSpeed = 0.035f;
         _dialogue.bubbleWidth = 440f;
         _dialogue.bubbleHeight = 155f;
         _dialogue.heightAboveNPC = 2.5f;

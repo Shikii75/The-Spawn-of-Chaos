@@ -247,8 +247,8 @@ public static class StrawhatClanMobsSetupTool
     {
         GameObject go = new GameObject("StrawhatSwordMob");
         go.tag = "enemy";
-        // Scaled bigger than player (player is ~4.5u tall, mob will be ~5.4u tall)
-        go.transform.localScale = new Vector3(0.58f, 0.58f, 1.0f);
+        // Scaled bigger than player (mob will be ~6.3u tall)
+        go.transform.localScale = new Vector3(0.68f, 0.68f, 1.0f);
 
         SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
         if (initialSprite != null) sr.sprite = initialSprite;
@@ -264,8 +264,8 @@ public static class StrawhatClanMobsSetupTool
         rb.constraints = RigidbodyConstraints2D.FreezeRotation;
 
         BoxCollider2D col = go.AddComponent<BoxCollider2D>();
-        col.size = new Vector2(3.4f, 8.8f);
-        col.offset = new Vector2(-0.6f, -0.2f);
+        col.size = new Vector2(3.4f, 9.4f);
+        col.offset = new Vector2(-0.6f, 0.1f);
 
         StrawhatSwordAI ai = go.AddComponent<StrawhatSwordAI>();
         ai.maxHealth = 110;
@@ -290,8 +290,8 @@ public static class StrawhatClanMobsSetupTool
     {
         GameObject go = new GameObject("StrawhatBruteMob");
         go.tag = "enemy";
-        // Brute is substantially larger and imposing (~6.7u tall)
-        go.transform.localScale = new Vector3(0.68f, 0.68f, 1.0f);
+        // Brute is substantially larger and imposing (~7.9u tall)
+        go.transform.localScale = new Vector3(0.80f, 0.80f, 1.0f);
 
         SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
         if (initialSprite != null) sr.sprite = initialSprite;
@@ -307,8 +307,8 @@ public static class StrawhatClanMobsSetupTool
         rb.constraints = RigidbodyConstraints2D.FreezeRotation;
 
         BoxCollider2D col = go.AddComponent<BoxCollider2D>();
-        col.size = new Vector2(5.6f, 9.4f);
-        col.offset = new Vector2(-0.5f, 0.1f);
+        col.size = new Vector2(5.6f, 10.2f);
+        col.offset = new Vector2(-0.5f, 0.3f);
 
         StrawhatBruteAI ai = go.AddComponent<StrawhatBruteAI>();
         ai.maxHealth = 180;

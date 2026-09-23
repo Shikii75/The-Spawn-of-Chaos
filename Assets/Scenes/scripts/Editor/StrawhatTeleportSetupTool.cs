@@ -294,7 +294,7 @@ public static class StrawhatTeleportSetupTool
         go.tag = "enemy";
 
         // Transform scale: bigger than player (~5.4 units tall in world space)
-        go.transform.localScale = new Vector3(0.58f, 0.58f, 1.0f);
+        go.transform.localScale = new Vector3(0.68f, 0.68f, 1.0f);
 
         // SpriteRenderer
         SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
@@ -314,8 +314,8 @@ public static class StrawhatTeleportSetupTool
 
         // Main Physical Collider
         BoxCollider2D col = go.AddComponent<BoxCollider2D>();
-        col.size = new Vector2(3.4f, 8.8f);
-        col.offset = new Vector2(-0.4f, -0.1f);
+        col.size = new Vector2(3.4f, 9.4f);
+        col.offset = new Vector2(-0.4f, 0.1f);
 
         // Body Attack Hitbox Child Trigger
         GameObject hitboxChild = new GameObject("BodyAttackHitbox");

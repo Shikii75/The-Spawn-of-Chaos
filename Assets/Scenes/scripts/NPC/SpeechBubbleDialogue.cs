@@ -101,6 +101,8 @@ public class SpeechBubbleDialogue : MonoBehaviour
     private bool      _typing;
     private int       _lineIndex;
     private int       _openedFrame;
+    private float     _openedTime;
+    private float     _finishedTypingTime;
     private Coroutine _typeRoutine;
     private Transform _playerTf;
 
@@ -211,12 +213,19 @@ public class SpeechBubbleDialogue : MonoBehaviour
 
         if (!_isOpen) return;
         if (Time.frameCount == _openedFrame) return;   // ignore the frame we opened on
+        if (Time.time < _openedTime + 0.45f) return;   // opening debounce so entering/holding key doesn't blow past line 0
 
         // Advance / skip
         if (Input.GetKeyDown(interactKey) || Input.GetMouseButtonDown(0))
         {
-            if (_typing) SkipTyping();
-            else         AdvanceLine();
+            if (_typing)
+            {
+                SkipTyping();
+            }
+            else if (Time.time >= _finishedTypingTime + 0.25f)
+            {
+                AdvanceLine();
+            }
         }
 
         // Close
@@ -239,6 +248,8 @@ public class SpeechBubbleDialogue : MonoBehaviour
 
         _lineIndex   = 0;
         _openedFrame = Time.frameCount;
+        _openedTime  = Time.time;
+        _finishedTypingTime = Time.time;
         _isOpen      = true;
         IsAnyDialogueOpen = true;
 
@@ -323,6 +334,7 @@ public class SpeechBubbleDialogue : MonoBehaviour
         }
 
         _typing = false;
+        _finishedTypingTime = Time.time;
         SetAdvanceActive(true);
     }
 
@@ -331,6 +343,7 @@ public class SpeechBubbleDialogue : MonoBehaviour
         if (_typeRoutine != null) StopCoroutine(_typeRoutine);
         _bodyText.text = SpawnOfChaos.Systems.TelepathyOrbSystem.ProcessDialogueLine(dialogueLines[_lineIndex], false);
         _typing = false;
+        _finishedTypingTime = Time.time;
         SetAdvanceActive(true);
     }
 

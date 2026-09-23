@@ -273,7 +273,14 @@ public class DojoWaveManager : MonoBehaviour
             AudioManager.Instance.PlayBGM(ambientMusic, fade: true);
         }
 
-        Debug.Log("[DojoWaveManager] ★ CHALLENGE COMPLETE — Gates opened! All Strawhat waves defeated!");
+        // Persist Dojo 1 trial completion
+        PlayerPrefs.SetInt("Dojo1_Completed", 1);
+        PlayerPrefs.Save();
+
+        // Auto-save current progress
+        SaveSlotManager.SaveCurrentGameState("Cherry Blossom - Strawhat Dojo Cleared");
+
+        Debug.Log("[DojoWaveManager] ★ CHALLENGE COMPLETE — Gates opened! Dojo 1 marked completed & auto-saved.");
 
         // Start post-victory exit sequence
         StartCoroutine(PostVictoryExitRoutine());

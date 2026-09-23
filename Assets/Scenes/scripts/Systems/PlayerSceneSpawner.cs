@@ -260,6 +260,12 @@ public class PlayerSceneSpawner : MonoBehaviour
         // --- Step 7: Activate and setup ---
         ActivateAndSetupPlayer(player);
 
+        if (isDojoReturn)
+        {
+            SaveSlotManager.SaveCurrentGameState("Cherry Blossom - Strawhat Dojo Cleared");
+            Debug.Log("[PlayerSceneSpawner] Auto-saved game state on Dojo return.");
+        }
+
         // --- Step 8: Delayed verification ---
         StartCoroutine(VerifyPlayerAfterFrame(player));
     }

@@ -298,8 +298,8 @@ public static class StrawhatStaffSetupTool
         GameObject go = new GameObject("StrawhatStaffMob");
         go.tag = "enemy";
 
-        // Scaled bigger than player (player is ~4.5u tall, mob will be ~5.3u tall)
-        go.transform.localScale = new Vector3(0.58f, 0.58f, 1.0f);
+        // Scaled bigger than player (mob will be ~6.3u tall)
+        go.transform.localScale = new Vector3(0.68f, 0.68f, 1.0f);
 
         // SpriteRenderer
         SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
@@ -319,8 +319,8 @@ public static class StrawhatStaffSetupTool
 
         // Main Collider matching actual sprite silhouette
         BoxCollider2D col = go.AddComponent<BoxCollider2D>();
-        col.size = new Vector2(3.6f, 8.8f);
-        col.offset = new Vector2(-0.15f, -0.3f);
+        col.size = new Vector2(3.6f, 9.4f);
+        col.offset = new Vector2(-0.15f, 0.0f);
 
         // AI Script
         StrawhatStaffAI ai = go.AddComponent<StrawhatStaffAI>();
